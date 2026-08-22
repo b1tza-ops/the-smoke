@@ -212,7 +212,7 @@
             level: number(app.dataset.level, 1),
             xp: number(app.dataset.xp),
             nextLevelXp: number(app.dataset.nextLevelXp, 100),
-            money: number(app.dataset.money, 500),
+            money: number(app.dataset.startingMoney, 500),
             health: number(app.dataset.health, 100),
             energy: number(app.dataset.energy, 100),
             maxEnergy: number(app.dataset.maxEnergy, 100),
