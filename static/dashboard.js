@@ -174,6 +174,26 @@
         { id: "mechanic", title: "Garage mechanic", company: "East End Motors", level: 6, energy: 14, pay: 190, xp: 25, description: "Repair vehicles and make useful contacts." },
     ];
 
+    const dailyObjectives = [
+        { key: "training", title: "Put in the work", description: "Complete 2 gym sessions", target: 2, icon: "◆" },
+        { key: "crimes", title: "Make your mark", description: "Attempt 2 crimes", target: 2, icon: "!" },
+        { key: "shifts", title: "Earn an honest wage", description: "Complete 1 work shift", target: 1, icon: "£" },
+    ];
+
+    const dailyReward = { cash: 250, xp: 30 };
+
+    const localDateKey = (date = new Date()) => [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    const createDailyState = () => ({
+        date: localDateKey(),
+        progress: Object.fromEntries(dailyObjectives.map((objective) => [objective.key, 0])),
+        rewardClaimed: false,
+    });
+
     const districts = {
         Camden: {
             description: "Markets, railway arches and a steady flow of low-risk opportunities.",
@@ -233,6 +253,7 @@
             ],
             restriction,
             selectedBet: 10,
+            daily: createDailyState(),
         };
     };
 
@@ -247,6 +268,10 @@
                 return initialState;
             }
 
+            const storedDaily = stored.daily?.date === initialState.daily.date
+                ? stored.daily
+                : initialState.daily;
+
             return {
                 ...initialState,
                 ...stored,
@@ -258,6 +283,14 @@
                     : initialInventory.map((item) => ({ ...item })),
                 equipped: { ...initialState.equipped, ...(stored.equipped || {}) },
                 restriction: initialState.restriction || stored.restriction || null,
+                daily: {
+                    ...initialState.daily,
+                    ...storedDaily,
+                    progress: {
+                        ...initialState.daily.progress,
+                        ...(storedDaily.progress || {}),
+                    },
+                },
             };
         } catch (error) {
             console.warn("Could not load frontend prototype state.", error);
@@ -290,10 +323,30 @@
         state.activities = state.activities.slice(0, 12);
     };
 
+    const advanceDailyObjective = (key, amount = 1) => {
+        const objective = dailyObjectives.find((item) => item.key === key);
+
+        if (!objective || state.daily.rewardClaimed) {
+            return;
+        }
+
+        const previous = number(state.daily.progress[key]);
+        state.daily.progress[key] = clamp(previous + amount, 0, objective.target);
+
+        if (previous < objective.target && state.daily.progress[key] === objective.target) {
+            toast(`Daily objective complete · ${objective.title}`);
+        }
+    };
+
+    const completedDailyObjectives = () => dailyObjectives.filter(
+        (objective) => number(state.daily.progress[objective.key]) >= objective.target,
+    ).length;
+
     const toast = (message, danger = false) => {
         const region = document.getElementById("toastRegion");
         const notification = document.createElement("div");
         notification.className = `toast${danger ? " toast--danger" : ""}`;
+        notification.setAttribute("role", danger ? "alert" : "status");
 
         const copy = document.createElement("span");
         copy.textContent = message;
@@ -422,6 +475,50 @@
             : "Unemployed";
     };
 
+    const renderDailyObjectives = () => {
+        if (state.daily.date !== localDateKey()) {
+            state.daily = createDailyState();
+            addActivity("New daily objectives available");
+            saveState();
+        }
+
+        const list = document.getElementById("dailyObjectiveList");
+        const completeCount = completedDailyObjectives();
+        const allComplete = completeCount === dailyObjectives.length;
+
+        list.innerHTML = dailyObjectives.map((objective) => {
+            const progress = clamp(number(state.daily.progress[objective.key]), 0, objective.target);
+            const complete = progress >= objective.target;
+            const progressPercent = (progress / objective.target) * 100;
+
+            return `
+                <article class="daily-objective${complete ? " is-complete" : ""}">
+                    <span class="daily-objective__icon" aria-hidden="true">${complete ? "✓" : objective.icon}</span>
+                    <div class="daily-objective__copy">
+                        <strong>${objective.title}</strong>
+                        <small>${objective.description}</small>
+                        <div class="meter meter--thin" aria-label="${objective.title}: ${progress} of ${objective.target}">
+                            <span class="meter__fill" style="width:${progressPercent}%"></span>
+                        </div>
+                    </div>
+                    <span class="daily-objective__count">${progress}/${objective.target}</span>
+                </article>
+            `;
+        }).join("");
+
+        document.getElementById("dailyProgressLabel").textContent = state.daily.rewardClaimed
+            ? "Reward collected"
+            : `${completeCount} / ${dailyObjectives.length} complete`;
+
+        const claimButton = document.getElementById("claimDailyReward");
+        claimButton.disabled = !allComplete || state.daily.rewardClaimed;
+        claimButton.textContent = state.daily.rewardClaimed
+            ? "Reward claimed"
+            : allComplete
+                ? `Claim ${formatMoney(dailyReward.cash)} + ${dailyReward.xp} XP`
+                : "Complete all objectives";
+    };
+
     const renderActivity = () => {
         const list = document.getElementById("activityList");
         list.replaceChildren();
@@ -495,6 +592,7 @@
 
         state.energy -= option.cost;
         state[statName] += option.gain;
+        advanceDailyObjective("training");
         addActivity(`${option.title} increased by ${option.gain}`);
         toast(`${option.title} +${option.gain}`);
         saveState();
@@ -567,6 +665,22 @@
         }
     };
 
+    const claimDailyReward = () => {
+        const allComplete = completedDailyObjectives() === dailyObjectives.length;
+
+        if (!allComplete || state.daily.rewardClaimed) {
+            return;
+        }
+
+        state.daily.rewardClaimed = true;
+        state.money += dailyReward.cash;
+        applyXp(dailyReward.xp);
+        addActivity(`Daily objectives: earned ${formatMoney(dailyReward.cash)} and ${dailyReward.xp} XP`);
+        saveState();
+        renderAll();
+        toast(`Daily reward claimed · ${formatMoney(dailyReward.cash)} + ${dailyReward.xp} XP`);
+    };
+
     const attemptCrime = (crimeId) => {
         const crime = crimes.find((item) => item.id === crimeId);
         if (!crime || !canPerformAction()) return;
@@ -577,6 +691,7 @@
 
         state.nerve -= crime.nerve;
         state.wanted = clamp(state.wanted + crime.wanted, 0, 100);
+        advanceDailyObjective("crimes");
         const success = randomBetween(1, 100) <= crime.chance;
 
         if (success) {
@@ -661,6 +776,7 @@
             state.energy -= job.energy;
             state.money += job.pay;
             applyXp(job.xp);
+            advanceDailyObjective("shifts");
             addActivity(`${job.title} shift: earned ${formatMoney(job.pay)}`);
             toast(`Shift complete · ${formatMoney(job.pay)}`);
         }
@@ -843,6 +959,7 @@
     const renderAll = () => {
         updateCoreUI();
         updateRestriction();
+        renderDailyObjectives();
         renderActivity();
         renderBattleStats();
         renderTraining();
@@ -853,7 +970,15 @@
         renderBets();
     };
 
-    const showView = (viewName) => {
+    const showView = (viewName, { updateHash = true, moveFocus = true } = {}) => {
+        const targetView = [...document.querySelectorAll("[data-view]")].find(
+            (view) => view.dataset.view === viewName,
+        );
+
+        if (!targetView) {
+            return;
+        }
+
         document.querySelectorAll("[data-view]").forEach((view) => {
             const active = view.dataset.view === viewName;
             view.hidden = !active;
@@ -861,7 +986,14 @@
         });
 
         document.querySelectorAll("[data-view-target]").forEach((button) => {
-            button.classList.toggle("is-active", button.dataset.viewTarget === viewName);
+            const active = button.dataset.viewTarget === viewName;
+            button.classList.toggle("is-active", active);
+
+            if (active && button.closest("nav")) {
+                button.setAttribute("aria-current", "page");
+            } else {
+                button.removeAttribute("aria-current");
+            }
         });
 
         const sidebar = document.getElementById("gameSidebar");
@@ -870,6 +1002,18 @@
         scrim.classList.remove("is-visible");
         document.getElementById("mobileMenuButton").setAttribute("aria-expanded", "false");
         document.getElementById("mainContent").scrollIntoView({ behavior: "smooth", block: "start" });
+
+        if (updateHash && window.location.hash !== `#${viewName}`) {
+            window.history.pushState({ view: viewName }, "", `#${viewName}`);
+        }
+
+        if (moveFocus) {
+            const heading = targetView.querySelector("h1");
+            if (heading) {
+                heading.setAttribute("tabindex", "-1");
+                window.requestAnimationFrame(() => heading.focus({ preventScroll: true }));
+            }
+        }
     };
 
     document.querySelectorAll("[data-view-target]").forEach((button) => {
@@ -890,6 +1034,14 @@
         menuButton.setAttribute("aria-expanded", "false");
     });
 
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !sidebar.classList.contains("is-open")) return;
+        sidebar.classList.remove("is-open");
+        scrim.classList.remove("is-visible");
+        menuButton.setAttribute("aria-expanded", "false");
+        menuButton.focus();
+    });
+
     document.querySelectorAll("[data-district]").forEach((button) => {
         button.addEventListener("click", () => {
             selectedDistrict = button.dataset.district;
@@ -897,6 +1049,7 @@
         });
     });
 
+    document.getElementById("claimDailyReward").addEventListener("click", claimDailyReward);
     document.getElementById("spinButton").addEventListener("click", spinSlots);
     document.getElementById("resetPrototype").addEventListener("click", () => {
         if (!window.confirm("Reset all browser-only prototype progress?")) return;
@@ -913,4 +1066,17 @@
     window.setInterval(updateRestriction, 1000);
     window.setInterval(renderActivity, 30000);
     renderAll();
+
+    const initialView = window.location.hash.slice(1);
+    showView(
+        [...document.querySelectorAll("[data-view]")].some((view) => view.dataset.view === initialView)
+            ? initialView
+            : "overview",
+        { updateHash: false, moveFocus: false },
+    );
+
+    window.addEventListener("popstate", () => {
+        const requestedView = window.location.hash.slice(1) || "overview";
+        showView(requestedView, { updateHash: false, moveFocus: false });
+    });
 })();
