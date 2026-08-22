@@ -643,6 +643,7 @@
 .resource-pill small { color: var(--game-muted); font-size: .56rem; }
 .resource-pill strong { font-size: .76rem; }
 .gym-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(16rem, .5fr); gap: 1rem; }
+.training-stage { min-width: 0; }
 .training-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
 .training-card { position: relative; overflow: hidden; border: 1px solid var(--game-line); border-radius: var(--game-radius); background: var(--game-panel); padding: 1.25rem; }
 .training-card::after { position: absolute; right: -2rem; bottom: -2.8rem; width: 8rem; height: 8rem; border-radius: 50%; background: var(--stat-colour); opacity: .06; content: ""; }
@@ -664,6 +665,10 @@
 .train-button { position: relative; z-index: 1; width: 100%; margin-top: 1.15rem; border: 1px solid color-mix(in srgb, var(--stat-colour), transparent 55%); border-radius: 9px; background: color-mix(in srgb, var(--stat-colour), transparent 90%); color: var(--stat-colour); cursor: pointer; padding: .7rem; font-size: .65rem; font-weight: 900; }
 .train-button:hover:not(:disabled) { filter: brightness(1.2); }
 .train-button:disabled { border-color: var(--game-line); background: #20272b; color: var(--game-faint); cursor: not-allowed; }
+.training-result { margin-top: .8rem; border: 1px solid rgba(185,243,75,.28); border-radius: var(--game-radius); background: linear-gradient(135deg, rgba(185,243,75,.11), rgba(17,22,26,.92)); padding: 1rem 1.1rem; }
+.training-result span { color: var(--game-accent); font-size: .55rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.training-result strong { display: block; margin-top: .35rem; font-family: Georgia, serif; font-size: 1rem; font-weight: 500; }
+.training-result p { margin: .35rem 0 0; color: var(--game-muted); font-size: .63rem; }
 .venue-card { background: linear-gradient(145deg, rgba(246,188,80,.07), rgba(17,22,26,.9)); }
 .venue-card__tag { color: var(--game-energy); font-size: .59rem; font-weight: 900; text-transform: uppercase; }
 .venue-card h2 { margin-top: .4rem; font-size: 2rem; }
