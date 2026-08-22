@@ -64,6 +64,17 @@
         <symbol id="icon-close" viewBox="0 0 24 24">
             <path d="m6 6 12 12M18 6 6 18"></path>
         </symbol>
+        <symbol id="icon-medical" viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14"></path>
+        </symbol>
+        <symbol id="icon-weapon" viewBox="0 0 24 24">
+            <path d="m14 4 6-2-2 6L8 18l-4 2 2-4L16 6"></path>
+            <path d="m11 13 4 4"></path>
+        </symbol>
+        <symbol id="icon-utility" viewBox="0 0 24 24">
+            <rect x="6" y="2" width="12" height="20" rx="2"></rect>
+            <path d="M10 5h4M11 18h2"></path>
+        </symbol>
     </svg>
 
     <div class="atmosphere atmosphere--one" aria-hidden="true"></div>
@@ -166,9 +177,35 @@
                     <span class="location-pill__district" id="currentDistrict">Camden</span>
                 </div>
 
-                <div class="topbar-wallet">
-                    <span>Available cash</span>
-                    <strong data-money>£0</strong>
+                <div class="topbar-hud" aria-label="Player status">
+                    <div class="hud-stat hud-stat--level">
+                        <span>Level</span>
+                        <strong data-bind="level">1</strong>
+                    </div>
+                    <div class="hud-stat hud-stat--health">
+                        <span>Health</span>
+                        <strong><span data-bind="health">100</span>/100</strong>
+                    </div>
+                    <div class="hud-stat hud-stat--energy">
+                        <span>Energy</span>
+                        <strong><span data-bind="energy">100</span>/<span data-bind="maxEnergy">100</span></strong>
+                    </div>
+                    <div class="hud-stat hud-stat--nerve">
+                        <span>Nerve</span>
+                        <strong><span data-bind="nerve">20</span>/<span data-bind="maxNerve">20</span></strong>
+                    </div>
+                    <div class="hud-stat hud-stat--wanted">
+                        <span>Wanted</span>
+                        <strong><span data-bind="wanted">0</span>/100</strong>
+                    </div>
+                    <div class="hud-stat hud-stat--travel" id="travelStatusItem" data-state="free">
+                        <span>Movement</span>
+                        <strong id="travelStatus">Free to travel</strong>
+                    </div>
+                    <div class="hud-stat hud-stat--money">
+                        <span>Cash</span>
+                        <strong data-money>£0</strong>
+                    </div>
                 </div>
             </header>
 
@@ -353,7 +390,7 @@
                             <span class="venue-card__tag">Current gym</span>
                             <h2>Ironworks</h2>
                             <p>A bare-bones railway-arch gym where reputations are built one set at a time.</p>
-                            <dl><div><dt>Membership</dt><dd>Free</dd></div><div><dt>Training bonus</dt><dd>+0%</dd></div><div><dt>District</dt><dd>Camden</dd></div></dl>
+                            <dl><div><dt>Membership</dt><dd>Free</dd></div><div><dt>Training rate</dt><dd>+1 per 5 energy</dd></div><div><dt>District</dt><dd>Camden</dd></div></dl>
                             <button class="secondary-button secondary-button--wide" type="button" disabled>More gyms coming soon</button>
                         </aside>
                     </div>
@@ -429,6 +466,7 @@
                         </section>
                         <aside class="panel paytable-panel">
                             <p class="eyebrow">Payouts</p><h2>Pay table</h2>
+                            <div class="slot-odds"><span>Approximate win rate</span><strong>18%</strong></div>
                             <dl><div><dt>7 · 7 · 7</dt><dd>10× stake</dd></div><div><dt>£ · £ · £</dt><dd>6× stake</dd></div><div><dt>Any triple</dt><dd>4× stake</dd></div><div><dt>Any pair</dt><dd>2× stake</dd></div></dl>
                             <p>Prototype only. No real currency, purchases or withdrawals.</p>
                         </aside>
