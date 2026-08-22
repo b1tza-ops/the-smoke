@@ -385,12 +385,15 @@
                         <div class="resource-pill resource-pill--energy"><svg><use href="#icon-bolt"></use></svg><span><small>Energy</small><strong><span data-bind="energy">100</span>/<span data-bind="maxEnergy">100</span></strong></span></div>
                     </header>
                     <div class="gym-layout">
-                        <section class="training-grid" id="trainingGrid"></section>
+                        <div class="training-stage">
+                            <section class="training-grid" id="trainingGrid"></section>
+                            <div class="training-result" id="trainingResult" role="status" hidden></div>
+                        </div>
                         <aside class="panel venue-card">
                             <span class="venue-card__tag">Current gym</span>
                             <h2>Ironworks</h2>
                             <p>A bare-bones railway-arch gym where reputations are built one set at a time.</p>
-                            <dl><div><dt>Membership</dt><dd>Free</dd></div><div><dt>Training rate</dt><dd>+1 per 5 energy</dd></div><div><dt>District</dt><dd>Camden</dd></div></dl>
+                            <dl><div><dt>Membership</dt><dd>Free</dd></div><div><dt>Energy per train</dt><dd>10</dd></div><div><dt>Prototype gain</dt><dd>+2 per train</dd></div><div><dt>District</dt><dd>Camden</dd></div></dl>
                             <button class="secondary-button secondary-button--wide" type="button" disabled>More gyms coming soon</button>
                         </aside>
                     </div>
