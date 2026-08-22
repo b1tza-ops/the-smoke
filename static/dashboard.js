@@ -160,11 +160,15 @@
         },
     ];
 
+    const GYM_ENERGY_PER_TRAIN = 10;
+    const GYM_GAIN_PER_TRAIN = 2;
+    const DEFAULT_TRAINING_SETS = 1;
+
     const trainingOptions = [
-        { stat: "strength", title: "Strength", description: "Increase raw striking power.", colour: "#ff7a45", cost: 10, gain: 2 },
-        { stat: "defence", title: "Defence", description: "Take less damage in combat.", colour: "#49cce3", cost: 10, gain: 2 },
-        { stat: "speed", title: "Speed", description: "Act before your opponent.", colour: "#b9f34b", cost: 10, gain: 2 },
-        { stat: "dexterity", title: "Dexterity", description: "Improve accuracy and evasion.", colour: "#a98cff", cost: 10, gain: 2 },
+        { stat: "strength", title: "Strength", description: "Increase raw striking power.", colour: "#ff7a45" },
+        { stat: "defence", title: "Defence", description: "Take less damage in combat.", colour: "#49cce3" },
+        { stat: "speed", title: "Speed", description: "Act before your opponent.", colour: "#b9f34b" },
+        { stat: "dexterity", title: "Dexterity", description: "Improve accuracy and evasion.", colour: "#a98cff" },
     ];
 
     const jobs = [
@@ -303,6 +307,10 @@
     let activeInventoryFilter = "All";
     let selectedDistrict = state.district;
     let spinning = false;
+    const trainingSets = Object.fromEntries(
+        trainingOptions.map((option) => [option.stat, DEFAULT_TRAINING_SETS]),
+    );
+    let lastTrainingResult = null;
 
     const formatMoney = (value) => new Intl.NumberFormat("en-GB", {
         style: "currency",
@@ -378,11 +386,24 @@
         });
     };
 
+    const setMovementStatus = (kind = null) => {
+        const statusItem = document.getElementById("travelStatusItem");
+        const status = document.getElementById("travelStatus");
+
+        statusItem.dataset.state = kind || "free";
+        status.textContent = kind === "hospital"
+            ? "In hospital"
+            : kind === "jail"
+                ? "In jail"
+                : "Free to travel";
+    };
+
     const updateRestriction = () => {
         const banner = document.getElementById("restrictionBanner");
 
         if (!state.restriction) {
             banner.hidden = true;
+            setMovementStatus();
             return false;
         }
 
@@ -407,6 +428,7 @@
             : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
         const hospital = state.restriction.kind === "hospital";
+        setMovementStatus(hospital ? "hospital" : "jail");
         banner.hidden = false;
         banner.classList.toggle("restriction-banner--hospital", hospital);
         document.getElementById("restrictionTitle").textContent = hospital ? "Recovering in hospital" : "Currently in jail";
@@ -565,36 +587,127 @@
         document.getElementById("equippedArmour").textContent = armour;
     };
 
+    const availableTrainingSets = () => Math.floor(state.energy / GYM_ENERGY_PER_TRAIN);
+
+    const trainingGainForSets = (sets) => sets * GYM_GAIN_PER_TRAIN;
+
+    const selectedTrainingSets = (statName) => {
+        const maximum = availableTrainingSets();
+
+        if (maximum < 1) {
+            return 0;
+        }
+
+        const requested = number(trainingSets[statName], DEFAULT_TRAINING_SETS);
+        return clamp(
+            Math.round(requested),
+            1,
+            maximum,
+        );
+    };
+
     const renderTraining = () => {
         const grid = document.getElementById("trainingGrid");
-        grid.innerHTML = trainingOptions.map((option) => `
-            <article class="training-card" style="--stat-colour:${option.colour}">
-                <div class="training-card__head"><span>Current stat</span><strong>${state[option.stat]}</strong></div>
-                <h2>${option.title}</h2>
-                <p>${option.description}</p>
-                <button class="train-button" type="button" data-train="${option.stat}">Train · ${option.cost} energy</button>
-            </article>
-        `).join("");
+        const maximumSets = availableTrainingSets();
+        const restricted = Boolean(state.restriction && state.restriction.until > Date.now());
+
+        grid.innerHTML = trainingOptions.map((option) => {
+            const selectedSets = selectedTrainingSets(option.stat);
+            const energyCost = selectedSets * GYM_ENERGY_PER_TRAIN;
+            const gain = trainingGainForSets(selectedSets);
+            const disabled = restricted || selectedSets === 0;
+            trainingSets[option.stat] = selectedSets || DEFAULT_TRAINING_SETS;
+
+            return `
+                <article class="training-card" style="--stat-colour:${option.colour}">
+                    <div class="training-card__head"><span>Current stat</span><strong>${state[option.stat]}</strong></div>
+                    <h2>${option.title}</h2>
+                    <p>${option.description}</p>
+                    <div class="training-investment">
+                        <div class="training-investment__summary">
+                            <span>Training sets</span>
+                            <output data-training-output>${selectedSets} ${selectedSets === 1 ? "train" : "trains"}</output>
+                        </div>
+                        <input
+                            class="training-slider"
+                            type="range"
+                            min="1"
+                            max="${Math.max(1, maximumSets)}"
+                            step="1"
+                            value="${selectedSets || 1}"
+                            data-training-sets="${option.stat}"
+                            aria-label="Number of ${option.title} training sets"
+                            aria-valuetext="${selectedSets} sets, ${energyCost} energy, estimated gain ${gain}"
+                            ${disabled ? "disabled" : ""}
+                        >
+                        <div class="training-investment__scale">
+                            <small>${maximumSets >= 1 ? "1 set" : "0 sets"}</small>
+                            <strong data-training-gain>${energyCost} energy · est. +${gain}</strong>
+                            <small>${maximumSets} ${maximumSets === 1 ? "set" : "sets"}</small>
+                        </div>
+                    </div>
+                    <button class="train-button" type="button" data-train="${option.stat}" ${disabled ? "disabled" : ""}>
+                        ${restricted ? "Currently restricted" : selectedSets === 0 ? `Need ${GYM_ENERGY_PER_TRAIN} energy` : `Train ${selectedSets}× · ${energyCost} energy`}
+                    </button>
+                </article>
+            `;
+        }).join("");
+
+        grid.querySelectorAll("[data-training-sets]").forEach((input) => {
+            input.addEventListener("input", () => {
+                const sets = Number(input.value);
+                const energyCost = sets * GYM_ENERGY_PER_TRAIN;
+                const statName = input.dataset.trainingSets;
+                const gain = trainingGainForSets(sets);
+                const card = input.closest(".training-card");
+
+                trainingSets[statName] = sets;
+                input.setAttribute("aria-valuetext", `${sets} sets, ${energyCost} energy, estimated gain ${gain}`);
+                card.querySelector("[data-training-output]").textContent = `${sets} ${sets === 1 ? "train" : "trains"}`;
+                card.querySelector("[data-training-gain]").textContent = `${energyCost} energy · est. +${gain}`;
+                card.querySelector("[data-train]").textContent = `Train ${sets}× · ${energyCost} energy`;
+            });
+        });
 
         grid.querySelectorAll("[data-train]").forEach((button) => {
             button.addEventListener("click", () => train(button.dataset.train));
         });
+
+        const result = document.getElementById("trainingResult");
+        result.hidden = !lastTrainingResult;
+
+        if (lastTrainingResult) {
+            result.innerHTML = `
+                <span>Session complete</span>
+                <strong>You completed ${lastTrainingResult.sets} ${lastTrainingResult.stat.toLowerCase()} ${lastTrainingResult.sets === 1 ? "train" : "trains"}.</strong>
+                <p>${lastTrainingResult.energy} energy used · ${lastTrainingResult.stat} +${lastTrainingResult.gain}</p>
+            `;
+        }
     };
 
     const train = (statName) => {
         const option = trainingOptions.find((item) => item.stat === statName);
+        const sets = selectedTrainingSets(statName);
+        const energyCost = sets * GYM_ENERGY_PER_TRAIN;
+        const gain = trainingGainForSets(sets);
 
         if (!option || !canPerformAction()) return;
-        if (state.energy < option.cost) {
+        if (sets < 1 || state.energy < energyCost) {
             toast("Not enough energy to train.", true);
             return;
         }
 
-        state.energy -= option.cost;
-        state[statName] += option.gain;
+        state.energy -= energyCost;
+        state[statName] += gain;
+        lastTrainingResult = {
+            stat: option.title,
+            sets,
+            energy: energyCost,
+            gain,
+        };
         advanceDailyObjective("training");
-        addActivity(`${option.title} increased by ${option.gain}`);
-        toast(`${option.title} +${option.gain}`);
+        addActivity(`${option.title} increased by ${gain} across ${sets} training sets`);
+        toast(`${option.title} +${gain} · ${energyCost} energy used`);
         saveState();
         renderAll();
     };
@@ -786,10 +899,20 @@
     };
 
     const renderInventoryFilters = () => {
-        const filters = ["All", "medical", "boost", "weapon", "armour", "utility"];
+        const filters = [
+            { key: "All", label: "All items", icon: "bag" },
+            { key: "medical", label: "Medical", icon: "medical" },
+            { key: "boost", label: "Boosts", icon: "bolt" },
+            { key: "weapon", label: "Weapons", icon: "weapon" },
+            { key: "armour", label: "Armour", icon: "shield" },
+            { key: "utility", label: "Utility", icon: "utility" },
+        ];
         const row = document.getElementById("inventoryFilters");
         row.innerHTML = filters.map((filter) => `
-            <button class="filter-button${activeInventoryFilter === filter ? " is-active" : ""}" type="button" data-item-filter="${filter}">${filter === "All" ? "All items" : filter}</button>
+            <button class="filter-button filter-button--icon${activeInventoryFilter === filter.key ? " is-active" : ""}" type="button" data-item-filter="${filter.key}">
+                <svg aria-hidden="true"><use href="#icon-${filter.icon}"></use></svg>
+                <span>${filter.label}</span>
+            </button>
         `).join("");
         row.querySelectorAll("[data-item-filter]").forEach((button) => {
             button.addEventListener("click", () => {
@@ -894,7 +1017,40 @@
         renderAll();
     };
 
-    const slotSymbols = ["7", "£", "♛", "◆", "☕"];
+    const slotSymbols = ["7", "£", "♛", "◆", "☕", "★"];
+
+    const shuffled = (values) => {
+        const result = [...values];
+
+        for (let index = result.length - 1; index > 0; index -= 1) {
+            const swapIndex = randomBetween(0, index);
+            [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+        }
+
+        return result;
+    };
+
+    const generateSlotResult = () => {
+        const roll = Math.random() * 100;
+
+        if (roll < .2) return ["7", "7", "7"];
+        if (roll < 1) return ["£", "£", "£"];
+
+        if (roll < 3) {
+            const symbol = ["♛", "◆", "☕", "★"][randomBetween(0, 3)];
+            return [symbol, symbol, symbol];
+        }
+
+        if (roll < 18) {
+            const pair = slotSymbols[randomBetween(0, slotSymbols.length - 1)];
+            const remaining = slotSymbols.filter((symbol) => symbol !== pair);
+            const other = remaining[randomBetween(0, remaining.length - 1)];
+            return shuffled([pair, pair, other]);
+        }
+
+        return shuffled(slotSymbols).slice(0, 3);
+    };
+
     const renderBets = () => {
         const selector = document.getElementById("betSelector");
         selector.innerHTML = [10, 50, 100, 500].map((bet) => `
@@ -927,7 +1083,7 @@
         document.getElementById("slotResult").textContent = "Reels spinning…";
 
         window.setTimeout(() => {
-            const result = reels.map(() => slotSymbols[randomBetween(0, slotSymbols.length - 1)]);
+            const result = generateSlotResult();
             reels.forEach((reel, index) => {
                 reel.textContent = result[index];
                 reel.classList.remove("is-spinning");
@@ -1058,6 +1214,7 @@
         activeCrimeFilter = "All";
         activeInventoryFilter = "All";
         selectedDistrict = state.district;
+        lastTrainingResult = null;
         saveState();
         renderAll();
         toast("Frontend prototype reset.");
