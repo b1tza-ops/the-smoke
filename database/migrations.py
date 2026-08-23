@@ -138,7 +138,7 @@ def migrate_003_bank_system(cursor):
         )
         """
     )
-    
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,

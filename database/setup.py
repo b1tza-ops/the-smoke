@@ -1,13 +1,6 @@
 from database.connection import get_connection
 from database.migrations import run_migrations
 
-
-
-
-
-
-
-
 def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
@@ -82,42 +75,11 @@ def create_tables():
         )
     """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS bank_transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            player_id INTEGER NOT NULL,
-            transaction_type TEXT NOT NULL
-                CHECK (
-                    transaction_type IN (
-                        'deposit',
-                        'withdrawal'
-                    )
-                ),
-            amount INTEGER NOT NULL
-                CHECK (amount > 0),
-            cash_balance_after INTEGER NOT NULL
-                CHECK (cash_balance_after >= 0),
-            bank_balance_after INTEGER NOT NULL
-                CHECK (bank_balance_after >= 0),
-            created_at TEXT NOT NULL
-                DEFAULT CURRENT_TIMESTAMP,
 
-            FOREIGN KEY (player_id)
-                REFERENCES players(id)
-                ON DELETE CASCADE
-        )
-    """)
 
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS
-            idx_bank_transactions_player
-        ON bank_transactions (
-            player_id,
-            created_at
-        )
-    """)
 
-    
+
+
     conn.commit()
     conn.close()
 
