@@ -156,6 +156,8 @@ MIGRATIONS: tuple[Migration, ...] = (
         apply=migrate_003_bank_system,
     ),
 )
+
+
 def ensure_migration_table(cursor):
     cursor.execute(
         """
