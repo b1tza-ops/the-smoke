@@ -23,6 +23,9 @@ class Player:
         jail_until,
         hospital_until,
         bank_balance,
+        current_district,
+        travel_destination,
+        travel_until,
         crime_progress=None,
         district_reputation=None
     ):
@@ -33,6 +36,9 @@ class Player:
         self.level = level
         self.money = money
         self.bank_balance = bank_balance
+        self.current_district = current_district
+        self.travel_destination = travel_destination
+        self.travel_until = travel_until
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -61,6 +67,22 @@ class Player:
         print("XP:", self.xp)
         print("Cash:", self.money)
         print("Bank:", self.bank_balance)
+
+        print(
+            "Location:",
+            self.current_district.title(),
+        )
+
+        if self.travel_destination is not None:
+            print(
+                "Travelling to:",
+                self.travel_destination.title(),
+            )
+            print(
+                "Arrival time:",
+                self.travel_until,
+            )
+
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")

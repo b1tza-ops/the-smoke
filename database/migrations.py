@@ -89,6 +89,7 @@ def migrate_002_player_status(cursor):
     )
 
 
+
 def migrate_003_bank_system(cursor):
     add_missing_player_columns(
         cursor,
@@ -139,6 +140,31 @@ def migrate_003_bank_system(cursor):
         """
     )
 
+
+def migrate_004_london_districts_and_travel(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "current_district": (
+                "TEXT NOT NULL DEFAULT 'camden'"
+            ),
+            "travel_destination": "TEXT",
+            "travel_until": "TEXT",
+        },
+    )
+
+    cursor.execute(
+        """
+        UPDATE players
+        SET current_district = 'camden'
+        WHERE
+            current_district IS NULL
+            OR TRIM(current_district) = ''
+        """
+    )
+
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -155,8 +181,12 @@ MIGRATIONS: tuple[Migration, ...] = (
         name="bank_system",
         apply=migrate_003_bank_system,
     ),
+    Migration(
+        version=4,
+        name="london_districts_and_travel",
+        apply=migrate_004_london_districts_and_travel,
+    ),
 )
-
 
 def ensure_migration_table(cursor):
     cursor.execute(

@@ -1,8 +1,7 @@
 import os
 import secrets
-
+from game.travel import update_travel
 from flask import Flask, render_template, request, redirect, session
-
 from database.setup import create_tables
 from database.users import get_user_by_username
 
@@ -46,9 +45,11 @@ def home():
         return "No character found."
 
     player = Player(*player_data)
-    update_player_status(player)
-    save_player(player)
 
+    update_travel(player)
+    update_player_status(player)
+
+    save_player(player)
     current_level_xp = xp_required_for_level(player.level)
     next_level_xp = xp_required_for_level(player.level + 1)
     xp_into_level = player.xp - current_level_xp

@@ -2,6 +2,7 @@ import random
 from dataclasses import dataclass
 
 from game.progression import award_xp
+from game.travel import get_active_travel
 
 from game.status import (
     add_wanted,
@@ -166,10 +167,36 @@ CRIMES_BY_KEY = {crime.key: crime for crime in CRIMES}
 def get_crime(crime_key):
     return CRIMES_BY_KEY[crime_key]
 
-
 def commit_crime(player, crime, rng=None, now=None):
     if rng is None:
         rng = random
+
+    active_travel = get_active_travel(
+        player,
+        now=now,
+    )
+
+    if active_travel is not None:
+        return CrimeResult(
+            attempted=False,
+            crime_key=crime.key,
+            crime_name=crime.name,
+            district=crime.district,
+            success=False,
+            reason="travelling",
+        )
+
+    crime_district_key = crime.district.casefold()
+
+    if player.current_district != crime_district_key:
+        return CrimeResult(
+            attempted=False,
+            crime_key=crime.key,
+            crime_name=crime.name,
+            district=crime.district,
+            success=False,
+            reason="wrong_district",
+        )
 
     if player.nerve < crime.nerve_cost:
         return CrimeResult(
@@ -329,6 +356,23 @@ def _resolve_failed_crime(
 
 def crimes_menu(player):
     while True:
+        active_travel = get_active_travel(player)
+
+        if active_travel is not None:
+            remaining_minutes = (
+                active_travel.remaining_seconds + 59
+            ) // 60
+
+            print(
+                "\nYou cannot commit crimes "
+                "while travelling."
+            )
+            print(
+                f"Arrival in approximately "
+                f"{remaining_minutes} minute(s)."
+            )
+            return
+
         restriction = get_active_restriction(player)
 
         if restriction is not None:
@@ -338,7 +382,8 @@ def crimes_menu(player):
 
             if restriction.kind == "jail":
                 print(
-                    "\nYou cannot commit crimes while in jail."
+                    "\nYou cannot commit crimes "
+                    "while in jail."
                 )
                 print(
                     f"Release in approximately "
@@ -346,7 +391,8 @@ def crimes_menu(player):
                 )
             else:
                 print(
-                    "\nYou cannot commit crimes while in hospital."
+                    "\nYou cannot commit crimes "
+                    "while in hospital."
                 )
                 print(
                     f"Discharge in approximately "
@@ -355,22 +401,43 @@ def crimes_menu(player):
 
             return
 
+        available_crimes = tuple(
+            crime
+            for crime in CRIMES
+            if crime.district.casefold()
+            == player.current_district
+        )
+
         print("\n===== CRIMES =====")
+        print(
+            "District:",
+            player.current_district.title(),
+        )
         print("Nerve:", player.nerve)
 
-        for number, crime in enumerate(CRIMES, start=1):
+        if not available_crimes:
             print(
-                f"{number}. [{crime.district}] {crime.name} "
+                "\nThere are no available crimes "
+                "in this district."
+            )
+            return
+
+        for number, crime in enumerate(
+            available_crimes,
+            start=1,
+        ):
+            print(
+                f"{number}. {crime.name} "
                 f"({crime.nerve_cost} nerve)"
             )
 
-        back_option = len(CRIMES) + 1
+        back_option = len(available_crimes) + 1
         print(f"{back_option}. Back")
 
         choice = input("Choose: ").strip()
 
         if choice == str(back_option):
-            break
+            return
 
         try:
             selected_index = int(choice) - 1
@@ -378,17 +445,34 @@ def crimes_menu(player):
             print("Invalid option.")
             continue
 
-        if not 0 <= selected_index < len(CRIMES):
+        if not 0 <= selected_index < len(
+            available_crimes
+        ):
             print("Invalid option.")
             continue
 
-        crime = CRIMES[selected_index]
+        crime = available_crimes[
+            selected_index
+        ]
 
         result = commit_crime(player, crime)
         display_crime_result(player, result)
 
-
 def display_crime_result(player, result):
+    if result.reason == "travelling":
+        print(
+            "\nYou cannot commit crimes "
+            "while travelling."
+        )
+        return
+
+    if result.reason == "wrong_district":
+        print(
+            "\nYou must travel to "
+            f"{result.district} for this crime."
+        )
+        return
+
     if result.reason == "not_enough_nerve":
         print("\nNot enough nerve.")
         return
@@ -403,7 +487,10 @@ def display_crime_result(player, result):
         print("Crime successful!")
         print("You made £", result.cash_reward)
         print("XP +", result.xp_reward)
-        print("Crime XP +", result.crime_xp_reward)
+        print(
+            "Crime XP +",
+            result.crime_xp_reward,
+        )
         print(
             f"{result.district} reputation +",
             result.reputation_reward,
@@ -420,17 +507,32 @@ def display_crime_result(player, result):
     print("Crime failed!")
 
     if result.consequence == "jail":
-        print("You were arrested and sent to jail.")
-        print("Release time:", result.jail_until)
+        print(
+            "You were arrested and sent to jail."
+        )
+        print(
+            "Release time:",
+            result.jail_until,
+        )
 
     elif result.consequence == "hospital":
-        print("You lost", result.damage, "health.")
+        print(
+            "You lost",
+            result.damage,
+            "health.",
+        )
         print("You were taken to hospital.")
-        print("Discharge time:", result.hospital_until)
+        print(
+            "Discharge time:",
+            result.hospital_until,
+        )
 
     else:
-        print("You lost", result.damage, "health.")
-
+        print(
+            "You lost",
+            result.damage,
+            "health.",
+        )
 
 def _crime_progress_for(player, crime_key):
     if not hasattr(player, "crime_progress"):
@@ -438,12 +540,19 @@ def _crime_progress_for(player, crime_key):
 
     return player.crime_progress.setdefault(
         crime_key,
-        {"xp": 0, "attempts": 0, "successes": 0},
+        {
+            "xp": 0,
+            "attempts": 0,
+            "successes": 0,
+        },
     )
 
 
 def _district_reputation_for(player):
-    if not hasattr(player, "district_reputation"):
+    if not hasattr(
+        player,
+        "district_reputation",
+    ):
         player.district_reputation = {}
 
     return player.district_reputation

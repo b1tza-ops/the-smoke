@@ -77,7 +77,7 @@ class MigrationTests(unittest.TestCase):
     def test_old_database_upgrades_without_losing_player(self):
         applied_versions = run_migrations()
 
-        self.assertEqual(applied_versions, (1, 2, 3))
+        self.assertEqual(applied_versions, (1, 2, 3, 4))
 
         with closing(
             sqlite3.connect(self.database_path)
@@ -102,6 +102,9 @@ class MigrationTests(unittest.TestCase):
                     "jail_until",
                     "hospital_until",
                     "bank_balance",
+                    "current_district",
+                    "travel_destination",
+                    "travel_until",
                 }.issubset(columns)
             )
 
@@ -118,7 +121,10 @@ class MigrationTests(unittest.TestCase):
                     wanted_level,
                     bank_balance,
                     last_energy_update,
-                    last_nerve_update
+                    last_nerve_update,
+                    current_district,
+                    travel_destination,
+                    travel_until
                 FROM players
                 WHERE user_id = 1
                 """
@@ -141,6 +147,15 @@ class MigrationTests(unittest.TestCase):
             self.assertIsNotNone(player[9])
             self.assertIsNotNone(player[10])
 
+            self.assertEqual(
+                player[11:],
+                (
+                    "camden",
+                    None,
+                    None,
+                ),
+            )
+
             migrations = conn.execute(
                 """
                 SELECT version, name
@@ -158,6 +173,10 @@ class MigrationTests(unittest.TestCase):
                     ),
                     (2, "player_status"),
                     (3, "bank_system"),
+                    (
+                        4,
+                        "london_districts_and_travel",
+                    ),
                 ],
             )
 
@@ -180,7 +199,7 @@ class MigrationTests(unittest.TestCase):
         first_run = run_migrations()
         second_run = run_migrations()
 
-        self.assertEqual(first_run, (1, 2, 3))
+        self.assertEqual(first_run, (1, 2, 3, 4))
         self.assertEqual(second_run, ())
 
         with closing(
@@ -214,7 +233,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 3)
+            self.assertEqual(migration_count, 4)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -233,7 +252,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=4,
+            version=5,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -283,7 +302,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3],
+                [1, 2, 3, 4],
             )
             self.assertEqual(money, 777)
 
@@ -316,10 +335,68 @@ class MigrationTests(unittest.TestCase):
                 )
             }
 
-            self.assertEqual(versions, [1, 2, 3])
+            self.assertEqual(versions, [1, 2, 3, 4])
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
             self.assertIn("wanted_level", columns)
+            self.assertIn("current_district", columns)
+            self.assertIn("travel_destination", columns)
+            self.assertIn("travel_until", columns)
+
+    def test_bank_schema_is_created_by_migration_three(self):
+        with patch(
+            "database.migrations.MIGRATIONS",
+            MIGRATIONS[:3],
+        ):
+            applied_versions = run_migrations()
+
+        self.assertEqual(
+            applied_versions,
+            (1, 2, 3),
+        )
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            bank_table = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'table'
+                    AND name = 'bank_transactions'
+                """
+            ).fetchone()
+
+            bank_index = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'index'
+                    AND name = 'idx_bank_transactions_player'
+                """
+            ).fetchone()
+
+            columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(players)"
+                )
+            }
+
+        self.assertEqual(
+            bank_table,
+            ("bank_transactions",),
+        )
+        self.assertEqual(
+            bank_index,
+            ("idx_bank_transactions_player",),
+        )
+        self.assertNotIn(
+            "current_district",
+            columns,
+        )
 
 if __name__ == "__main__":
     unittest.main()
