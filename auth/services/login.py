@@ -1,4 +1,4 @@
-from database.users import get_user_by_username
+from database.repositories.users import get_user_by_username
 from utils.security import verify_password
 
 def login():

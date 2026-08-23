@@ -1,4 +1,4 @@
-from database.bank import BankError, deposit, withdraw
+from database.repositories.bank import BankError, deposit, withdraw
 
 def update_player_balances(player, transaction):
 

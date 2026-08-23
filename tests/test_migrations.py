@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from database.setup import create_tables
+from database.core.setup import create_tables
 
 
-from database.migrations import (
+from database.core.migrations import (
     MIGRATIONS,
     Migration,
     run_migrations,
@@ -22,7 +22,7 @@ class MigrationTests(unittest.TestCase):
         )
 
         self.database_patch = patch(
-            "database.connection.DB_PATH",
+            "database.core.connection.DB_PATH",
             self.database_path,
         )
         self.database_patch.start()
@@ -271,7 +271,7 @@ class MigrationTests(unittest.TestCase):
         )
 
         with patch(
-            "database.migrations.MIGRATIONS",
+            "database.core.migrations.MIGRATIONS",
             MIGRATIONS + (failing_migration,),
         ):
             with self.assertRaisesRegex(
@@ -362,7 +362,7 @@ class MigrationTests(unittest.TestCase):
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(
-            "database.migrations.MIGRATIONS",
+            "database.core.migrations.MIGRATIONS",
             MIGRATIONS[:3],
         ):
             applied_versions = run_migrations()

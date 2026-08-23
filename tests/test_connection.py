@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from database.connection import get_connection
+from database.core.connection import get_connection
 
 
 class ConnectionTests(unittest.TestCase):
@@ -11,7 +11,7 @@ class ConnectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
 
-            with patch("database.connection.DB_PATH", database_path):
+            with patch("database.core.connection.DB_PATH", database_path):
                 conn = get_connection()
                 foreign_keys_enabled = conn.execute(
                     "PRAGMA foreign_keys"

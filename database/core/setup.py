@@ -1,5 +1,5 @@
-from database.connection import get_connection
-from database.migrations import run_migrations
+from database.core.connection import get_connection
+from database.core.migrations import run_migrations
 
 
 def create_tables():
