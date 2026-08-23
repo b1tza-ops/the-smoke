@@ -163,6 +163,7 @@ def migrate_004_london_districts_and_travel(cursor):
         """
     )
 
+
 def migrate_005_starting_housing(cursor):
     add_missing_player_columns(
         cursor,
@@ -183,6 +184,7 @@ def migrate_005_starting_housing(cursor):
             OR TRIM(residence_key) = ''
         """
     )
+
 
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
@@ -210,7 +212,6 @@ MIGRATIONS: tuple[Migration, ...] = (
         name="starting_housing",
         apply=migrate_005_starting_housing,
     ),
-        
 )
 
 def ensure_migration_table(cursor):
