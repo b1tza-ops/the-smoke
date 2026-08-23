@@ -43,6 +43,21 @@ def create_player(user_id, name):
         (player_id,)
     )
 
+    cursor.executemany(
+        """
+        INSERT INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        VALUES (?, ?, 1)
+        """,
+        (
+            (player_id, "first_aid_kit"),
+            (player_id, "energy_drink"),
+        )
+    )
+
     conn.commit()
     conn.close()
 
@@ -183,6 +198,16 @@ def get_player_by_user_id(user_id):
         for row in cursor.fetchall()
     }
 
+    cursor.execute(
+        """
+        SELECT item_key, quantity
+        FROM player_inventory
+        WHERE player_id = ?
+        """,
+        (player_data[0],)
+    )
+    inventory = dict(cursor.fetchall())
+
     conn.close()
 
     player_data[6] = energy
@@ -194,6 +219,7 @@ def get_player_by_user_id(user_id):
         crime_progress,
         district_reputation,
         unlocked_gyms,
+        inventory,
     ])
 
     return tuple(player_data)
@@ -300,6 +326,26 @@ def save_player(player):
                 progress["successes"],
             )
             for crime_key, progress in player.crime_progress.items()
+        ]
+    )
+
+    cursor.execute(
+        "DELETE FROM player_inventory WHERE player_id = ?",
+        (player.id,)
+    )
+    cursor.executemany(
+        """
+        INSERT INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        VALUES (?, ?, ?)
+        """,
+        [
+            (player.id, item_key, quantity)
+            for item_key, quantity
+            in player.inventory.items()
         ]
     )
 

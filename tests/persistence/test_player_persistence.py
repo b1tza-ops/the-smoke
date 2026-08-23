@@ -25,6 +25,7 @@ from game.economy.bank import deposit_cash, withdraw_cash
 from game.housing import purchase_residence
 from game.jobs import complete_shift, join_career, start_shift
 from game.gym import select_gym, unlock_gym
+from game.inventory import add_item, remove_item, use_item
 
 
 class PlayerPersistenceTests(unittest.TestCase):
@@ -426,6 +427,70 @@ class PlayerPersistenceTests(unittest.TestCase):
                     reloaded.unlocked_gyms,
                 )
                 self.assertEqual(reloaded.money, 250)
+
+    def test_inventory_quantities_persist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.core.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="inventory_player",
+                    email="inventory@example.com",
+                    password_hash="test_hash",
+                )
+                create_player(
+                    user_id,
+                    "Inventory Character",
+                )
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    player.inventory,
+                    {
+                        "first_aid_kit": 1,
+                        "energy_drink": 1,
+                    },
+                )
+
+                add_item(
+                    player,
+                    "lockpick",
+                    quantity=4,
+                )
+                remove_item(
+                    player,
+                    "lockpick",
+                    quantity=1,
+                )
+                player.health = 80
+                use_item(
+                    player,
+                    "first_aid_kit",
+                )
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.inventory,
+                    {
+                        "energy_drink": 1,
+                        "lockpick": 3,
+                    },
+                )
+                self.assertEqual(reloaded.health, 100)
 
 if __name__ == "__main__":
     unittest.main()

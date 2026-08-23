@@ -24,7 +24,7 @@
 - Starter housing (tent/hostel/council flat)
 - One legal career path (London Construction)
 - Banking
-- Basic inventory/items
+- Basic persistent inventory and starter items
 
 ## Phase 3 — World Expansion
 

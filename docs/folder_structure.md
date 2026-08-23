@@ -39,6 +39,8 @@ the-smoke/
 │   ├── housing/
 │   │   └── service.py
 │   ├── inventory/
+│   │   ├── items.py
+│   │   └── service.py
 │   ├── jobs/
 │   │   ├── definitions.py
 │   │   └── service.py

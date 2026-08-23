@@ -245,6 +245,146 @@ def migrate_007_district_gyms(cursor):
     )
 
 
+def migrate_008_starter_inventory(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS items (
+            item_key TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL
+                CHECK (
+                    category IN (
+                        'medical',
+                        'boost',
+                        'weapon',
+                        'armour',
+                        'utility'
+                    )
+                ),
+            description TEXT NOT NULL,
+            stackable INTEGER NOT NULL
+                CHECK (stackable IN (0, 1)),
+            max_quantity INTEGER NOT NULL
+                CHECK (max_quantity > 0),
+            effect_key TEXT,
+            effect_amount INTEGER NOT NULL DEFAULT 0
+                CHECK (effect_amount >= 0)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_inventory (
+            player_id INTEGER NOT NULL,
+            item_key TEXT NOT NULL,
+            quantity INTEGER NOT NULL
+                CHECK (quantity > 0),
+
+            PRIMARY KEY (player_id, item_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+
+    cursor.executemany(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key,
+            name,
+            category,
+            description,
+            stackable,
+            max_quantity,
+            effect_key,
+            effect_amount
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            (
+                "first_aid_kit",
+                "First Aid Kit",
+                "medical",
+                "Restores up to 25 health.",
+                1,
+                5,
+                "health",
+                25,
+            ),
+            (
+                "energy_drink",
+                "Energy Drink",
+                "boost",
+                "Restores up to 20 energy.",
+                1,
+                5,
+                "energy",
+                20,
+            ),
+            (
+                "kitchen_knife",
+                "Kitchen Knife",
+                "weapon",
+                "A basic close-range weapon.",
+                0,
+                1,
+                None,
+                0,
+            ),
+            (
+                "padded_jacket",
+                "Padded Jacket",
+                "armour",
+                "Basic protection for a new player.",
+                0,
+                1,
+                None,
+                0,
+            ),
+            (
+                "lockpick",
+                "Lockpick",
+                "utility",
+                "A simple tool for future crime actions.",
+                1,
+                20,
+                None,
+                0,
+            ),
+        ),
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        SELECT id, 'first_aid_kit', 1
+        FROM players
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        SELECT id, 'energy_drink', 1
+        FROM players
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -280,6 +420,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=7,
         name="district_gyms",
         apply=migrate_007_district_gyms,
+    ),
+    Migration(
+        version=8,
+        name="starter_inventory",
+        apply=migrate_008_starter_inventory,
     ),
 )
 

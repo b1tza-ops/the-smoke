@@ -40,6 +40,7 @@ class Player:
         crime_progress=None,
         district_reputation=None,
         unlocked_gyms=None,
+        inventory=None,
     ):
 
         self.id = player_id
@@ -62,6 +63,7 @@ class Player:
         self.unlocked_gyms = unlocked_gyms or {
             "camden_community"
         }
+        self.inventory = inventory or {}
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -128,6 +130,7 @@ class Player:
             "Gym:",
             self.current_gym_key.replace("_", " ").title(),
         )
+        print("Inventory:", f"{len(self.inventory)}/20 slots")
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")

@@ -15,6 +15,7 @@ A database migration upgrades an existing `game.db` schema to a newer version wi
 | 5 | `starting_housing` | Adds the player's current residence |
 | 6 | `legal_jobs` | Adds employment, career XP, shift totals and active shift timestamps |
 | 7 | `district_gyms` | Adds current gym selection and persistent membership access |
+| 8 | `starter_inventory` | Adds the item catalogue and persistent player quantities |
 
 Applied versions are stored in the `schema_migrations` table.
 
@@ -34,7 +35,7 @@ When `create_tables()` runs:
 Every schema change must receive the next sequential version. For example:
 
 ```python
-def migrate_008_example(cursor):
+def migrate_009_example(cursor):
     add_missing_player_columns(
         cursor,
         {
@@ -49,9 +50,9 @@ Register it in `MIGRATIONS`:
 
 ```python
 Migration(
-    version=8,
+    version=9,
     name="example_change",
-    apply=migrate_008_example,
+    apply=migrate_009_example,
 ),
 ```
 

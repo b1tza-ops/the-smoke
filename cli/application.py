@@ -15,6 +15,7 @@ from game.player.status import update_player_status
 from game.economy.bank import bank_menu
 from game.housing import housing_menu
 from game.jobs import jobs_menu
+from game.inventory import inventory_menu
 
 
 
@@ -92,7 +93,8 @@ def game_menu(player):
             save_player(player)
 
         elif choice == "5":
-            print("Inventory coming soon.")
+            inventory_menu(player)
+            save_player(player)
 
         elif choice == "6":
             bank_menu(player)
