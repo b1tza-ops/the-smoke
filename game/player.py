@@ -1,5 +1,6 @@
 from game.housing import get_residence
 
+
 class Player:
     def __init__(
         self,
@@ -62,8 +63,6 @@ class Player:
         self.crime_progress = crime_progress or {}
         self.district_reputation = district_reputation or {}
 
-
-
     def show_stats(self):
         print("\n===== CHARACTER =====")
         print("Name:", self.name)
@@ -109,7 +108,6 @@ class Player:
 
         else:
             print("Status: Free")
-
 
         print("\n===== BATTLE STATS =====")
 
