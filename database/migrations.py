@@ -164,6 +164,27 @@ def migrate_004_london_districts_and_travel(cursor):
     )
 
 
+def migrate_005_starting_housing(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "residence_key": (
+                "TEXT NOT NULL DEFAULT 'tent' "
+                "CHECK (TRIM(residence_key) <> '')"
+            ),
+        },
+    )
+
+    cursor.execute(
+        """
+        UPDATE players
+        SET residence_key = 'tent'
+        WHERE
+            residence_key IS NULL
+            OR TRIM(residence_key) = ''
+        """
+    )
+
 
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
@@ -185,6 +206,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=4,
         name="london_districts_and_travel",
         apply=migrate_004_london_districts_and_travel,
+    ),
+    Migration(
+        version=5,
+        name="starting_housing",
+        apply=migrate_005_starting_housing,
     ),
 )
 

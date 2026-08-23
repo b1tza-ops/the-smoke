@@ -77,7 +77,10 @@ class MigrationTests(unittest.TestCase):
     def test_old_database_upgrades_without_losing_player(self):
         applied_versions = run_migrations()
 
-        self.assertEqual(applied_versions, (1, 2, 3, 4))
+        self.assertEqual(
+            applied_versions,
+            (1, 2, 3, 4, 5),
+        )
 
         with closing(
             sqlite3.connect(self.database_path)
@@ -105,6 +108,7 @@ class MigrationTests(unittest.TestCase):
                     "current_district",
                     "travel_destination",
                     "travel_until",
+                    "residence_key",
                 }.issubset(columns)
             )
 
@@ -124,7 +128,8 @@ class MigrationTests(unittest.TestCase):
                     last_nerve_update,
                     current_district,
                     travel_destination,
-                    travel_until
+                    travel_until,
+                    residence_key
                 FROM players
                 WHERE user_id = 1
                 """
@@ -153,6 +158,7 @@ class MigrationTests(unittest.TestCase):
                     "camden",
                     None,
                     None,
+                    "tent",
                 ),
             )
 
@@ -177,6 +183,10 @@ class MigrationTests(unittest.TestCase):
                         4,
                         "london_districts_and_travel",
                     ),
+                    (
+                        5,
+                        "starting_housing",
+                    ),
                 ],
             )
 
@@ -199,7 +209,10 @@ class MigrationTests(unittest.TestCase):
         first_run = run_migrations()
         second_run = run_migrations()
 
-        self.assertEqual(first_run, (1, 2, 3, 4))
+        self.assertEqual(
+            first_run,
+            (1, 2, 3, 4, 5),
+        )
         self.assertEqual(second_run, ())
 
         with closing(
@@ -233,7 +246,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 4)
+            self.assertEqual(migration_count, 5)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -252,7 +265,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=5,
+            version=6,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -302,7 +315,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4],
+                [1, 2, 3, 4, 5],
             )
             self.assertEqual(money, 777)
 
@@ -335,13 +348,17 @@ class MigrationTests(unittest.TestCase):
                 )
             }
 
-            self.assertEqual(versions, [1, 2, 3, 4])
+            self.assertEqual(
+                versions,
+                [1, 2, 3, 4, 5],
+            )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
             self.assertIn("wanted_level", columns)
             self.assertIn("current_district", columns)
             self.assertIn("travel_destination", columns)
             self.assertIn("travel_until", columns)
+            self.assertIn("residence_key", columns)
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(

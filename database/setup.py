@@ -1,6 +1,7 @@
 from database.connection import get_connection
 from database.migrations import run_migrations
 
+
 def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
@@ -43,6 +44,8 @@ def create_tables():
             current_district TEXT NOT NULL DEFAULT 'camden',
             travel_destination TEXT,
             travel_until TEXT,
+            residence_key TEXT NOT NULL DEFAULT 'tent'
+                CHECK (TRIM(residence_key) <> ''),
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

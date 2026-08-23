@@ -22,6 +22,7 @@ from game.progression import award_xp
 from game.crimes import commit_crime, get_crime
 
 from game.bank import deposit_cash, withdraw_cash
+from game.housing import purchase_residence
 
 
 class PlayerPersistenceTests(unittest.TestCase):
@@ -257,6 +258,55 @@ class PlayerPersistenceTests(unittest.TestCase):
                     reloaded.money,
                     465,
                 )
+
+
+    def test_residence_persists_across_sessions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="housing_player",
+                    email="housing@example.com",
+                    password_hash="test_hash",
+                )
+
+                create_player(
+                    user_id,
+                    "Housing Character",
+                )
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    player.residence_key,
+                    "tent",
+                )
+
+                purchase_residence(
+                    player,
+                    "hostel",
+                )
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.residence_key,
+                    "hostel",
+                )
+                self.assertEqual(reloaded.money, 250)
 
 if __name__ == "__main__":
     unittest.main()
