@@ -13,6 +13,7 @@ from game.gym  import gym_menu
 from game.crimes import crimes_menu
 from game.status import update_player_status
 from game.bank import bank_menu
+from game.housing import housing_menu
 
 
 
@@ -69,7 +70,8 @@ def game_menu(player):
         print("5. Inventory")
         print("6. Bank")
         print("7. Travel")
-        print("8. Logout")
+        print("8. Housing")
+        print("9. Logout")
 
         choice = input("Choose: ")
 
@@ -96,7 +98,12 @@ def game_menu(player):
         elif choice == "7":
             travel_menu(player)
             save_player(player)
+
         elif choice == "8":
+            housing_menu(player)
+            save_player(player)
+
+        elif choice == "9":
             save_player(player)
             print("Player Saved")
             print("Logged out.")
