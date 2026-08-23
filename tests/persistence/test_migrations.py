@@ -265,7 +265,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 5)
+            self.assertEqual(migration_count, 6)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
