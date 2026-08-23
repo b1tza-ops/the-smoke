@@ -54,6 +54,8 @@ def create_tables():
                 CHECK (shifts_completed >= 0),
             shift_started_at TEXT,
             shift_until TEXT,
+            current_gym_key TEXT NOT NULL DEFAULT 'camden_community'
+                CHECK (TRIM(current_gym_key) <> ''),
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

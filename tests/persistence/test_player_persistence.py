@@ -24,6 +24,7 @@ from game.crime import commit_crime, get_crime
 from game.economy.bank import deposit_cash, withdraw_cash
 from game.housing import purchase_residence
 from game.jobs import complete_shift, join_career, start_shift
+from game.gym import select_gym, unlock_gym
 
 
 class PlayerPersistenceTests(unittest.TestCase):
@@ -371,6 +372,60 @@ class PlayerPersistenceTests(unittest.TestCase):
                 self.assertEqual(completed.shifts_completed, 1)
                 self.assertIsNone(completed.shift_started_at)
                 self.assertIsNone(completed.shift_until)
+
+    def test_gym_access_and_selection_persist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.core.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="gym_player",
+                    email="gym@example.com",
+                    password_hash="test_hash",
+                )
+                create_player(user_id, "Gym Character")
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+                player.level = 2
+                player.money = 1_000
+                player.current_district = "brixton"
+
+                unlock_gym(
+                    player,
+                    "brixton_performance",
+                )
+                select_gym(
+                    player,
+                    "brixton_performance",
+                )
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.current_gym_key,
+                    "brixton_performance",
+                )
+                self.assertIn(
+                    "camden_community",
+                    reloaded.unlocked_gyms,
+                )
+                self.assertIn(
+                    "brixton_performance",
+                    reloaded.unlocked_gyms,
+                )
+                self.assertEqual(reloaded.money, 250)
 
 if __name__ == "__main__":
     unittest.main()

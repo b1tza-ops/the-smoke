@@ -206,6 +206,45 @@ def migrate_006_legal_jobs(cursor):
     )
 
 
+def migrate_007_district_gyms(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "current_gym_key": (
+                "TEXT NOT NULL DEFAULT 'camden_community' "
+                "CHECK (TRIM(current_gym_key) <> '')"
+            ),
+        },
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_unlocked_gyms (
+            player_id INTEGER NOT NULL,
+            gym_key TEXT NOT NULL,
+            unlocked_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (player_id, gym_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_unlocked_gyms (
+            player_id,
+            gym_key
+        )
+        SELECT id, 'camden_community'
+        FROM players
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -236,6 +275,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=6,
         name="legal_jobs",
         apply=migrate_006_legal_jobs,
+    ),
+    Migration(
+        version=7,
+        name="district_gyms",
+        apply=migrate_007_district_gyms,
     ),
 )
 

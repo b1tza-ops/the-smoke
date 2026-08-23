@@ -36,8 +36,10 @@ class Player:
         shifts_completed,
         shift_started_at,
         shift_until,
+        current_gym_key,
         crime_progress=None,
         district_reputation=None,
+        unlocked_gyms=None,
     ):
 
         self.id = player_id
@@ -56,6 +58,10 @@ class Player:
         self.shifts_completed = shifts_completed
         self.shift_started_at = shift_started_at
         self.shift_until = shift_until
+        self.current_gym_key = current_gym_key
+        self.unlocked_gyms = unlocked_gyms or {
+            "camden_community"
+        }
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -118,6 +124,10 @@ class Player:
             if self.shift_until is not None:
                 print("Shift finishes:", self.shift_until)
 
+        print(
+            "Gym:",
+            self.current_gym_key.replace("_", " ").title(),
+        )
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")

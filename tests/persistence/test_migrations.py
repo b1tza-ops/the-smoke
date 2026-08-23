@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6),
+            (1, 2, 3, 4, 5, 6, 7),
         )
 
         with closing(
@@ -115,6 +115,7 @@ class MigrationTests(unittest.TestCase):
                     "shifts_completed",
                     "shift_started_at",
                     "shift_until",
+                    "current_gym_key",
                 }.issubset(columns)
             )
 
@@ -141,7 +142,8 @@ class MigrationTests(unittest.TestCase):
                     career_xp,
                     shifts_completed,
                     shift_started_at,
-                    shift_until
+                    shift_until,
+                    current_gym_key
                 FROM players
                 WHERE user_id = 1
                 """
@@ -177,6 +179,7 @@ class MigrationTests(unittest.TestCase):
                     0,
                     None,
                     None,
+                    "camden_community",
                 ),
             )
 
@@ -206,6 +209,7 @@ class MigrationTests(unittest.TestCase):
                         "starting_housing",
                     ),
                     (6, "legal_jobs"),
+                    (7, "district_gyms"),
                 ],
             )
 
@@ -224,13 +228,26 @@ class MigrationTests(unittest.TestCase):
                 ("bank_transactions",),
             )
 
+            gym_access = conn.execute(
+                """
+                SELECT player_id, gym_key
+                FROM player_unlocked_gyms
+                ORDER BY player_id, gym_key
+                """
+            ).fetchall()
+
+            self.assertEqual(
+                gym_access,
+                [(1, "camden_community")],
+            )
+
     def test_running_migrations_twice_is_safe(self):
         first_run = run_migrations()
         second_run = run_migrations()
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6),
+            (1, 2, 3, 4, 5, 6, 7),
         )
         self.assertEqual(second_run, ())
 
@@ -265,7 +282,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 6)
+            self.assertEqual(migration_count, 7)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -284,7 +301,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=7,
+            version=8,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -334,7 +351,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6],
+                [1, 2, 3, 4, 5, 6, 7],
             )
             self.assertEqual(money, 777)
 
@@ -369,7 +386,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6],
+                [1, 2, 3, 4, 5, 6, 7],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -384,6 +401,7 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("shifts_completed", columns)
             self.assertIn("shift_started_at", columns)
             self.assertIn("shift_until", columns)
+            self.assertIn("current_gym_key", columns)
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(

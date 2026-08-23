@@ -20,7 +20,7 @@
 - 2–3 London districts
 - District reputation
 - Basic travel
-- Multiple gyms
+- Multiple district-specialised gyms
 - Starter housing (tent/hostel/council flat)
 - One legal career path (London Construction)
 - Banking

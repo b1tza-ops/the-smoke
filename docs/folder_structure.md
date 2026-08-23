@@ -34,6 +34,7 @@ the-smoke/
 │   ├── economy/
 │   │   └── bank.py
 │   ├── gym/
+│   │   ├── definitions.py
 │   │   └── service.py
 │   ├── housing/
 │   │   └── service.py
