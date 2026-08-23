@@ -43,6 +43,8 @@ def create_tables():
             current_district TEXT NOT NULL DEFAULT 'camden',
             travel_destination TEXT,
             travel_until TEXT,
+            residence_key TEXT NOT NULL DEFAULT 'tent'
+                CHECK(TRIM(residence_key)<>''),
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

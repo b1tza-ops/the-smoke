@@ -1,3 +1,5 @@
+from game.housing import get_residence
+
 class Player:
     def __init__(
         self,
@@ -26,8 +28,9 @@ class Player:
         current_district,
         travel_destination,
         travel_until,
+        residence_key,
         crime_progress=None,
-        district_reputation=None
+        district_reputation=None,
     ):
 
         self.id = player_id
@@ -39,6 +42,7 @@ class Player:
         self.current_district = current_district
         self.travel_destination = travel_destination
         self.travel_until = travel_until
+        self.residence_key = residence_key
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -82,6 +86,13 @@ class Player:
                 "Arrival time:",
                 self.travel_until,
             )
+
+        residence = get_residence(self.residence_key)
+
+        if residence is None:
+            print("Residence:", self.residence_key)
+        else:
+            print("Residence:", residence.name)
 
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")

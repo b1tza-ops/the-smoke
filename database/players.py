@@ -68,7 +68,8 @@ def get_player_by_user_id(user_id):
             bank_balance,
             current_district,
             travel_destination,
-            travel_until
+            travel_until,
+            residence_key
         FROM players
         WHERE user_id = ?
         """,
@@ -192,7 +193,8 @@ def save_player(player):
             hospital_until = ?,
             current_district = ?,
             travel_destination = ?,
-            travel_until = ?
+            travel_until = ?,
+            residence_key = ?
         WHERE id = ?
         """,
         (
@@ -219,6 +221,7 @@ def save_player(player):
             player.current_district,
             player.travel_destination,
             player.travel_until,
+            player.residence_key,
             player.id
         )
     )
