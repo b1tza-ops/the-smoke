@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
-
+from game.travel import start_travel
 from game.status import (
     add_wanted,
     send_to_hospital,
@@ -198,6 +198,64 @@ class PlayerPersistenceTests(unittest.TestCase):
                 self.assertEqual(
                     reloaded_again.bank_balance,
                     150,
+                )
+
+    def test_active_travel_survives_reload(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="travel_player",
+                    email="travel@example.com",
+                    password_hash="test_hash",
+                )
+
+                create_player(
+                    user_id,
+                    "Travel Character",
+                )
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                now = datetime.now(timezone.utc)
+
+                journey = start_travel(
+                    player,
+                    "brixton",
+                    now=now,
+                )
+
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.current_district,
+                    "camden",
+                )
+                self.assertEqual(
+                    reloaded.travel_destination,
+                    "brixton",
+                )
+                self.assertEqual(
+                    reloaded.travel_until,
+                    journey.arrives_at,
+                )
+                self.assertEqual(
+                    reloaded.money,
+                    465,
                 )
 
 if __name__ == "__main__":

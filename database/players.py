@@ -65,7 +65,10 @@ def get_player_by_user_id(user_id):
             last_wanted_update,
             jail_until,
             hospital_until,
-            bank_balance
+            bank_balance,
+            current_district,
+            travel_destination,
+            travel_until
         FROM players
         WHERE user_id = ?
         """,
@@ -186,7 +189,10 @@ def save_player(player):
             wanted_level = ?,
             last_wanted_update = ?,
             jail_until = ?,
-            hospital_until = ?
+            hospital_until = ?,
+            current_district = ?,
+            travel_destination = ?,
+            travel_until = ?
         WHERE id = ?
         """,
         (
@@ -210,6 +216,9 @@ def save_player(player):
             player.last_wanted_update,
             player.jail_until,
             player.hospital_until,
+            player.current_district,
+            player.travel_destination,
+            player.travel_until,
             player.id
         )
     )

@@ -1,4 +1,62 @@
+from game.status import get_active_restriction
+from game.travel import get_active_travel
+
+
+VALID_BATTLE_STATS = (
+    "strength",
+    "defence",
+    "speed",
+    "dexterity",
+)
+
+TRAINING_ENERGY_COST = 10
+TRAINING_STAT_GAIN = 2
+
+
+def get_training_block(player, now=None):
+    active_travel = get_active_travel(
+        player,
+        now=now,
+    )
+
+    if active_travel is not None:
+        return "travelling"
+
+    restriction = get_active_restriction(
+        player,
+        now=now,
+    )
+
+    if restriction is not None:
+        return restriction.kind
+
+    return None
+
+
+def display_training_block(block_reason):
+    if block_reason == "jail":
+        print(
+            "\nYou cannot train while in jail."
+        )
+
+    elif block_reason == "hospital":
+        print(
+            "\nYou cannot train while in hospital."
+        )
+
+    elif block_reason == "travelling":
+        print(
+            "\nYou cannot train while travelling."
+        )
+
+
 def gym_menu(player):
+    block_reason = get_training_block(player)
+
+    if block_reason is not None:
+        display_training_block(block_reason)
+        return
+
     while True:
         print("\n===== GYM =====")
         print("Energy:", player.energy)
@@ -24,36 +82,50 @@ def gym_menu(player):
             train(player, "dexterity")
 
         elif choice == "5":
-            break
+            return
 
         else:
             print("Invalid option.")
 
-def train(player, stat):
-    energy_cost = 10
-    stat_gain = 2
 
-    if player.energy < energy_cost:
+def train(player, stat, now=None):
+    if stat not in VALID_BATTLE_STATS:
+        raise ValueError(
+            f"Unknown battle stat: {stat}"
+        )
+
+    block_reason = get_training_block(
+        player,
+        now=now,
+    )
+
+    if block_reason is not None:
+        display_training_block(block_reason)
+        return False
+
+    if player.energy < TRAINING_ENERGY_COST:
         print("Not enough energy.")
-        return
-    
-    player.energy -= energy_cost
+        return False
 
-    if stat == "strength":
-        player.strength += stat_gain
+    player.energy -= TRAINING_ENERGY_COST
 
-    elif stat == "defence":
-        player.defence += stat_gain
+    current_value = getattr(player, stat)
 
-    elif stat == "speed":
-        player.speed += stat_gain
-
-    elif stat == "dexterity":
-        player.dexterity += stat_gain
-
-    else:
-        raise ValueError(f"Unknown battle stat: {stat}")
+    setattr(
+        player,
+        stat,
+        current_value + TRAINING_STAT_GAIN,
+    )
 
     print("\nTraining complete!")
-    print(stat.capitalize(), "+", stat_gain)
-    print("Energy -", energy_cost)
+    print(
+        stat.capitalize(),
+        "+",
+        TRAINING_STAT_GAIN,
+    )
+    print(
+        "Energy -",
+        TRAINING_ENERGY_COST,
+    )
+
+    return True

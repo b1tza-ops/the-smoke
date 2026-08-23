@@ -40,6 +40,9 @@ def create_tables():
             last_wanted_update TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             jail_until TEXT,
             hospital_until TEXT,
+            current_district TEXT NOT NULL DEFAULT 'camden',
+            travel_destination TEXT,
+            travel_until TEXT,
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

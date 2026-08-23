@@ -1,17 +1,17 @@
 from database.setup import create_tables
-
 from auth.register import register
 from auth.login import login
-
 from database.players import create_player, get_player_by_user_id, save_player
 
+from game.travel import (
+    travel_menu,
+    update_travel,
+)
 
 from game.player import Player
 from game.gym  import gym_menu
 from game.crimes import crimes_menu
 from game.status import update_player_status
-
-
 from game.bank import bank_menu
 
 
@@ -50,6 +50,17 @@ def main():
 def game_menu(player):
 
     while True:
+
+        arrived = update_travel(player)
+
+        if arrived:
+            save_player(player)
+
+            print(
+                "\nYou have arrived in "
+                f"{player.current_district.title()}."
+            )
+
         print("\n===== GAME MENU =====")
         print("1. Character")
         print("2. Gym")
@@ -57,7 +68,8 @@ def game_menu(player):
         print("4. Jobs")
         print("5. Inventory")
         print("6. Bank")
-        print("7. Logout")
+        print("7. Travel")
+        print("8. Logout")
 
         choice = input("Choose: ")
 
@@ -82,6 +94,9 @@ def game_menu(player):
             bank_menu(player)
 
         elif choice == "7":
+            travel_menu(player)
+            save_player(player)
+        elif choice == "8":
             save_player(player)
             print("Player Saved")
             print("Logged out.")
@@ -105,6 +120,8 @@ def load_or_create_player(user_id):
         print("\nCharacter created!")
 
     player = Player(*player_data)
+
+    arrived = update_travel(player)
     status_update = update_player_status(player)
 
     save_player(player)
@@ -114,6 +131,13 @@ def load_or_create_player(user_id):
 
     if status_update.discharged_from_hospital:
         print("\nYou have been discharged from hospital.")
+
+    if arrived:
+
+        print(
+            "\nYou have arrived in "
+            f"{player.current_district.title()}."
+        )
 
     return player
 
