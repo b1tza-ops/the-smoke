@@ -385,6 +385,94 @@ def migrate_008_starter_inventory(cursor):
     )
 
 
+def migrate_009_authentication_hardening(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    existing_columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(users)"
+        )
+    }
+
+    if "email_verified" not in existing_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN email_verified INTEGER NOT NULL
+                DEFAULT 0
+                CHECK (email_verified IN (0, 1))
+            """
+        )
+
+    if "email_verified_at" not in existing_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN email_verified_at TEXT
+            """
+        )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS account_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token_type TEXT NOT NULL
+                CHECK (
+                    token_type IN (
+                        'email_verification',
+                        'password_reset'
+                    )
+                ),
+            token_hash TEXT NOT NULL UNIQUE,
+            expires_at TEXT NOT NULL,
+            used_at TEXT,
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_account_tokens_lookup
+        ON account_tokens (
+            token_type,
+            token_hash
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_account_tokens_user
+        ON account_tokens (
+            user_id,
+            token_type,
+            created_at
+        )
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -425,6 +513,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=8,
         name="starter_inventory",
         apply=migrate_008_starter_inventory,
+    ),
+    Migration(
+        version=9,
+        name="authentication_hardening",
+        apply=migrate_009_authentication_hardening,
     ),
 )
 

@@ -1,6 +1,7 @@
 from database.core.setup import create_tables
 from auth.services.register import register
 from auth.services.login import login
+from auth.services.password_reset import forgot_password
 from database.repositories.players import create_player, get_player_by_user_id, save_player
 
 from game.world.travel import (
@@ -41,7 +42,7 @@ def main():
             register()
 
         elif choice == "3":
-            print("Forgot password coming next")
+            forgot_password()
 
         elif choice == "4":
             print("Goodbye!")

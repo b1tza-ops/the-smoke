@@ -35,7 +35,7 @@ When `create_tables()` runs:
 Every schema change must receive the next sequential version. For example:
 
 ```python
-def migrate_009_example(cursor):
+def migrate_010_example(cursor):
     add_missing_player_columns(
         cursor,
         {
@@ -50,9 +50,9 @@ Register it in `MIGRATIONS`:
 
 ```python
 Migration(
-    version=9,
+    version=10,
     name="example_change",
-    apply=migrate_009_example,
+    apply=migrate_010_example,
 ),
 ```
 

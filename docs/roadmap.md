@@ -73,7 +73,9 @@ After the backend rules and persistence are mature:
 - Deploy to VPS
 - Domain, HTTPS and production configuration
 
-## V1 Definition
+## V1
+
+- Authentication hardening: hashed one-time tokens, expiry, generic recovery responses, validation, and rate-limit hooks. Definition
 
 V1 should be considered playable when a user can:
 

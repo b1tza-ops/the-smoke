@@ -10,6 +10,8 @@ the-smoke/
 ├── requirements.txt
 │
 ├── auth/
+│   ├── rate_limit.py
+│   ├── validation.py
 │   └── services/
 │       ├── login.py
 │       ├── password_reset.py
@@ -24,6 +26,7 @@ the-smoke/
 │   │   ├── migrations.py
 │   │   └── setup.py
 │   └── repositories/
+│       ├── auth_tokens.py
 │       ├── bank.py
 │       ├── players.py
 │       └── users.py
@@ -63,6 +66,7 @@ the-smoke/
 │       └── login.html
 │
 ├── tests/
+│   ├── auth/
 │   ├── gameplay/
 │   └── persistence/
 │
@@ -86,7 +90,7 @@ Application logic belongs in `web/application.py` or `cli/application.py`, not i
 
 ### `auth/services/`
 
-User-facing authentication workflows such as registration, login, and password recovery. Authentication uses user repositories instead of issuing SQL directly.
+User-facing authentication workflows such as registration, login, password recovery, validation, and rate-limit integration. Authentication uses user and account-token repositories instead of issuing SQL directly.
 
 ### `cli/`
 
@@ -114,6 +118,7 @@ The independent static holding page used by the public site. It remains separate
 
 ### `tests/`
 
+- `tests/auth/` covers authentication security and account recovery.
 - `tests/gameplay/` covers game rules.
 - `tests/persistence/` covers SQLite, migrations, and saved player state.
 

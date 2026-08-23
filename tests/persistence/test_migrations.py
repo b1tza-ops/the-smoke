@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9),
         )
 
         with closing(
@@ -211,6 +211,7 @@ class MigrationTests(unittest.TestCase):
                     (6, "legal_jobs"),
                     (7, "district_gyms"),
                     (8, "starter_inventory"),
+                    (9, "authentication_hardening"),
                 ],
             )
 
@@ -269,13 +270,36 @@ class MigrationTests(unittest.TestCase):
                 ],
             )
 
+            user_columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(users)"
+                )
+            }
+            token_table = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'table'
+                    AND name = 'account_tokens'
+                """
+            ).fetchone()
+
+            self.assertIn("email_verified", user_columns)
+            self.assertIn("email_verified_at", user_columns)
+            self.assertEqual(
+                token_table,
+                ("account_tokens",),
+            )
+
     def test_running_migrations_twice_is_safe(self):
         first_run = run_migrations()
         second_run = run_migrations()
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9),
         )
         self.assertEqual(second_run, ())
 
@@ -310,7 +334,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 8)
+            self.assertEqual(migration_count, 9)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -329,7 +353,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=9,
+            version=10,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -379,7 +403,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
             )
             self.assertEqual(money, 777)
 
@@ -414,7 +438,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -430,6 +454,15 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("shift_started_at", columns)
             self.assertIn("shift_until", columns)
             self.assertIn("current_gym_key", columns)
+
+            user_columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(users)"
+                )
+            }
+            self.assertIn("email_verified", user_columns)
+            self.assertIn("email_verified_at", user_columns)
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(

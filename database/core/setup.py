@@ -12,6 +12,9 @@ def create_tables():
             username TEXT NOT NULL UNIQUE,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
+            email_verified INTEGER NOT NULL DEFAULT 0
+                CHECK (email_verified IN (0, 1)),
+            email_verified_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
