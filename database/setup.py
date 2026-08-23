@@ -1,53 +1,5 @@
 from database.connection import get_connection
-
-
-PLAYER_STATUS_COLUMNS = {
-    "wanted_level": "INTEGER NOT NULL DEFAULT 0 CHECK (wanted_level >= 0)",
-    "last_wanted_update": "TEXT",
-    "jail_until": "TEXT",
-    "hospital_until": "TEXT",
-}
-
-
-def ensure_player_status_columns(cursor):
-    existing_columns = {
-        row[1]
-        for row in cursor.execute("PRAGMA table_info(players)")
-    }
-
-    for column_name, definition in PLAYER_STATUS_COLUMNS.items():
-        if column_name not in existing_columns:
-            cursor.execute(
-                f"""
-                ALTER TABLE players
-                ADD COLUMN {column_name} {definition}
-                """
-            )
-
-    cursor.execute(
-        """
-        UPDATE players
-        SET last_wanted_update = CURRENT_TIMESTAMP
-        WHERE last_wanted_update IS NULL
-        """
-    )
-
-
-def ensure_player_bank_column(cursor):
-    existing_columns = {
-        row[1]
-        for row in cursor.execute("PRAGMA table_info(players)")
-    }
-
-    if "bank_balance" not in existing_columns:
-        cursor.execute(
-            """
-            ALTER TABLE players
-            ADD COLUMN bank_balance INTEGER NOT NULL DEFAULT 0
-                CHECK (bank_balance >= 0)
-            """
-        )
-
+from database.migrations import run_migrations
 
 def create_tables():
     conn = get_connection()
@@ -93,8 +45,7 @@ def create_tables():
                 ON DELETE CASCADE
         )
     """)
-    ensure_player_status_columns(cursor)
-    ensure_player_bank_column(cursor)
+
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS player_crime_progress (
@@ -124,41 +75,12 @@ def create_tables():
         )
     """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS bank_transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            player_id INTEGER NOT NULL,
-            transaction_type TEXT NOT NULL
-                CHECK (
-                    transaction_type IN (
-                        'deposit',
-                        'withdrawal'
-                    )
-                ),
-            amount INTEGER NOT NULL
-                CHECK (amount > 0),
-            cash_balance_after INTEGER NOT NULL
-                CHECK (cash_balance_after >= 0),
-            bank_balance_after INTEGER NOT NULL
-                CHECK (bank_balance_after >= 0),
-            created_at TEXT NOT NULL
-                DEFAULT CURRENT_TIMESTAMP,
 
-            FOREIGN KEY (player_id)
-                REFERENCES players(id)
-                ON DELETE CASCADE
-        )
-    """)
 
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS
-            idx_bank_transactions_player
-        ON bank_transactions (
-            player_id,
-            created_at
-        )
-    """)
 
-    
+
+
     conn.commit()
     conn.close()
+
+    run_migrations()
