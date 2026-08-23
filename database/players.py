@@ -64,7 +64,8 @@ def get_player_by_user_id(user_id):
             wanted_level,
             last_wanted_update,
             jail_until,
-            hospital_until
+            hospital_until,
+            bank_balance
         FROM players
         WHERE user_id = ?
         """,
@@ -169,6 +170,7 @@ def save_player(player):
             name = ?,
             level = ?,
             money = ?,
+            bank_balance = ?,
             health = ?,
             energy = ?,
             strength = ?,
@@ -191,6 +193,7 @@ def save_player(player):
             player.name,
             player.level,
             player.money,
+            player.bank_balance,
             player.health,
             player.energy,
             player.strength,

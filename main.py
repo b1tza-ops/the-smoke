@@ -12,6 +12,9 @@ from game.crimes import crimes_menu
 from game.status import update_player_status
 
 
+from game.bank import bank_menu
+
+
 
 def main():
     create_tables()
@@ -53,7 +56,8 @@ def game_menu(player):
         print("3. Crimes")
         print("4. Jobs")
         print("5. Inventory")
-        print("6. Logout")
+        print("6. Bank")
+        print("7. Logout")
 
         choice = input("Choose: ")
 
@@ -75,6 +79,9 @@ def game_menu(player):
             print("Inventory coming soon.")
 
         elif choice == "6":
+            bank_menu(player)
+
+        elif choice == "7":
             save_player(player)
             print("Player Saved")
             print("Logged out.")
