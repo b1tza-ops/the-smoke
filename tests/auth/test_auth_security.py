@@ -13,6 +13,7 @@ from auth.rate_limit import (
 )
 from auth.services.password_reset import (
     ExpiredAccountTokenError,
+    InvalidAccountTokenError,
     GENERIC_RESET_MESSAGE,
     UsedAccountTokenError,
     request_email_verification,
@@ -269,6 +270,26 @@ class AuthenticationSecurityTests(unittest.TestCase):
             limiter,
             "login:player",
             now=self.now + timedelta(seconds=61),
+        )
+
+    def test_invalid_reset_token_does_not_change_password(self):
+        with self.assertRaises(
+            InvalidAccountTokenError
+        ):
+            reset_password(
+                "not-a-real-token",
+                "new-password",
+                now=self.now,
+            )
+
+        user = get_user_by_email(
+            "secure@example.com"
+        )
+        self.assertTrue(
+            verify_password(
+                "old-password",
+                user[3],
+            )
         )
 
     def test_account_input_validation(self):
