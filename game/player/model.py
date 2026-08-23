@@ -30,8 +30,17 @@ class Player:
         travel_destination,
         travel_until,
         residence_key,
+        career_key,
+        job_role_key,
+        career_xp,
+        shifts_completed,
+        shift_started_at,
+        shift_until,
+        current_gym_key,
         crime_progress=None,
         district_reputation=None,
+        unlocked_gyms=None,
+        inventory=None,
     ):
 
         self.id = player_id
@@ -44,6 +53,17 @@ class Player:
         self.travel_destination = travel_destination
         self.travel_until = travel_until
         self.residence_key = residence_key
+        self.career_key = career_key
+        self.job_role_key = job_role_key
+        self.career_xp = career_xp
+        self.shifts_completed = shifts_completed
+        self.shift_started_at = shift_started_at
+        self.shift_until = shift_until
+        self.current_gym_key = current_gym_key
+        self.unlocked_gyms = unlocked_gyms or {
+            "camden_community"
+        }
+        self.inventory = inventory or {}
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -93,6 +113,24 @@ class Player:
         else:
             print("Residence:", residence.name)
 
+        if self.job_role_key is None:
+            print("Job: Unemployed")
+        else:
+            print(
+                "Job:",
+                self.job_role_key.replace("_", " ").title(),
+            )
+            print("Career XP:", self.career_xp)
+            print("Shifts completed:", self.shifts_completed)
+
+            if self.shift_until is not None:
+                print("Shift finishes:", self.shift_until)
+
+        print(
+            "Gym:",
+            self.current_gym_key.replace("_", " ").title(),
+        )
+        print("Inventory:", f"{len(self.inventory)}/20 slots")
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")

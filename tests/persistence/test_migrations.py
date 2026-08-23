@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9),
         )
 
         with closing(
@@ -109,6 +109,13 @@ class MigrationTests(unittest.TestCase):
                     "travel_destination",
                     "travel_until",
                     "residence_key",
+                    "career_key",
+                    "job_role_key",
+                    "career_xp",
+                    "shifts_completed",
+                    "shift_started_at",
+                    "shift_until",
+                    "current_gym_key",
                 }.issubset(columns)
             )
 
@@ -129,7 +136,14 @@ class MigrationTests(unittest.TestCase):
                     current_district,
                     travel_destination,
                     travel_until,
-                    residence_key
+                    residence_key,
+                    career_key,
+                    job_role_key,
+                    career_xp,
+                    shifts_completed,
+                    shift_started_at,
+                    shift_until,
+                    current_gym_key
                 FROM players
                 WHERE user_id = 1
                 """
@@ -159,6 +173,13 @@ class MigrationTests(unittest.TestCase):
                     None,
                     None,
                     "tent",
+                    None,
+                    None,
+                    0,
+                    0,
+                    None,
+                    None,
+                    "camden_community",
                 ),
             )
 
@@ -187,6 +208,10 @@ class MigrationTests(unittest.TestCase):
                         5,
                         "starting_housing",
                     ),
+                    (6, "legal_jobs"),
+                    (7, "district_gyms"),
+                    (8, "starter_inventory"),
+                    (9, "authentication_hardening"),
                 ],
             )
 
@@ -205,13 +230,76 @@ class MigrationTests(unittest.TestCase):
                 ("bank_transactions",),
             )
 
+            gym_access = conn.execute(
+                """
+                SELECT player_id, gym_key
+                FROM player_unlocked_gyms
+                ORDER BY player_id, gym_key
+                """
+            ).fetchall()
+
+            self.assertEqual(
+                gym_access,
+                [(1, "camden_community")],
+            )
+
+            item_rows = conn.execute(
+                """
+                SELECT item_key, category
+                FROM items
+                ORDER BY item_key
+                """
+            ).fetchall()
+
+            self.assertEqual(len(item_rows), 5)
+
+            starter_inventory = conn.execute(
+                """
+                SELECT item_key, quantity
+                FROM player_inventory
+                WHERE player_id = 1
+                ORDER BY item_key
+                """
+            ).fetchall()
+
+            self.assertEqual(
+                starter_inventory,
+                [
+                    ("energy_drink", 1),
+                    ("first_aid_kit", 1),
+                ],
+            )
+
+            user_columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(users)"
+                )
+            }
+            token_table = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'table'
+                    AND name = 'account_tokens'
+                """
+            ).fetchone()
+
+            self.assertIn("email_verified", user_columns)
+            self.assertIn("email_verified_at", user_columns)
+            self.assertEqual(
+                token_table,
+                ("account_tokens",),
+            )
+
     def test_running_migrations_twice_is_safe(self):
         first_run = run_migrations()
         second_run = run_migrations()
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9),
         )
         self.assertEqual(second_run, ())
 
@@ -246,7 +334,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 5)
+            self.assertEqual(migration_count, 9)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -265,7 +353,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=6,
+            version=10,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -315,7 +403,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
             )
             self.assertEqual(money, 777)
 
@@ -350,7 +438,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -359,6 +447,22 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("travel_destination", columns)
             self.assertIn("travel_until", columns)
             self.assertIn("residence_key", columns)
+            self.assertIn("career_key", columns)
+            self.assertIn("job_role_key", columns)
+            self.assertIn("career_xp", columns)
+            self.assertIn("shifts_completed", columns)
+            self.assertIn("shift_started_at", columns)
+            self.assertIn("shift_until", columns)
+            self.assertIn("current_gym_key", columns)
+
+            user_columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(users)"
+                )
+            }
+            self.assertIn("email_verified", user_columns)
+            self.assertIn("email_verified_at", user_columns)
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(

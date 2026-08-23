@@ -30,8 +30,35 @@ def create_player(user_id, name):
         (user_id, name)
     )
 
-    conn.commit()
     player_id = cursor.lastrowid
+
+    cursor.execute(
+        """
+        INSERT INTO player_unlocked_gyms (
+            player_id,
+            gym_key
+        )
+        VALUES (?, 'camden_community')
+        """,
+        (player_id,)
+    )
+
+    cursor.executemany(
+        """
+        INSERT INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        VALUES (?, ?, 1)
+        """,
+        (
+            (player_id, "first_aid_kit"),
+            (player_id, "energy_drink"),
+        )
+    )
+
+    conn.commit()
     conn.close()
 
     return player_id
@@ -69,7 +96,14 @@ def get_player_by_user_id(user_id):
             current_district,
             travel_destination,
             travel_until,
-            residence_key
+            residence_key,
+            career_key,
+            job_role_key,
+            career_xp,
+            shifts_completed,
+            shift_started_at,
+            shift_until,
+            current_gym_key
         FROM players
         WHERE user_id = ?
         """,
@@ -151,6 +185,29 @@ def get_player_by_user_id(user_id):
     )
     district_reputation = dict(cursor.fetchall())
 
+    cursor.execute(
+        """
+        SELECT gym_key
+        FROM player_unlocked_gyms
+        WHERE player_id = ?
+        """,
+        (player_data[0],)
+    )
+    unlocked_gyms = {
+        row[0]
+        for row in cursor.fetchall()
+    }
+
+    cursor.execute(
+        """
+        SELECT item_key, quantity
+        FROM player_inventory
+        WHERE player_id = ?
+        """,
+        (player_data[0],)
+    )
+    inventory = dict(cursor.fetchall())
+
     conn.close()
 
     player_data[6] = energy
@@ -158,7 +215,12 @@ def get_player_by_user_id(user_id):
     player_data[14] = energy_update
     player_data[15] = nerve_update
 
-    player_data.extend([crime_progress, district_reputation])
+    player_data.extend([
+        crime_progress,
+        district_reputation,
+        unlocked_gyms,
+        inventory,
+    ])
 
     return tuple(player_data)
 
@@ -194,7 +256,14 @@ def save_player(player):
             current_district = ?,
             travel_destination = ?,
             travel_until = ?,
-            residence_key = ?
+            residence_key = ?,
+            career_key = ?,
+            job_role_key = ?,
+            career_xp = ?,
+            shifts_completed = ?,
+            shift_started_at = ?,
+            shift_until = ?,
+            current_gym_key = ?
         WHERE id = ?
         """,
         (
@@ -222,6 +291,13 @@ def save_player(player):
             player.travel_destination,
             player.travel_until,
             player.residence_key,
+            player.career_key,
+            player.job_role_key,
+            player.career_xp,
+            player.shifts_completed,
+            player.shift_started_at,
+            player.shift_until,
+            player.current_gym_key,
             player.id
         )
     )
@@ -250,6 +326,44 @@ def save_player(player):
                 progress["successes"],
             )
             for crime_key, progress in player.crime_progress.items()
+        ]
+    )
+
+    cursor.execute(
+        "DELETE FROM player_inventory WHERE player_id = ?",
+        (player.id,)
+    )
+    cursor.executemany(
+        """
+        INSERT INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        VALUES (?, ?, ?)
+        """,
+        [
+            (player.id, item_key, quantity)
+            for item_key, quantity
+            in player.inventory.items()
+        ]
+    )
+
+    cursor.execute(
+        "DELETE FROM player_unlocked_gyms WHERE player_id = ?",
+        (player.id,)
+    )
+    cursor.executemany(
+        """
+        INSERT INTO player_unlocked_gyms (
+            player_id,
+            gym_key
+        )
+        VALUES (?, ?)
+        """,
+        [
+            (player.id, gym_key)
+            for gym_key in player.unlocked_gyms
         ]
     )
 

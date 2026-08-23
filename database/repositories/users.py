@@ -2,6 +2,8 @@ from database.core.connection import get_connection
 
 
 def create_user(username, email, password_hash):
+    username = username.strip()
+    email = email.strip().lower()
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -30,9 +32,9 @@ def get_user_by_username(username):
         """
         SELECT id, username, email, password_hash, created_at
         FROM users
-        WHERE username = ?
+        WHERE username = ? COLLATE NOCASE
         """,
-        (username,)
+        (username.strip(),)
     )
 
     user = cursor.fetchone()
@@ -50,9 +52,9 @@ def get_user_by_email(email):
         """
         SELECT id, username, email, password_hash, created_at
         FROM users
-        WHERE email = ?
+        WHERE email = ? COLLATE NOCASE
         """,
-        (email,)
+        (email.strip().lower(),)
     )
 
     user = cursor.fetchone()

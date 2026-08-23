@@ -1,6 +1,7 @@
 from database.core.setup import create_tables
 from auth.services.register import register
 from auth.services.login import login
+from auth.services.password_reset import forgot_password
 from database.repositories.players import create_player, get_player_by_user_id, save_player
 
 from game.world.travel import (
@@ -14,6 +15,8 @@ from game.crime import crimes_menu
 from game.player.status import update_player_status
 from game.economy.bank import bank_menu
 from game.housing import housing_menu
+from game.jobs import jobs_menu
+from game.inventory import inventory_menu
 
 
 
@@ -39,7 +42,7 @@ def main():
             register()
 
         elif choice == "3":
-            print("Forgot password coming next")
+            forgot_password()
 
         elif choice == "4":
             print("Goodbye!")
@@ -87,10 +90,12 @@ def game_menu(player):
             save_player(player)
 
         elif choice == "4":
-            print("Jobs coming soon.")
+            jobs_menu(player)
+            save_player(player)
 
         elif choice == "5":
-            print("Inventory coming soon.")
+            inventory_menu(player)
+            save_player(player)
 
         elif choice == "6":
             bank_menu(player)

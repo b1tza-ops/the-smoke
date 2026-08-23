@@ -186,6 +186,293 @@ def migrate_005_starting_housing(cursor):
     )
 
 
+def migrate_006_legal_jobs(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "career_key": "TEXT",
+            "job_role_key": "TEXT",
+            "career_xp": (
+                "INTEGER NOT NULL DEFAULT 0 "
+                "CHECK (career_xp >= 0)"
+            ),
+            "shifts_completed": (
+                "INTEGER NOT NULL DEFAULT 0 "
+                "CHECK (shifts_completed >= 0)"
+            ),
+            "shift_started_at": "TEXT",
+            "shift_until": "TEXT",
+        },
+    )
+
+
+def migrate_007_district_gyms(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "current_gym_key": (
+                "TEXT NOT NULL DEFAULT 'camden_community' "
+                "CHECK (TRIM(current_gym_key) <> '')"
+            ),
+        },
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_unlocked_gyms (
+            player_id INTEGER NOT NULL,
+            gym_key TEXT NOT NULL,
+            unlocked_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (player_id, gym_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_unlocked_gyms (
+            player_id,
+            gym_key
+        )
+        SELECT id, 'camden_community'
+        FROM players
+        """
+    )
+
+
+def migrate_008_starter_inventory(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS items (
+            item_key TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL
+                CHECK (
+                    category IN (
+                        'medical',
+                        'boost',
+                        'weapon',
+                        'armour',
+                        'utility'
+                    )
+                ),
+            description TEXT NOT NULL,
+            stackable INTEGER NOT NULL
+                CHECK (stackable IN (0, 1)),
+            max_quantity INTEGER NOT NULL
+                CHECK (max_quantity > 0),
+            effect_key TEXT,
+            effect_amount INTEGER NOT NULL DEFAULT 0
+                CHECK (effect_amount >= 0)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_inventory (
+            player_id INTEGER NOT NULL,
+            item_key TEXT NOT NULL,
+            quantity INTEGER NOT NULL
+                CHECK (quantity > 0),
+
+            PRIMARY KEY (player_id, item_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+
+    cursor.executemany(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key,
+            name,
+            category,
+            description,
+            stackable,
+            max_quantity,
+            effect_key,
+            effect_amount
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            (
+                "first_aid_kit",
+                "First Aid Kit",
+                "medical",
+                "Restores up to 25 health.",
+                1,
+                5,
+                "health",
+                25,
+            ),
+            (
+                "energy_drink",
+                "Energy Drink",
+                "boost",
+                "Restores up to 20 energy.",
+                1,
+                5,
+                "energy",
+                20,
+            ),
+            (
+                "kitchen_knife",
+                "Kitchen Knife",
+                "weapon",
+                "A basic close-range weapon.",
+                0,
+                1,
+                None,
+                0,
+            ),
+            (
+                "padded_jacket",
+                "Padded Jacket",
+                "armour",
+                "Basic protection for a new player.",
+                0,
+                1,
+                None,
+                0,
+            ),
+            (
+                "lockpick",
+                "Lockpick",
+                "utility",
+                "A simple tool for future crime actions.",
+                1,
+                20,
+                None,
+                0,
+            ),
+        ),
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        SELECT id, 'first_aid_kit', 1
+        FROM players
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_inventory (
+            player_id,
+            item_key,
+            quantity
+        )
+        SELECT id, 'energy_drink', 1
+        FROM players
+        """
+    )
+
+
+def migrate_009_authentication_hardening(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    existing_columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(users)"
+        )
+    }
+
+    if "email_verified" not in existing_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN email_verified INTEGER NOT NULL
+                DEFAULT 0
+                CHECK (email_verified IN (0, 1))
+            """
+        )
+
+    if "email_verified_at" not in existing_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN email_verified_at TEXT
+            """
+        )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS account_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token_type TEXT NOT NULL
+                CHECK (
+                    token_type IN (
+                        'email_verification',
+                        'password_reset'
+                    )
+                ),
+            token_hash TEXT NOT NULL UNIQUE,
+            expires_at TEXT NOT NULL,
+            used_at TEXT,
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_account_tokens_lookup
+        ON account_tokens (
+            token_type,
+            token_hash
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_account_tokens_user
+        ON account_tokens (
+            user_id,
+            token_type,
+            created_at
+        )
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -211,6 +498,26 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=5,
         name="starting_housing",
         apply=migrate_005_starting_housing,
+    ),
+    Migration(
+        version=6,
+        name="legal_jobs",
+        apply=migrate_006_legal_jobs,
+    ),
+    Migration(
+        version=7,
+        name="district_gyms",
+        apply=migrate_007_district_gyms,
+    ),
+    Migration(
+        version=8,
+        name="starter_inventory",
+        apply=migrate_008_starter_inventory,
+    ),
+    Migration(
+        version=9,
+        name="authentication_hardening",
+        apply=migrate_009_authentication_hardening,
     ),
 )
 

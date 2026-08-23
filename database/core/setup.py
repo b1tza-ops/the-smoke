@@ -12,6 +12,9 @@ def create_tables():
             username TEXT NOT NULL UNIQUE,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
+            email_verified INTEGER NOT NULL DEFAULT 0
+                CHECK (email_verified IN (0, 1)),
+            email_verified_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -46,6 +49,16 @@ def create_tables():
             travel_until TEXT,
             residence_key TEXT NOT NULL DEFAULT 'tent'
                 CHECK (TRIM(residence_key) <> ''),
+            career_key TEXT,
+            job_role_key TEXT,
+            career_xp INTEGER NOT NULL DEFAULT 0
+                CHECK (career_xp >= 0),
+            shifts_completed INTEGER NOT NULL DEFAULT 0
+                CHECK (shifts_completed >= 0),
+            shift_started_at TEXT,
+            shift_until TEXT,
+            current_gym_key TEXT NOT NULL DEFAULT 'camden_community'
+                CHECK (TRIM(current_gym_key) <> ''),
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +23,9 @@ from game.crime import commit_crime, get_crime
 
 from game.economy.bank import deposit_cash, withdraw_cash
 from game.housing import purchase_residence
+from game.jobs import complete_shift, join_career, start_shift
+from game.gym import select_gym, unlock_gym
+from game.inventory import add_item, remove_item, use_item
 
 
 class PlayerPersistenceTests(unittest.TestCase):
@@ -307,6 +310,187 @@ class PlayerPersistenceTests(unittest.TestCase):
                     "hostel",
                 )
                 self.assertEqual(reloaded.money, 250)
+
+    def test_job_progress_and_active_shift_persist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.core.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="job_player",
+                    email="job@example.com",
+                    password_hash="test_hash",
+                )
+                create_player(user_id, "Job Character")
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+                now = datetime.now(timezone.utc)
+
+                join_career(player, "construction")
+                shift = start_shift(player, now=now)
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.career_key,
+                    "construction",
+                )
+                self.assertEqual(
+                    reloaded.job_role_key,
+                    "construction_labourer",
+                )
+                self.assertEqual(
+                    reloaded.shift_until,
+                    shift.completes_at,
+                )
+                self.assertEqual(reloaded.energy, 90)
+
+                complete_shift(
+                    reloaded,
+                    now=now + timedelta(hours=3),
+                )
+                save_player(reloaded)
+
+                completed = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(completed.money, 620)
+                self.assertEqual(completed.xp, 15)
+                self.assertEqual(completed.career_xp, 15)
+                self.assertEqual(completed.shifts_completed, 1)
+                self.assertIsNone(completed.shift_started_at)
+                self.assertIsNone(completed.shift_until)
+
+    def test_gym_access_and_selection_persist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.core.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="gym_player",
+                    email="gym@example.com",
+                    password_hash="test_hash",
+                )
+                create_player(user_id, "Gym Character")
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+                player.level = 2
+                player.money = 1_000
+                player.current_district = "brixton"
+
+                unlock_gym(
+                    player,
+                    "brixton_performance",
+                )
+                select_gym(
+                    player,
+                    "brixton_performance",
+                )
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.current_gym_key,
+                    "brixton_performance",
+                )
+                self.assertIn(
+                    "camden_community",
+                    reloaded.unlocked_gyms,
+                )
+                self.assertIn(
+                    "brixton_performance",
+                    reloaded.unlocked_gyms,
+                )
+                self.assertEqual(reloaded.money, 250)
+
+    def test_inventory_quantities_persist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = (
+                Path(temp_dir) / "data" / "game.db"
+            )
+
+            with patch(
+                "database.core.connection.DB_PATH",
+                database_path,
+            ):
+                create_tables()
+
+                user_id = create_user(
+                    username="inventory_player",
+                    email="inventory@example.com",
+                    password_hash="test_hash",
+                )
+                create_player(
+                    user_id,
+                    "Inventory Character",
+                )
+
+                player = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    player.inventory,
+                    {
+                        "first_aid_kit": 1,
+                        "energy_drink": 1,
+                    },
+                )
+
+                add_item(
+                    player,
+                    "lockpick",
+                    quantity=4,
+                )
+                remove_item(
+                    player,
+                    "lockpick",
+                    quantity=1,
+                )
+                player.health = 80
+                use_item(
+                    player,
+                    "first_aid_kit",
+                )
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(
+                    reloaded.inventory,
+                    {
+                        "energy_drink": 1,
+                        "lockpick": 3,
+                    },
+                )
+                self.assertEqual(reloaded.health, 100)
 
 if __name__ == "__main__":
     unittest.main()
