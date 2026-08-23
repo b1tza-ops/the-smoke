@@ -22,6 +22,7 @@ class Player:
         last_wanted_update,
         jail_until,
         hospital_until,
+        bank_balance,
         crime_progress=None,
         district_reputation=None
     ):
@@ -31,6 +32,7 @@ class Player:
         self.name = name
         self.level = level
         self.money = money
+        self.bank_balance = bank_balance
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -57,7 +59,8 @@ class Player:
         print("Name:", self.name)
         print("Level:", self.level)
         print("XP:", self.xp)
-        print("Money:", self.money)
+        print("Cash:", self.money)
+        print("Bank:", self.bank_balance)
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")

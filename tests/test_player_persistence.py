@@ -21,6 +21,8 @@ from game.player import Player
 from game.progression import award_xp
 from game.crimes import commit_crime, get_crime
 
+from game.bank import deposit_cash, withdraw_cash
+
 
 class PlayerPersistenceTests(unittest.TestCase):
     def test_xp_and_level_persist_across_sessions(self):
@@ -156,6 +158,46 @@ class PlayerPersistenceTests(unittest.TestCase):
                 self.assertEqual(
                     reloaded.hospital_until,
                     "2026-08-22 14:10:00",
+                )
+
+
+    def test_bank_balances_persist_across_sessions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "data" / "game.db"
+
+            with patch("database.connection.DB_PATH", database_path):
+                create_tables()
+
+                user_id = create_user(
+                    username="bank_player",
+                    email="bank@example.com",
+                    password_hash="test_hash",
+                )
+
+                create_player(user_id, "Bank Character")
+                player = Player(*get_player_by_user_id(user_id))
+
+                deposit_cash(player, 200)
+                save_player(player)
+
+                reloaded = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(reloaded.money, 300)
+                self.assertEqual(reloaded.bank_balance, 200)
+
+                withdraw_cash(reloaded, 50)
+                save_player(reloaded)
+
+                reloaded_again = Player(
+                    *get_player_by_user_id(user_id)
+                )
+
+                self.assertEqual(reloaded_again.money, 350)
+                self.assertEqual(
+                    reloaded_again.bank_balance,
+                    150,
                 )
 
 if __name__ == "__main__":
