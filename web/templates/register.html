@@ -1,0 +1,16 @@
+{% extends "auth_base.html" %}
+{% block title %}Register · The Smoke{% endblock %}
+{% block content %}
+    <p class="eyebrow">New identity</p>
+    <h2>Create your account</h2>
+    <p class="muted">Your first step into The Smoke.</p>
+    <form class="stack-form" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label>Username<input name="username" minlength="3" maxlength="30" autocomplete="username" required></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required></label>
+        <label>Password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label>
+        <label>Confirm password<input type="password" name="password_confirm" minlength="8" autocomplete="new-password" required></label>
+        <button class="primary-button" type="submit">Create account <span>→</span></button>
+    </form>
+    <p class="auth-switch">Already registered? <a href="{{ url_for('login') }}">Sign in</a></p>
+{% endblock %}

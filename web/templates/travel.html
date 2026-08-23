@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Travel · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">London network</p><h1>Travel</h1><p>{{ current_district.description }}</p></div><span class="page-badge">Currently in {{ current_district.name }}</span></header>
+{% if active_travel %}
+<div class="journey-card"><p class="eyebrow">Journey underway</p><h2>{{ current_district.name }} → {{ active_travel.destination_key.title() }}</h2><strong data-countdown="{{ active_travel.remaining_seconds }}">{{ active_travel.remaining_seconds|duration }}</strong><p>Arrival: {{ active_travel.arrives_at }} UTC. Refresh after the timer reaches zero.</p></div>
+{% else %}
+<section class="card-grid">
+    {% for district, route in destinations %}
+    <article class="panel item-card"><p class="eyebrow">Level {{ district.minimum_level }} district</p><h2>{{ district.name }}</h2><p>{{ district.description }}</p><div class="tag-row"><span>£{{ route.cost }} fare</span><span>{{ (route.duration_seconds / 60)|round|int }} minutes</span></div><form method="post" action="{{ url_for('travel_action', destination_key=district.key) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="primary-button" {% if player.level < district.minimum_level or player.money < route.cost or restriction %}disabled{% endif %}>{% if player.level < district.minimum_level %}Requires level {{ district.minimum_level }}{% else %}Travel to {{ district.name }}{% endif %}</button></form></article>
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

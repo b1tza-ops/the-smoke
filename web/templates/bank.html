@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Bank · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">Cash safety</p><h1>Bank</h1><p>Move carried cash into protected funds before taking risks.</p></div><span class="page-badge">Secure account</span></header>
+<section class="balance-grid"><article><small>Carried cash</small><strong>£{{ "{:,}".format(player.money) }}</strong><p>Available for travel, housing and daily actions.</p></article><article><small>Protected funds</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong><p>Stored safely in your bank account.</p></article></section>
+<section class="card-grid two-columns">
+    {% for action, heading, copy in [('deposit', 'Deposit cash', 'Move carried cash into your protected balance.'), ('withdraw', 'Withdraw funds', 'Move protected funds back into carried cash.')] %}
+    <form class="panel money-form" method="post" action="{{ url_for('bank_action', action=action) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><p class="eyebrow">{{ action }}</p><h2>{{ heading }}</h2><p>{{ copy }}</p><label>Amount in pounds<div class="money-input"><span>£</span><input type="number" name="amount" min="1" step="1" required></div></label><button class="primary-button">{{ heading }}</button></form>
+    {% endfor %}
+</section>
+{% endblock %}

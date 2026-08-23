@@ -1,0 +1,12 @@
+{% extends "auth_base.html" %}
+{% block title %}Create character · The Smoke{% endblock %}
+{% block content %}
+    <p class="eyebrow">Choose your name</p>
+    <h2>Who are you in London?</h2>
+    <p class="muted">You begin in Camden with £500, a tent, and starter supplies.</p>
+    <form class="stack-form" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label>Character name<input name="name" minlength="3" maxlength="24" autocomplete="off" required autofocus></label>
+        <button class="primary-button" type="submit">Begin your story <span>→</span></button>
+    </form>
+{% endblock %}

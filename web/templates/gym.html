@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Gym · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">Battle development</p><h1>Gym</h1><p>Choose how much energy to invest. More energy means a larger gain.</p></div><span class="page-badge">{{ current_gym.name }}</span></header>
+
+{% if training_block %}<div class="empty-state"><h2>Training unavailable</h2><p>You cannot train while {{ training_block }}.</p></div>{% else %}
+<section class="card-grid card-grid--gyms">
+    {% for gym in gyms %}
+    <article class="panel item-card {% if gym.key == player.current_gym_key %}is-selected{% endif %}">
+        <p class="eyebrow">{{ gym.district.title() }}</p><h2>{{ gym.name }}</h2>
+        <p>Level {{ gym.required_level }} · Membership £{{ "{:,}".format(gym.membership_cost) }}</p>
+        <div class="multiplier-row"><span>STR ×{{ gym.strength_multiplier }}</span><span>DEF ×{{ gym.defence_multiplier }}</span><span>SPD ×{{ gym.speed_multiplier }}</span><span>DEX ×{{ gym.dexterity_multiplier }}</span></div>
+        <form method="post" action="{{ url_for('select_gym_action', gym_key=gym.key) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="secondary-button" {% if gym.key == player.current_gym_key %}disabled{% endif %}>
+                {% if gym.key == player.current_gym_key %}Current gym{% elif gym.key in player.unlocked_gyms %}Select gym{% else %}Buy membership{% endif %}
+            </button>
+        </form>
+    </article>
+    {% endfor %}
+</section>
+
+<section class="panel training-panel">
+    <div class="panel-heading"><div><p class="eyebrow">Energy available</p><h2>{{ player.energy }}/{{ player.max_energy }}</h2></div><span>10 energy minimum</span></div>
+    <div class="training-grid">
+        {% for stat in valid_stats %}
+        <form class="training-card" method="post" action="{{ url_for('train_action') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="stat" value="{{ stat }}">
+            <div><small>{{ stat.upper() }}</small><strong>{{ player|attr(stat) }}</strong></div>
+            <label>Energy to spend<input type="number" name="energy" value="10" min="10" max="{{ player.energy }}" step="10" required></label>
+            <button class="primary-button" {% if player.energy < 10 %}disabled{% endif %}>Train {{ stat.title() }}</button>
+        </form>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Jobs · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">Legal work</p><h1>Jobs</h1><p>Three-hour shifts provide reliable income, career XP, and promotions.</p></div>{% if role %}<span class="page-badge">{{ role.name }}</span>{% endif %}</header>
+
+{% if not career %}
+<section class="card-grid">
+    {% for option in careers %}{% set entry = option.roles[0] %}
+    <article class="panel item-card"><p class="eyebrow">Career</p><h2>{{ option.name }}</h2><p>{{ option.description }}</p><div class="tag-row"><span>{{ entry.name }}</span><span>£{{ entry.salary }}/shift</span><span>{{ entry.energy_cost }} energy</span></div>
+        <form method="post" action="{{ url_for('join_career_action', career_key=option.key) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="primary-button">Join career</button></form>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="dashboard-grid">
+    <article class="panel span-two"><p class="eyebrow">{{ career.name }}</p><h2>{{ role.name }}</h2><div class="job-metrics"><span><small>Pay</small><strong>£{{ role.salary }}</strong></span><span><small>Energy cost</small><strong>{{ role.energy_cost }}</strong></span><span><small>Career XP</small><strong>{{ player.career_xp }}</strong></span><span><small>Shifts</small><strong>{{ player.shifts_completed }}</strong></span></div>
+        {% if shift %}
+            <div class="shift-box"><div><small>{% if shift.ready_to_complete %}Ready{% else %}Shift in progress{% endif %}</small><strong data-countdown="{{ shift.remaining_seconds }}">{{ shift.remaining_seconds|duration }}</strong></div>
+            {% if shift.ready_to_complete %}<form method="post" action="{{ url_for('complete_shift_action') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="primary-button">Complete shift</button></form>{% endif %}</div>
+        {% else %}
+            <form method="post" action="{{ url_for('start_shift_action') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="primary-button" {% if active_travel or restriction or player.energy < role.energy_cost %}disabled{% endif %}>Start three-hour shift</button></form>
+        {% endif %}
+    </article>
+    <article class="panel"><p class="eyebrow">Promotion ladder</p><h2>Career path</h2><ol class="career-ladder">{% for career_role in career.roles %}<li class="{% if career_role.key == role.key %}is-current{% endif %}"><strong>{{ career_role.name }}</strong><span>Level {{ career_role.required_level }} · {{ career_role.required_career_xp }} career XP</span></li>{% endfor %}</ol></article>
+</section>
+{% endif %}
+{% endblock %}
