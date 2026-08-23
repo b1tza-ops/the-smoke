@@ -2,7 +2,7 @@ import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from database.connection import get_connection
+from database.core.connection import get_connection
 
 
 @dataclass(frozen=True)

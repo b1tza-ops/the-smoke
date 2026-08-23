@@ -1,7 +1,7 @@
-from database.setup import create_tables
-from auth.register import register
-from auth.login import login
-from database.players import create_player, get_player_by_user_id, save_player
+from database.core.setup import create_tables
+from auth.services.register import register
+from auth.services.login import login
+from database.repositories.players import create_player, get_player_by_user_id, save_player
 
 from game.world.travel import (
     travel_menu,

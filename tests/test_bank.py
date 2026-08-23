@@ -3,17 +3,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from database.bank import (
+from database.repositories.bank import (
     InsufficientBankFundsError,
     InsufficientCashError,
     InvalidAmountError,
     deposit,
     withdraw,
 )
-from database.connection import get_connection
-from database.players import create_player
-from database.setup import create_tables
-from database.users import create_user
+from database.core.connection import get_connection
+from database.repositories.players import create_player
+from database.core.setup import create_tables
+from database.repositories.users import create_user
 
 
 class BankTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class BankTests(unittest.TestCase):
         )
 
         self.database_patch = patch(
-            "database.connection.DB_PATH",
+            "database.core.connection.DB_PATH",
             self.database_path
         )
         self.database_patch.start()

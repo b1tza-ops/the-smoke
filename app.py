@@ -2,10 +2,10 @@ import os
 import secrets
 from game.world.travel import update_travel
 from flask import Flask, render_template, request, redirect, session
-from database.setup import create_tables
-from database.users import get_user_by_username
+from database.core.setup import create_tables
+from database.repositories.users import get_user_by_username
 
-from database.players import (
+from database.repositories.players import (
     get_player_by_user_id,
     save_player,
 )

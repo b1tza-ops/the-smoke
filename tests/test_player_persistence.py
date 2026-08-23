@@ -10,13 +10,13 @@ from game.player.status import (
     send_to_jail,
 )
 
-from database.players import (
+from database.repositories.players import (
     create_player,
     get_player_by_user_id,
     save_player,
 )
-from database.setup import create_tables
-from database.users import create_user
+from database.core.setup import create_tables
+from database.repositories.users import create_user
 from game.player import Player
 from game.player.progression import award_xp
 from game.crime import commit_crime, get_crime
@@ -30,7 +30,7 @@ class PlayerPersistenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
 
-            with patch("database.connection.DB_PATH", database_path):
+            with patch("database.core.connection.DB_PATH", database_path):
                 create_tables()
 
                 user_id = create_user(
@@ -63,7 +63,7 @@ class PlayerPersistenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
 
-            with patch("database.connection.DB_PATH", database_path):
+            with patch("database.core.connection.DB_PATH", database_path):
                 create_tables()
 
                 user_id = create_user(
@@ -102,7 +102,7 @@ class PlayerPersistenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
 
-            with patch("database.connection.DB_PATH", database_path):
+            with patch("database.core.connection.DB_PATH", database_path):
                 create_tables()
 
                 user_id = create_user(
@@ -166,7 +166,7 @@ class PlayerPersistenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
 
-            with patch("database.connection.DB_PATH", database_path):
+            with patch("database.core.connection.DB_PATH", database_path):
                 create_tables()
 
                 user_id = create_user(
@@ -208,7 +208,7 @@ class PlayerPersistenceTests(unittest.TestCase):
             )
 
             with patch(
-                "database.connection.DB_PATH",
+                "database.core.connection.DB_PATH",
                 database_path,
             ):
                 create_tables()
@@ -267,7 +267,7 @@ class PlayerPersistenceTests(unittest.TestCase):
             )
 
             with patch(
-                "database.connection.DB_PATH",
+                "database.core.connection.DB_PATH",
                 database_path,
             ):
                 create_tables()

@@ -1,4 +1,4 @@
-from database.users import create_user, get_user_by_username, get_user_by_email
+from database.repositories.users import create_user, get_user_by_username, get_user_by_email
 from utils.security import hash_password
 
 
