@@ -19,7 +19,7 @@ from game.housing import housing_menu
 
 def main():
     create_tables()
-    while True: 
+    while True:
         print("\n===== MINI TORN =====")
         print("1. Login")
         print("2. Register")
@@ -85,7 +85,7 @@ def game_menu(player):
         elif choice == "3":
             crimes_menu(player)
             save_player(player)
-            
+
         elif choice == "4":
             print("Jobs coming soon.")
 
