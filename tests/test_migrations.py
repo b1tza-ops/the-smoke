@@ -1,0 +1,325 @@
+from contextlib import closing
+import sqlite3
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+from database.setup import create_tables
+
+
+from database.migrations import (
+    MIGRATIONS,
+    Migration,
+    run_migrations,
+)
+
+
+class MigrationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.database_path = (
+            Path(self.temp_dir.name) / "legacy.db"
+        )
+
+        self.database_patch = patch(
+            "database.connection.DB_PATH",
+            self.database_path,
+        )
+        self.database_patch.start()
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            cursor = conn.cursor()
+
+            cursor.execute(
+                """
+                CREATE TABLE players (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL UNIQUE,
+                    name TEXT NOT NULL,
+                    level INTEGER DEFAULT 1,
+                    money INTEGER DEFAULT 500,
+                    health INTEGER DEFAULT 100,
+                    energy INTEGER DEFAULT 100,
+                    strength INTEGER DEFAULT 10,
+                    defence INTEGER DEFAULT 10,
+                    speed INTEGER DEFAULT 10,
+                    dexterity INTEGER DEFAULT 10
+                )
+                """
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO players (
+                    user_id,
+                    name,
+                    money,
+                    energy
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    1,
+                    "Legacy Player",
+                    777,
+                    25,
+                ),
+            )
+
+            conn.commit()
+
+    def tearDown(self):
+        self.database_patch.stop()
+        self.temp_dir.cleanup()
+
+    def test_old_database_upgrades_without_losing_player(self):
+        applied_versions = run_migrations()
+
+        self.assertEqual(applied_versions, (1, 2, 3))
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(players)"
+                )
+            }
+
+            self.assertTrue(
+                {
+                    "xp",
+                    "nerve",
+                    "max_energy",
+                    "max_nerve",
+                    "last_energy_update",
+                    "last_nerve_update",
+                    "wanted_level",
+                    "last_wanted_update",
+                    "jail_until",
+                    "hospital_until",
+                    "bank_balance",
+                }.issubset(columns)
+            )
+
+            player = conn.execute(
+                """
+                SELECT
+                    name,
+                    money,
+                    energy,
+                    xp,
+                    nerve,
+                    max_energy,
+                    max_nerve,
+                    wanted_level,
+                    bank_balance,
+                    last_energy_update,
+                    last_nerve_update
+                FROM players
+                WHERE user_id = 1
+                """
+            ).fetchone()
+
+            self.assertEqual(
+                player[:9],
+                (
+                    "Legacy Player",
+                    777,
+                    25,
+                    0,
+                    20,
+                    100,
+                    20,
+                    0,
+                    0,
+                ),
+            )
+            self.assertIsNotNone(player[9])
+            self.assertIsNotNone(player[10])
+
+            migrations = conn.execute(
+                """
+                SELECT version, name
+                FROM schema_migrations
+                ORDER BY version
+                """
+            ).fetchall()
+
+            self.assertEqual(
+                migrations,
+                [
+                    (
+                        1,
+                        "player_progression_and_resources",
+                    ),
+                    (2, "player_status"),
+                    (3, "bank_system"),
+                ],
+            )
+
+            bank_table = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'table'
+                    AND name = 'bank_transactions'
+                """
+            ).fetchone()
+
+            self.assertEqual(
+                bank_table,
+                ("bank_transactions",),
+            )
+
+    def test_running_migrations_twice_is_safe(self):
+        first_run = run_migrations()
+        second_run = run_migrations()
+
+        self.assertEqual(first_run, (1, 2, 3))
+        self.assertEqual(second_run, ())
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            player_count = conn.execute(
+                "SELECT COUNT(*) FROM players"
+            ).fetchone()[0]
+
+            money = conn.execute(
+                """
+                SELECT money
+                FROM players
+                WHERE user_id = 1
+                """
+            ).fetchone()[0]
+
+            migration_count = conn.execute(
+                """
+                SELECT COUNT(*)
+                FROM schema_migrations
+                """
+            ).fetchone()[0]
+
+            player_columns = [
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(players)"
+                )
+            ]
+
+            self.assertEqual(player_count, 1)
+            self.assertEqual(money, 777)
+            self.assertEqual(migration_count, 3)
+            self.assertEqual(
+                len(player_columns),
+                len(set(player_columns)),
+            )
+    def test_failed_migration_rolls_back(self):
+        run_migrations()
+
+        def broken_migration(cursor):
+            cursor.execute(
+                """
+                ALTER TABLE players
+                ADD COLUMN temporary_value INTEGER
+                """
+            )
+
+            raise RuntimeError("Migration failed")
+
+        failing_migration = Migration(
+            version=4,
+            name="deliberately_broken_migration",
+            apply=broken_migration,
+        )
+
+        with patch(
+            "database.migrations.MIGRATIONS",
+            MIGRATIONS + (failing_migration,),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Migration failed",
+            ):
+                run_migrations()
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(players)"
+                )
+            }
+
+            recorded_versions = [
+                row[0]
+                for row in conn.execute(
+                    """
+                    SELECT version
+                    FROM schema_migrations
+                    ORDER BY version
+                    """
+                )
+            ]
+
+            money = conn.execute(
+                """
+                SELECT money
+                FROM players
+                WHERE user_id = 1
+                """
+            ).fetchone()[0]
+
+            self.assertNotIn(
+                "temporary_value",
+                columns,
+            )
+            self.assertEqual(
+                recorded_versions,
+                [1, 2, 3],
+            )
+            self.assertEqual(money, 777)
+
+    def test_create_tables_runs_migrations_automatically(self):
+        create_tables()
+        create_tables()
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            versions = [
+                row[0]
+                for row in conn.execute(
+                    """
+                    SELECT version
+                    FROM schema_migrations
+                    ORDER BY version
+                    """
+                )
+            ]
+
+            player_count = conn.execute(
+                "SELECT COUNT(*) FROM players"
+            ).fetchone()[0]
+
+            columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(players)"
+                )
+            }
+
+            self.assertEqual(versions, [1, 2, 3])
+            self.assertEqual(player_count, 1)
+            self.assertIn("bank_balance", columns)
+            self.assertIn("wanted_level", columns)
+
+if __name__ == "__main__":
+    unittest.main()

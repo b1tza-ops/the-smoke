@@ -1,52 +1,11 @@
 from database.connection import get_connection
+from database.migrations import run_migrations
 
 
-PLAYER_STATUS_COLUMNS = {
-    "wanted_level": "INTEGER NOT NULL DEFAULT 0 CHECK (wanted_level >= 0)",
-    "last_wanted_update": "TEXT",
-    "jail_until": "TEXT",
-    "hospital_until": "TEXT",
-}
 
 
-def ensure_player_status_columns(cursor):
-    existing_columns = {
-        row[1]
-        for row in cursor.execute("PRAGMA table_info(players)")
-    }
-
-    for column_name, definition in PLAYER_STATUS_COLUMNS.items():
-        if column_name not in existing_columns:
-            cursor.execute(
-                f"""
-                ALTER TABLE players
-                ADD COLUMN {column_name} {definition}
-                """
-            )
-
-    cursor.execute(
-        """
-        UPDATE players
-        SET last_wanted_update = CURRENT_TIMESTAMP
-        WHERE last_wanted_update IS NULL
-        """
-    )
 
 
-def ensure_player_bank_column(cursor):
-    existing_columns = {
-        row[1]
-        for row in cursor.execute("PRAGMA table_info(players)")
-    }
-
-    if "bank_balance" not in existing_columns:
-        cursor.execute(
-            """
-            ALTER TABLE players
-            ADD COLUMN bank_balance INTEGER NOT NULL DEFAULT 0
-                CHECK (bank_balance >= 0)
-            """
-        )
 
 
 def create_tables():
@@ -93,8 +52,7 @@ def create_tables():
                 ON DELETE CASCADE
         )
     """)
-    ensure_player_status_columns(cursor)
-    ensure_player_bank_column(cursor)
+
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS player_crime_progress (
@@ -162,3 +120,5 @@ def create_tables():
     
     conn.commit()
     conn.close()
+
+    run_migrations()
