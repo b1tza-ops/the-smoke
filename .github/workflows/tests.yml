@@ -25,4 +25,4 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Compile Python files
-        run: python -m compileall -q app.py main.py auth database game tests
+        run: python -m compileall -q app.py main.py auth cli database game tests web
