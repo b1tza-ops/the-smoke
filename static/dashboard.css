@@ -702,9 +702,17 @@
 .action-button:hover { filter: brightness(1.07); }
 .action-button:disabled { background: #293137; color: #6f7a80; cursor: not-allowed; }
 .job-card.is-active { border-color: rgba(185,243,75,.38); }
+.job-card.is-working { border-color: rgba(246,188,80,.42); box-shadow: inset 0 3px 0 rgba(246,188,80,.45); }
+.job-card.is-ready { border-color: rgba(185,243,75,.62); box-shadow: inset 0 3px 0 rgba(185,243,75,.55), 0 0 24px rgba(185,243,75,.05); }
+.job-stats--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.job-card__duration { display: block; margin: .65rem 0 -.35rem; color: var(--game-energy); font-size: .56rem; font-weight: 850; }
 .job-status, .inventory-capacity { display: grid; min-width: 10rem; border: 1px solid var(--game-line); border-radius: 12px; background: var(--game-panel); padding: .65rem .85rem; text-align: right; }
 .job-status small, .inventory-capacity small { color: var(--game-muted); font-size: .56rem; }
 .job-status strong, .inventory-capacity strong { font-size: .73rem; }
+.job-status__timer { margin-top: .18rem; color: var(--game-energy); font-size: .58rem; font-weight: 850; }
+.job-status__timer.is-ready { color: var(--game-accent); }
+.job-progress { height: 3px; margin-top: .45rem; overflow: hidden; border-radius: 999px; background: #293137; }
+.job-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--game-energy), var(--game-accent)); transition: width .4s linear; }
 
 /* Inventory */
 .inventory-layout { display: grid; grid-template-columns: minmax(0, 1fr) 16rem; gap: 1rem; }
