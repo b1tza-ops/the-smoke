@@ -1,77 +1,14 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#090b0d">
-    <title>Enter The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-
-<body class="auth-page">
-    <div class="atmosphere atmosphere--one" aria-hidden="true"></div>
-    <div class="atmosphere atmosphere--two" aria-hidden="true"></div>
-
-    <main class="auth-shell">
-        <section class="auth-intro" aria-labelledby="brand-title">
-            <a class="brand" href="{{ url_for('login') }}" aria-label="The Smoke login">
-                <span class="brand__mark">TS</span>
-                <span class="brand__name">The Smoke</span>
-            </a>
-
-            <div class="auth-intro__copy">
-                <p class="eyebrow">A persistent London crime RPG</p>
-                <h1 id="brand-title">Own the city.<br>Build your name.</h1>
-                <p class="lede">
-                    Start with nothing. Train hard, take risks and build a reputation
-                    across a city that keeps moving while you are away.
-                </p>
-            </div>
-
-            <div class="city-status" aria-label="Game status">
-                <span class="status-dot" aria-hidden="true"></span>
-                <span>London is active</span>
-                <span class="city-status__time">Persistent world</span>
-            </div>
-        </section>
-
-        <section class="auth-card" aria-labelledby="login-title">
-            <div class="auth-card__header">
-                <p class="eyebrow">Player access</p>
-                <h2 id="login-title">Welcome back</h2>
-                <p>Sign in to continue your story.</p>
-            </div>
-
-            {% if error %}
-                <div class="alert" role="alert">
-                    <span class="alert__icon" aria-hidden="true">!</span>
-                    <span>{{ error }}</span>
-                </div>
-            {% endif %}
-
-            <form class="auth-form" method="post">
-                <div class="field">
-                    <label for="username">Username</label>
-                    <input id="username" type="text" name="username"
-                        autocomplete="username" placeholder="Enter your username"
-                        required autofocus>
-                </div>
-
-                <div class="field">
-                    <label for="password">Password</label>
-                    <input id="password" type="password" name="password"
-                        autocomplete="current-password" placeholder="Enter your password"
-                        required>
-                </div>
-
-                <button class="primary-button" type="submit">
-                    <span>Enter The Smoke</span>
-                    <span aria-hidden="true">→</span>
-                </button>
-            </form>
-
-            <p class="auth-card__footer">Your progress is saved securely between sessions.</p>
-        </section>
-    </main>
-</body>
-</html>
+{% extends "auth_base.html" %}
+{% block title %}Sign in · The Smoke{% endblock %}
+{% block content %}
+    <p class="eyebrow">Player access</p>
+    <h2>Welcome back</h2>
+    <p class="muted">Sign in to continue your story.</p>
+    <form class="stack-form" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label>Username<input name="username" autocomplete="username" required autofocus></label>
+        <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="primary-button" type="submit">Enter The Smoke <span>→</span></button>
+    </form>
+    <p class="auth-switch">New to London? <a href="{{ url_for('register') }}">Create an account</a></p>
+{% endblock %}

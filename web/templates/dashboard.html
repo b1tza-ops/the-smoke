@@ -1,162 +1,54 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#090b0d">
-    <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+{% extends "base.html" %}
+{% block title %}{{ player.name }} · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading hero-heading">
+    <div><p class="eyebrow">Active character</p><h1>{{ player.name }}</h1><p>{{ current_district.name }} · {{ residence.name }}</p></div>
+    <div class="level-card"><small>Level {{ player.level }}</small><strong>{{ player.xp }} / {{ dashboard.next_level_xp }} XP</strong><div class="meter"><i style="--value: {{ dashboard.xp_percent }}%"></i></div></div>
+</header>
 
-<body class="dashboard-page">
-    <div class="atmosphere atmosphere--one" aria-hidden="true"></div>
-    <div class="atmosphere atmosphere--two" aria-hidden="true"></div>
+<section class="resource-grid">
+    {% for label, value, maximum, percent, class_name in [
+        ('Health', player.health, 100, dashboard.health_percent, 'health'),
+        ('Energy', player.energy, player.max_energy, dashboard.energy_percent, 'energy'),
+        ('Nerve', player.nerve, player.max_nerve, dashboard.nerve_percent, 'nerve')
+    ] %}
+    <article class="resource-card resource-card--{{ class_name }}">
+        <div><span>{{ label }}</span><strong>{{ value }}/{{ maximum }}</strong></div>
+        <div class="meter"><i style="--value: {{ percent }}%"></i></div>
+    </article>
+    {% endfor %}
+</section>
 
-    <div class="app-shell">
-        <header class="topbar">
-            <a class="brand" href="{{ url_for('home') }}" aria-label="The Smoke dashboard">
-                <span class="brand__mark">TS</span>
-                <span class="brand__name">The Smoke</span>
-            </a>
+<section class="dashboard-grid">
+    <article class="panel span-two">
+        <div class="panel-heading"><div><p class="eyebrow">Your next move</p><h2>London is open</h2></div><span>{{ current_district.name }}</span></div>
+        <div class="quick-grid">
+            <a href="{{ url_for('gym_page') }}"><strong>Train</strong><span>Spend energy to build battle stats.</span></a>
+            <a href="{{ url_for('crimes_page') }}"><strong>Commit a crime</strong><span>Risk nerve for money and XP.</span></a>
+            <a href="{{ url_for('jobs_page') }}"><strong>Work a shift</strong><span>Earn legal income over three hours.</span></a>
+            <a href="{{ url_for('travel_page') }}"><strong>Explore London</strong><span>Travel between districts.</span></a>
+        </div>
+    </article>
 
-            <div class="topbar__right">
-                <div class="world-status">
-                    <span class="status-dot" aria-hidden="true"></span>
-                    <span>London</span>
-                    <span class="world-status__label">Online</span>
-                </div>
-                <a class="logout-link" href="{{ url_for('logout') }}">Log out</a>
-            </div>
-        </header>
+    <article class="panel">
+        <p class="eyebrow">Battle stats</p><h2>Combat profile</h2>
+        <dl class="stat-list">
+            <div><dt>Strength</dt><dd>{{ player.strength }}</dd></div>
+            <div><dt>Defence</dt><dd>{{ player.defence }}</dd></div>
+            <div><dt>Speed</dt><dd>{{ player.speed }}</dd></div>
+            <div><dt>Dexterity</dt><dd>{{ player.dexterity }}</dd></div>
+        </dl>
+    </article>
 
-        <main class="dashboard-main">
-            <section class="player-hero" aria-labelledby="player-name">
-                <div class="player-hero__identity">
-                    <p class="eyebrow">Active character</p>
-                    <h1 id="player-name">{{ player.name }}</h1>
-                    <div class="identity-meta">
-                        <span class="level-badge">Level {{ player.level }}</span>
-                        <span>£{{ "{:,}".format(player.money) }} cash</span>
-                    </div>
-                </div>
-
-                <div class="xp-card">
-                    <div class="progress-heading">
-                        <span>Level progress</span>
-                        <strong>{{ player.xp }} / {{ dashboard.next_level_xp }} XP</strong>
-                    </div>
-                    <div class="progress-track" role="progressbar"
-                         aria-label="Experience progress"
-                         aria-valuenow="{{ dashboard.xp_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill progress-fill--xp"
-                              style="--progress: {{ dashboard.xp_percent }}%"></span>
-                    </div>
-                    <p>{{ dashboard.next_level_xp - player.xp }} XP until level {{ player.level + 1 }}</p>
-                </div>
-            </section>
-
-            <section class="resource-grid" aria-label="Player resources">
-                <article class="resource-card resource-card--health">
-                    <div class="resource-card__header">
-                        <span class="resource-icon" aria-hidden="true">+</span>
-                        <span>Health</span>
-                        <strong>{{ player.health }}/100</strong>
-                    </div>
-                    <div class="progress-track progress-track--thin" role="progressbar"
-                         aria-label="Health" aria-valuenow="{{ dashboard.health_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill" style="--progress: {{ dashboard.health_percent }}%"></span>
-                    </div>
-                </article>
-
-                <article class="resource-card resource-card--energy">
-                    <div class="resource-card__header">
-                        <span class="resource-icon" aria-hidden="true">ϟ</span>
-                        <span>Energy</span>
-                        <strong>{{ player.energy }}/{{ player.max_energy }}</strong>
-                    </div>
-                    <div class="progress-track progress-track--thin" role="progressbar"
-                         aria-label="Energy" aria-valuenow="{{ dashboard.energy_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill" style="--progress: {{ dashboard.energy_percent }}%"></span>
-                    </div>
-                </article>
-
-                <article class="resource-card resource-card--nerve">
-                    <div class="resource-card__header">
-                        <span class="resource-icon" aria-hidden="true">◆</span>
-                        <span>Nerve</span>
-                        <strong>{{ player.nerve }}/{{ player.max_nerve }}</strong>
-                    </div>
-                    <div class="progress-track progress-track--thin" role="progressbar"
-                         aria-label="Nerve" aria-valuenow="{{ dashboard.nerve_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill" style="--progress: {{ dashboard.nerve_percent }}%"></span>
-                    </div>
-                </article>
-            </section>
-
-            <div class="dashboard-columns">
-                <section class="action-panel" aria-labelledby="actions-title">
-                    <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">City access</p>
-                            <h2 id="actions-title">Choose your next move</h2>
-                        </div>
-                        <span class="section-note">Web actions coming soon</span>
-                    </div>
-
-                    <div class="action-grid">
-                        <article class="action-card action-card--active">
-                            <span class="action-card__number">01</span>
-                            <div><h3>Character</h3><p>Review your progress and battle stats.</p></div>
-                            <span class="action-card__status">Active</span>
-                        </article>
-                        <article class="action-card">
-                            <span class="action-card__number">02</span>
-                            <div><h3>Gym</h3><p>Train strength, defence, speed and dexterity.</p></div>
-                            <span class="action-card__status">Terminal</span>
-                        </article>
-                        <article class="action-card">
-                            <span class="action-card__number">03</span>
-                            <div><h3>Crimes</h3><p>Risk your nerve for cash, XP and reputation.</p></div>
-                            <span class="action-card__status">Terminal</span>
-                        </article>
-                        <article class="action-card action-card--locked">
-                            <span class="action-card__number">04</span>
-                            <div><h3>Jobs &amp; inventory</h3><p>Build a career and manage your gear.</p></div>
-                            <span class="action-card__status">Soon</span>
-                        </article>
-                    </div>
-                </section>
-
-                <aside class="side-stack">
-                    <section class="panel battle-panel" aria-labelledby="battle-title">
-                        <div class="section-heading section-heading--compact">
-                            <div><p class="eyebrow">Combat profile</p><h2 id="battle-title">Battle stats</h2></div>
-                        </div>
-                        <dl class="battle-list">
-                            <div><dt>Strength</dt><dd>{{ player.strength }}</dd></div>
-                            <div><dt>Defence</dt><dd>{{ player.defence }}</dd></div>
-                            <div><dt>Speed</dt><dd>{{ player.speed }}</dd></div>
-                            <div><dt>Dexterity</dt><dd>{{ player.dexterity }}</dd></div>
-                        </dl>
-                    </section>
-
-                    <section class="panel dispatch-panel" aria-labelledby="dispatch-title">
-                        <p class="eyebrow">City dispatch</p>
-                        <h2 id="dispatch-title">Welcome back to London</h2>
-                        <p>Your resources recovered while you were away. Keep building momentum—every choice shapes your path through The Smoke.</p>
-                    </section>
-                </aside>
-            </div>
-        </main>
-
-        <footer class="app-footer">
-            <span>The Smoke · V1 development build</span>
-            <span>Progress saves automatically</span>
-        </footer>
-    </div>
-</body>
-</html>
+    <article class="panel">
+        <p class="eyebrow">Life in London</p><h2>Current status</h2>
+        <dl class="stat-list">
+            <div><dt>Bank</dt><dd>£{{ "{:,}".format(player.bank_balance) }}</dd></div>
+            <div><dt>Residence</dt><dd>{{ residence.name }}</dd></div>
+            <div><dt>Career</dt><dd>{{ career.name if career else 'Unemployed' }}</dd></div>
+            <div><dt>Role</dt><dd>{{ role.name if role else '—' }}</dd></div>
+        </dl>
+        {% if shift %}<p class="inline-status">Shift: <span data-countdown="{{ shift.remaining_seconds }}">{{ shift.remaining_seconds|duration }}</span></p>{% endif %}
+    </article>
+</section>
+{% endblock %}

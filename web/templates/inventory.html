@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Inventory · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">Personal storage</p><h1>Inventory</h1><p>Use consumables and review your gear before heading out.</p></div><span class="page-badge">{{ player.inventory|length }}/{{ capacity }} slots</span></header>
+{% if owned_items %}
+<section class="card-grid inventory-grid">
+    {% set icons = {'medical': '+', 'boost': 'ϟ', 'weapon': '†', 'armour': '◇', 'utility': '⌁'} %}
+    {% for item, quantity in owned_items %}
+    <article class="panel item-card inventory-card">
+        <div class="item-icon item-icon--{{ item.category }}" aria-hidden="true">{{ icons[item.category] }}</div>
+        <div><p class="eyebrow">{{ item.category }}</p><h2>{{ item.name }} <small>×{{ quantity }}</small></h2><p>{{ item.description }}</p></div>
+        {% if item.effect_key %}<form method="post" action="{{ url_for('use_item_action', item_key=item.key) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="secondary-button">Use item</button></form>{% else %}<span class="tag">Equipment</span>{% endif %}
+    </article>
+    {% endfor %}
+</section>
+{% else %}<div class="empty-state"><h2>Your inventory is empty</h2><p>Items earned or purchased later will appear here.</p></div>{% endif %}
+{% endblock %}

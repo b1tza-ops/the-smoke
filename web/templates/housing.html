@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Housing · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">Your place in London</p><h1>Housing</h1><p>Better accommodation increases comfort, storage and recovery.</p></div><span class="page-badge">{{ residence.name }}</span></header>
+<section class="residence-hero panel"><div><p class="eyebrow">Current residence</p><h2>{{ residence.name }}</h2><p>{{ residence.description }}</p></div><dl><div><dt>Comfort</dt><dd>{{ residence.comfort }}</dd></div><div><dt>Storage</dt><dd>{{ residence.storage_capacity }}</dd></div><div><dt>Energy bonus</dt><dd>+{{ residence.energy_recovery_bonus_percent }}%</dd></div><div><dt>Nerve bonus</dt><dd>+{{ residence.nerve_recovery_bonus_percent }}%</dd></div></dl></section>
+<section class="card-grid">
+    {% for option in residences %}
+    <article class="panel item-card {% if option.key == player.residence_key %}is-selected{% endif %}"><p class="eyebrow">Comfort {{ option.comfort }}</p><h2>{{ option.name }}</h2><p>{{ option.description }}</p><div class="tag-row"><span>{{ option.storage_capacity }} storage</span><span>£{{ "{:,}".format(option.safe_cash_capacity) }} safe</span><span>{{ option.garage_capacity }} garage</span></div><form method="post" action="{{ url_for('housing_action', residence_key=option.key) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="primary-button" {% if option.key == player.residence_key or player.money < option.purchase_price %}disabled{% endif %}>{% if option.key == player.residence_key %}Current residence{% else %}Move for £{{ "{:,}".format(option.purchase_price) }}{% endif %}</button></form></article>
+    {% endfor %}
+</section>
+{% endblock %}

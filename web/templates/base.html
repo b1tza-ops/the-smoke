@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080b0d">
+    <title>{% block title %}The Smoke{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='game.js') }}" defer></script>
+</head>
+<body class="game-page">
+    <div class="fog fog--one" aria-hidden="true"></div>
+    <div class="fog fog--two" aria-hidden="true"></div>
+
+    <div class="game-shell">
+        <header class="topbar">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand__mark">TS</span>
+                <span><strong>The Smoke</strong><small>London never sleeps</small></span>
+            </a>
+
+            <div class="topbar__resources" aria-label="Player resources">
+                <span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></span>
+                <span><small>Energy</small><strong>{{ player.energy }}/{{ player.max_energy }}</strong></span>
+                <span><small>Nerve</small><strong>{{ player.nerve }}/{{ player.max_nerve }}</strong></span>
+                <span><small>Level</small><strong>{{ player.level }}</strong></span>
+                <span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></span>
+            </div>
+
+            <form method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button class="quiet-button" type="submit">Log out</button>
+            </form>
+        </header>
+
+        <div class="mobile-summary">
+            <span>{{ current_district.name }}</span>
+            <span>£{{ "{:,}".format(player.money) }}</span>
+            <span>ϟ {{ player.energy }}/{{ player.max_energy }}</span>
+            <span>◆ {{ player.nerve }}/{{ player.max_nerve }}</span>
+        </div>
+
+        <div class="game-layout">
+            <nav class="sidebar" aria-label="Game navigation">
+                {% set navigation = [
+                    ('dashboard', 'home', 'Overview', '01'),
+                    ('gym', 'gym_page', 'Gym', '02'),
+                    ('crimes', 'crimes_page', 'Crimes', '03'),
+                    ('jobs', 'jobs_page', 'Jobs', '04'),
+                    ('inventory', 'inventory_page', 'Inventory', '05'),
+                    ('bank', 'bank_page', 'Bank', '06'),
+                    ('travel', 'travel_page', 'Travel', '07'),
+                    ('housing', 'housing_page', 'Housing', '08')
+                ] %}
+                {% for key, endpoint, label, number in navigation %}
+                    <a href="{{ url_for(endpoint) }}"
+                       class="nav-link{% if active_page == key %} is-active{% endif %}"
+                       {% if active_page == key %}aria-current="page"{% endif %}>
+                        <span>{{ number }}</span>{{ label }}
+                    </a>
+                {% endfor %}
+            </nav>
+
+            <main class="content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-stack" aria-live="polite">
+                            {% for category, message in messages %}
+                                <div class="flash flash--{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% if active_travel %}
+                    <section class="status-banner status-banner--travel">
+                        <div><small>In transit</small><strong>Travelling to {{ active_travel.destination_key.title() }}</strong></div>
+                        <span data-countdown="{{ active_travel.remaining_seconds }}">{{ active_travel.remaining_seconds|duration }}</span>
+                    </section>
+                {% elif restriction %}
+                    <section class="status-banner status-banner--danger">
+                        <div><small>Restricted</small><strong>In {{ restriction.kind }}</strong></div>
+                        <span data-countdown="{{ restriction.remaining_seconds }}">{{ restriction.remaining_seconds|duration }}</span>
+                    </section>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        <nav class="bottom-nav" aria-label="Mobile game navigation">
+            <a href="{{ url_for('home') }}" class="{% if active_page == 'dashboard' %}is-active{% endif %}">Home</a>
+            <a href="{{ url_for('gym_page') }}" class="{% if active_page == 'gym' %}is-active{% endif %}">Gym</a>
+            <a href="{{ url_for('crimes_page') }}" class="{% if active_page == 'crimes' %}is-active{% endif %}">Crimes</a>
+            <a href="{{ url_for('jobs_page') }}" class="{% if active_page == 'jobs' %}is-active{% endif %}">Jobs</a>
+            <a href="{{ url_for('travel_page') }}" class="{% if active_page == 'travel' %}is-active{% endif %}">City</a>
+        </nav>
+    </div>
+</body>
+</html>

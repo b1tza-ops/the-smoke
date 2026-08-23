@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080b0d">
+    <title>{% block title %}Enter The Smoke{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="fog fog--one" aria-hidden="true"></div>
+    <div class="fog fog--two" aria-hidden="true"></div>
+    <main class="auth-shell">
+        <section class="auth-story">
+            <a class="brand" href="{{ url_for('login') }}">
+                <span class="brand__mark">TS</span>
+                <span><strong>The Smoke</strong><small>A persistent London RPG</small></span>
+            </a>
+            <div>
+                <p class="eyebrow">London · V1</p>
+                <h1>Start with nothing.<br>Build your name.</h1>
+                <p>Train, work, travel, take risks and make your mark across a city that keeps moving while you are away.</p>
+            </div>
+            <p class="world-online"><i></i> London is active</p>
+        </section>
+
+        <section class="auth-card">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="flash flash--{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </section>
+    </main>
+</body>
+</html>

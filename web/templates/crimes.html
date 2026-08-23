@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Crimes · The Smoke{% endblock %}
+{% block content %}
+<header class="page-heading"><div><p class="eyebrow">Risk and reward</p><h1>Crimes</h1><p>Build crime XP and district reputation, but expect consequences.</p></div><span class="page-badge">{{ current_district.name }} · {{ player.nerve }} nerve</span></header>
+<section class="card-grid">
+    {% for crime in crimes %}
+    {% set here = crime.district.casefold() == player.current_district %}
+    <article class="panel item-card {% if not here %}is-muted{% endif %}">
+        <div class="panel-heading"><p class="eyebrow">{{ crime.district }}</p><span>{{ crime.success_chance }}% base chance</span></div>
+        <h2>{{ crime.name }}</h2><p>Reward £{{ crime.min_reward }}–£{{ crime.max_reward }} · {{ crime.xp_reward }} XP</p>
+        <div class="tag-row"><span>{{ crime.nerve_cost }} nerve</span><span>+{{ crime.wanted_gain }} wanted</span><span>{{ crime.crime_xp_reward }} crime XP</span></div>
+        <form method="post" action="{{ url_for('crime_action', crime_key=crime.key) }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="primary-button" {% if active_travel or restriction or not here or player.nerve < crime.nerve_cost %}disabled{% endif %}>
+                {% if not here %}Travel to {{ crime.district }}{% elif player.nerve < crime.nerve_cost %}Not enough nerve{% else %}Attempt crime{% endif %}
+            </button>
+        </form>
+    </article>
+    {% endfor %}
+</section>
+{% endblock %}
