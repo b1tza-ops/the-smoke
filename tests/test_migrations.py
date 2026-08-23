@@ -343,5 +343,60 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("travel_destination", columns)
             self.assertIn("travel_until", columns)
 
+    def test_bank_schema_is_created_by_migration_three(self):
+        with patch(
+            "database.migrations.MIGRATIONS",
+            MIGRATIONS[:3],
+        ):
+            applied_versions = run_migrations()
+
+        self.assertEqual(
+            applied_versions,
+            (1, 2, 3),
+        )
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            bank_table = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'table'
+                    AND name = 'bank_transactions'
+                """
+            ).fetchone()
+
+            bank_index = conn.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE
+                    type = 'index'
+                    AND name = 'idx_bank_transactions_player'
+                """
+            ).fetchone()
+
+            columns = {
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(players)"
+                )
+            }
+
+        self.assertEqual(
+            bank_table,
+            ("bank_transactions",),
+        )
+        self.assertEqual(
+            bank_index,
+            ("idx_bank_transactions_player",),
+        )
+        self.assertNotIn(
+            "current_district",
+            columns,
+        )
+
 if __name__ == "__main__":
     unittest.main()

@@ -208,17 +208,6 @@ def commit_crime(player, crime, rng=None, now=None):
             reason="not_enough_nerve",
         )
 
-
-    if player.nerve < crime.nerve_cost:
-        return CrimeResult(
-            attempted=False,
-            crime_key=crime.key,
-            crime_name=crime.name,
-            district=crime.district,
-            success=False,
-            reason="not_enough_nerve",
-        )
-
     player.nerve -= crime.nerve_cost
 
     progress = _crime_progress_for(
@@ -467,6 +456,7 @@ def crimes_menu(player):
         ]
 
         result = commit_crime(player, crime)
+        display_crime_result(player, result)
 
 def display_crime_result(player, result):
     if result.reason == "travelling":
@@ -487,6 +477,62 @@ def display_crime_result(player, result):
         print("\nNot enough nerve.")
         return
 
+    print("\nAttempting:", result.crime_name)
+    print(
+        f"Wanted +{result.wanted_gained} "
+        f"(current level: {player.wanted_level})"
+    )
+
+    if result.success:
+        print("Crime successful!")
+        print("You made £", result.cash_reward)
+        print("XP +", result.xp_reward)
+        print(
+            "Crime XP +",
+            result.crime_xp_reward,
+        )
+        print(
+            f"{result.district} reputation +",
+            result.reputation_reward,
+        )
+
+        if result.levels_gained > 0:
+            print(
+                f"Level up! You are now level "
+                f"{player.level}."
+            )
+
+        return
+
+    print("Crime failed!")
+
+    if result.consequence == "jail":
+        print(
+            "You were arrested and sent to jail."
+        )
+        print(
+            "Release time:",
+            result.jail_until,
+        )
+
+    elif result.consequence == "hospital":
+        print(
+            "You lost",
+            result.damage,
+            "health.",
+        )
+        print("You were taken to hospital.")
+        print(
+            "Discharge time:",
+            result.hospital_until,
+        )
+
+    else:
+        print(
+            "You lost",
+            result.damage,
+            "health.",
+        )
 
 def _crime_progress_for(player, crime_key):
     if not hasattr(player, "crime_progress"):

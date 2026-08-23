@@ -2,15 +2,15 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 from datetime import datetime, timezone
-
+from contextlib import redirect_stdout
+from io import StringIO
 from game.crimes import (
     CRIMES,
     CrimeResult,
     commit_crime,
+    display_crime_result,
     get_crime,
 )
-
-
 class CrimeDefinitionTests(unittest.TestCase):
     def test_starter_crimes_cover_each_planned_district(self):
         districts = {crime.district for crime in CRIMES}
@@ -247,6 +247,43 @@ class CrimeEngineTests(unittest.TestCase):
         self.assertEqual(player.nerve, 20)
         self.assertEqual(player.money, 100)
         rng.randint.assert_not_called()
+
+    def test_successful_crime_result_is_displayed(self):
+        player = self.make_player(
+            current_district="soho"
+        )
+        crime = get_crime("soho_pickpocket")
+        rng = Mock()
+        rng.randint.side_effect = [1, 75]
+
+        result = commit_crime(
+            player,
+            crime,
+            rng=rng,
+        )
+
+        output = StringIO()
+
+        with redirect_stdout(output):
+            display_crime_result(
+                player,
+                result,
+            )
+
+        displayed_text = output.getvalue()
+
+        self.assertIn(
+            "Crime successful!",
+            displayed_text,
+        )
+        self.assertIn(
+            "You made £ 75",
+            displayed_text,
+        )
+        self.assertIn(
+            "XP + 25",
+            displayed_text,
+        )
 
 if __name__ == "__main__":
     unittest.main()
