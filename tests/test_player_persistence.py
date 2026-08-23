@@ -3,8 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
-from game.travel import start_travel
-from game.status import (
+from game.world.travel import start_travel
+from game.player.status import (
     add_wanted,
     send_to_hospital,
     send_to_jail,
@@ -18,10 +18,10 @@ from database.players import (
 from database.setup import create_tables
 from database.users import create_user
 from game.player import Player
-from game.progression import award_xp
-from game.crimes import commit_crime, get_crime
+from game.player.progression import award_xp
+from game.crime import commit_crime, get_crime
 
-from game.bank import deposit_cash, withdraw_cash
+from game.economy.bank import deposit_cash, withdraw_cash
 from game.housing import purchase_residence
 
 

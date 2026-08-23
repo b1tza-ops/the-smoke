@@ -1,17 +1,17 @@
 from dataclasses import dataclass
 from datetime import timedelta
 
-from game.districts import (
+from game.world.districts import (
     DISTRICTS,
     get_district,
     get_travel_route,
 )
 
-from game.regeneration import (
+from game.player.regeneration import (
     format_timestamp,
     parse_timestamp,
 )
-from game.status import (
+from game.player.status import (
     get_active_restriction,
     normalise_now,
 )

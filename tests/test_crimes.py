@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from datetime import datetime, timezone
 from contextlib import redirect_stdout
 from io import StringIO
-from game.crimes import (
+from game.crime import (
     CRIMES,
     CrimeResult,
     commit_crime,

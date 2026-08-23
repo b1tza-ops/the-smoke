@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from game.status import (
+from game.player.status import (
     MAX_WANTED_LEVEL,
     add_wanted,
     decay_wanted_level,

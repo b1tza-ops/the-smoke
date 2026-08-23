@@ -1,10 +1,10 @@
 import random
 from dataclasses import dataclass
 
-from game.progression import award_xp
-from game.travel import get_active_travel
+from game.player.progression import award_xp
+from game.world.travel import get_active_travel
 
-from game.status import (
+from game.player.status import (
     add_wanted,
     get_active_restriction,
     send_to_hospital,

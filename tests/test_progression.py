@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from game.progression import (
+from game.player.progression import (
     award_xp,
     level_for_xp,
     xp_required_for_level,

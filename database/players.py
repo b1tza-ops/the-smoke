@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from database.connection import get_connection
-from game.regeneration import (
+from game.player.regeneration import (
     ENERGY_POINTS_PER_TICK,
     ENERGY_TICK_SECONDS,
     NERVE_POINTS_PER_TICK,

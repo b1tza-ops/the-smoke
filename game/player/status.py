@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from game.regeneration import format_timestamp, parse_timestamp
+from game.player.regeneration import format_timestamp, parse_timestamp
 
 
 WANTED_DECAY_POINTS = 1
