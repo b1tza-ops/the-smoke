@@ -178,6 +178,9 @@
         { id: "mechanic", title: "Garage mechanic", company: "East End Motors", level: 6, energy: 14, pay: 190, xp: 25, description: "Repair vehicles and make useful contacts." },
     ];
 
+    const JOB_SHIFT_HOURS = 3;
+    const JOB_SHIFT_DURATION_MS = JOB_SHIFT_HOURS * 60 * 60 * 1000;
+
     const dailyObjectives = [
         { key: "training", title: "Put in the work", description: "Complete 2 gym sessions", target: 2, icon: "◆" },
         { key: "crimes", title: "Make your mark", description: "Attempt 2 crimes", target: 2, icon: "!" },
@@ -249,6 +252,7 @@
             dexterity: number(app.dataset.dexterity, 10),
             district: "Camden",
             activeJob: null,
+            workShift: null,
             equipped: { weapon: null, armour: null },
             inventory: initialInventory.map((item) => ({ ...item })),
             activities: [
@@ -287,6 +291,18 @@
                     : initialInventory.map((item) => ({ ...item })),
                 equipped: { ...initialState.equipped, ...(stored.equipped || {}) },
                 restriction: initialState.restriction || stored.restriction || null,
+                workShift: stored.workShift
+                    && jobs.some((job) => job.id === stored.workShift.jobId)
+                    && Number.isFinite(Number(stored.workShift.completesAt))
+                    ? {
+                        ...stored.workShift,
+                        startedAt: number(
+                            stored.workShift.startedAt,
+                            Number(stored.workShift.completesAt) - JOB_SHIFT_DURATION_MS,
+                        ),
+                        completesAt: Number(stored.workShift.completesAt),
+                    }
+                    : null,
                 daily: {
                     ...initialState.daily,
                     ...storedDaily,
@@ -372,6 +388,19 @@
         const minutes = Math.floor(seconds / 60);
         if (minutes < 60) return `${minutes}m ago`;
         return `${Math.floor(minutes / 60)}h ago`;
+    };
+
+    const formatShiftDuration = (milliseconds) => {
+        const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+        }
+
+        return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
     };
 
     const setBoundText = (name, value) => {
@@ -851,19 +880,73 @@
     const renderJobs = () => {
         const grid = document.getElementById("jobGrid");
         const active = jobs.find((job) => job.id === state.activeJob);
-        document.getElementById("activeJobStatus").innerHTML = `<small>Current position</small><strong>${active ? active.title : "Unemployed"}</strong>`;
+        const shift = state.workShift;
+        const shiftJob = shift ? jobs.find((job) => job.id === shift.jobId) : null;
+        const remaining = shift ? Math.max(0, shift.completesAt - Date.now()) : 0;
+        const shiftReady = Boolean(shift && remaining === 0);
+        const shiftProgress = shift
+            ? clamp(((JOB_SHIFT_DURATION_MS - remaining) / JOB_SHIFT_DURATION_MS) * 100, 0, 100)
+            : 0;
+        const status = document.getElementById("activeJobStatus");
+
+        if (!active) {
+            status.innerHTML = `<small>Current position</small><strong>Unemployed</strong>`;
+        } else if (!shift) {
+            status.innerHTML = `<small>Current position</small><strong>${active.title}</strong><span class="job-status__timer">Ready for a shift</span>`;
+        } else {
+            status.innerHTML = `
+                <small>${shiftReady ? "Shift finished" : "Shift in progress"}</small>
+                <strong>${shiftJob?.title || active.title}</strong>
+                <span class="job-status__timer${shiftReady ? " is-ready" : ""}">${shiftReady ? "Pay ready to collect" : `${formatShiftDuration(remaining)} remaining`}</span>
+                <div class="job-progress" role="progressbar" aria-label="Job shift progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(shiftProgress)}">
+                    <span style="width:${shiftProgress}%"></span>
+                </div>
+            `;
+        }
 
         grid.innerHTML = jobs.map((job) => {
             const locked = state.level < job.level;
             const current = state.activeJob === job.id;
-            const label = locked ? `Unlocks at level ${job.level}` : current ? `Work shift · ${job.energy} energy` : "Apply for job";
+            const shiftForJob = shift?.jobId === job.id;
+            const readyForJob = shiftForJob && shiftReady;
+            const blockedByShift = Boolean(shift && !shiftForJob);
+            const insufficientEnergy = current && !shift && state.energy < job.energy;
+            const working = shiftForJob && !shiftReady;
+            let label = "Apply for job";
+
+            if (locked) label = `Unlocks at level ${job.level}`;
+            else if (readyForJob) label = `Collect ${formatMoney(job.pay)} + ${job.xp} XP`;
+            else if (working) label = `Working · ${formatShiftDuration(remaining)}`;
+            else if (blockedByShift) label = "Another shift is active";
+            else if (current && insufficientEnergy) label = `Need ${job.energy} energy`;
+            else if (current) label = `Start 3h shift · ${job.energy} energy`;
+
+            const disabled = locked || working || blockedByShift || insufficientEnergy;
+            const employmentLabel = readyForJob
+                ? "Pay ready"
+                : working
+                    ? "Working"
+                    : current
+                        ? "Employed"
+                        : `Level ${job.level}`;
+            const employmentClass = working
+                ? "risk-tag--medium"
+                : readyForJob || current
+                    ? "risk-tag--low"
+                    : "";
+
             return `
-                <article class="job-card${current ? " is-active" : ""}">
-                    <div class="job-card__top"><span class="district-tag">${job.company}</span><span class="risk-tag ${current ? "risk-tag--low" : ""}">${current ? "Employed" : `Level ${job.level}`}</span></div>
+                <article class="job-card${current ? " is-active" : ""}${working ? " is-working" : ""}${readyForJob ? " is-ready" : ""}">
+                    <div class="job-card__top"><span class="district-tag">${job.company}</span><span class="risk-tag ${employmentClass}">${employmentLabel}</span></div>
                     <h2>${job.title}</h2>
                     <p>${job.description}</p>
-                    <div class="job-stats"><div><small>Shift pay</small><strong>${formatMoney(job.pay)}</strong></div><div><small>Job XP</small><strong>+${job.xp}</strong></div></div>
-                    <button class="action-button" type="button" data-job-id="${job.id}" ${locked ? "disabled" : ""}>${label}</button>
+                    <span class="job-card__duration">Shifts run for 3 real hours</span>
+                    <div class="job-stats job-stats--three">
+                        <div><small>Shift pay</small><strong>${formatMoney(job.pay)}</strong></div>
+                        <div><small>Job XP</small><strong>+${job.xp}</strong></div>
+                        <div><small>Duration</small><strong>3 hours</strong></div>
+                    </div>
+                    <button class="action-button" type="button" data-job-id="${job.id}" ${disabled ? "disabled" : ""}>${label}</button>
                 </article>
             `;
         }).join("");
@@ -875,7 +958,32 @@
 
     const handleJob = (jobId) => {
         const job = jobs.find((item) => item.id === jobId);
+
         if (!job || state.level < job.level || !canPerformAction()) return;
+
+        if (state.workShift) {
+            if (state.workShift.jobId !== job.id) {
+                toast("Finish your current shift before changing jobs.", true);
+                return;
+            }
+
+            const remaining = state.workShift.completesAt - Date.now();
+
+            if (remaining > 0) {
+                toast(`Shift still in progress · ${formatShiftDuration(remaining)} remaining`, true);
+                return;
+            }
+
+            state.workShift = null;
+            state.money += job.pay;
+            applyXp(job.xp);
+            advanceDailyObjective("shifts");
+            addActivity(`${job.title} shift collected: ${formatMoney(job.pay)}`);
+            toast(`Shift collected · ${formatMoney(job.pay)} · ${job.xp} XP`);
+            saveState();
+            renderAll();
+            return;
+        }
 
         if (state.activeJob !== job.id) {
             state.activeJob = job.id;
@@ -883,21 +991,24 @@
             toast(`Hired by ${job.company}`);
         } else {
             if (state.energy < job.energy) {
-                toast("Not enough energy for a shift.", true);
+                toast("Not enough energy to start this shift.", true);
                 return;
             }
+
+            const startedAt = Date.now();
             state.energy -= job.energy;
-            state.money += job.pay;
-            applyXp(job.xp);
-            advanceDailyObjective("shifts");
-            addActivity(`${job.title} shift: earned ${formatMoney(job.pay)}`);
-            toast(`Shift complete · ${formatMoney(job.pay)}`);
+            state.workShift = {
+                jobId: job.id,
+                startedAt,
+                completesAt: startedAt + JOB_SHIFT_DURATION_MS,
+            };
+            addActivity(`Started a three-hour ${job.title} shift`);
+            toast("Shift started · ready in 3 hours");
         }
 
         saveState();
         renderAll();
     };
-
     const renderInventoryFilters = () => {
         const filters = [
             { key: "All", label: "All items", icon: "bag" },
@@ -1221,6 +1332,9 @@
     });
 
     window.setInterval(updateRestriction, 1000);
+    window.setInterval(() => {
+        if (state.workShift) renderJobs();
+    }, 1000);
     window.setInterval(renderActivity, 30000);
     renderAll();
 
