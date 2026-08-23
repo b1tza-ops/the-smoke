@@ -1,6 +1,6 @@
 import os
 import secrets
-from game.travel import update_travel
+from game.world.travel import update_travel
 from flask import Flask, render_template, request, redirect, session
 from database.setup import create_tables
 from database.users import get_user_by_username
@@ -12,8 +12,8 @@ from database.players import (
 
 from utils.security import verify_password
 from game.player import Player
-from game.progression import xp_required_for_level
-from game.status import update_player_status
+from game.player.progression import xp_required_for_level
+from game.player.status import update_player_status
 
 
 app = Flask(__name__)

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 import unittest
 
-from game.travel import (
+from game.world.travel import (
     AlreadyTravellingError,
     DistrictLockedError,
     InsufficientTravelFundsError,

@@ -3,16 +3,16 @@ from auth.register import register
 from auth.login import login
 from database.players import create_player, get_player_by_user_id, save_player
 
-from game.travel import (
+from game.world.travel import (
     travel_menu,
     update_travel,
 )
 
 from game.player import Player
 from game.gym  import gym_menu
-from game.crimes import crimes_menu
-from game.status import update_player_status
-from game.bank import bank_menu
+from game.crime import crimes_menu
+from game.player.status import update_player_status
+from game.economy.bank import bank_menu
 from game.housing import housing_menu
 
 

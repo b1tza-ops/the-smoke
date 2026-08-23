@@ -1,5 +1,5 @@
-from game.status import get_active_restriction
-from game.travel import get_active_travel
+from game.player.status import get_active_restriction
+from game.world.travel import get_active_travel
 
 
 VALID_BATTLE_STATS = (

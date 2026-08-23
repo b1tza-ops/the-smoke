@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 from datetime import datetime, timezone
-from game.crimes import commit_crime, get_crime
+from game.crime import commit_crime, get_crime
 from game.gym import train
 
 

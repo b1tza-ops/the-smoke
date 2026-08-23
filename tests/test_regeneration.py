@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from game.regeneration import regenerate_resource
+from game.player.regeneration import regenerate_resource
 
 
 class RegenerationTests(unittest.TestCase):
