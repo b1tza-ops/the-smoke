@@ -39,6 +39,8 @@ the-smoke/
 │   │   └── service.py
 │   ├── inventory/
 │   ├── jobs/
+│   │   ├── definitions.py
+│   │   └── service.py
 │   ├── player/
 │   │   ├── model.py
 │   │   ├── progression.py

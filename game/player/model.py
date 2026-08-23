@@ -30,6 +30,12 @@ class Player:
         travel_destination,
         travel_until,
         residence_key,
+        career_key,
+        job_role_key,
+        career_xp,
+        shifts_completed,
+        shift_started_at,
+        shift_until,
         crime_progress=None,
         district_reputation=None,
     ):
@@ -44,6 +50,12 @@ class Player:
         self.travel_destination = travel_destination
         self.travel_until = travel_until
         self.residence_key = residence_key
+        self.career_key = career_key
+        self.job_role_key = job_role_key
+        self.career_xp = career_xp
+        self.shifts_completed = shifts_completed
+        self.shift_started_at = shift_started_at
+        self.shift_until = shift_until
         self.health = health
         self.energy = energy
         self.strength = strength
@@ -92,6 +104,19 @@ class Player:
             print("Residence:", self.residence_key)
         else:
             print("Residence:", residence.name)
+
+        if self.job_role_key is None:
+            print("Job: Unemployed")
+        else:
+            print(
+                "Job:",
+                self.job_role_key.replace("_", " ").title(),
+            )
+            print("Career XP:", self.career_xp)
+            print("Shifts completed:", self.shifts_completed)
+
+            if self.shift_until is not None:
+                print("Shift finishes:", self.shift_until)
 
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")

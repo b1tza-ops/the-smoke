@@ -69,7 +69,13 @@ def get_player_by_user_id(user_id):
             current_district,
             travel_destination,
             travel_until,
-            residence_key
+            residence_key,
+            career_key,
+            job_role_key,
+            career_xp,
+            shifts_completed,
+            shift_started_at,
+            shift_until
         FROM players
         WHERE user_id = ?
         """,
@@ -194,7 +200,13 @@ def save_player(player):
             current_district = ?,
             travel_destination = ?,
             travel_until = ?,
-            residence_key = ?
+            residence_key = ?,
+            career_key = ?,
+            job_role_key = ?,
+            career_xp = ?,
+            shifts_completed = ?,
+            shift_started_at = ?,
+            shift_until = ?
         WHERE id = ?
         """,
         (
@@ -222,6 +234,12 @@ def save_player(player):
             player.travel_destination,
             player.travel_until,
             player.residence_key,
+            player.career_key,
+            player.job_role_key,
+            player.career_xp,
+            player.shifts_completed,
+            player.shift_started_at,
+            player.shift_until,
             player.id
         )
     )

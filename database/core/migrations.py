@@ -186,6 +186,26 @@ def migrate_005_starting_housing(cursor):
     )
 
 
+def migrate_006_legal_jobs(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "career_key": "TEXT",
+            "job_role_key": "TEXT",
+            "career_xp": (
+                "INTEGER NOT NULL DEFAULT 0 "
+                "CHECK (career_xp >= 0)"
+            ),
+            "shifts_completed": (
+                "INTEGER NOT NULL DEFAULT 0 "
+                "CHECK (shifts_completed >= 0)"
+            ),
+            "shift_started_at": "TEXT",
+            "shift_until": "TEXT",
+        },
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -211,6 +231,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=5,
         name="starting_housing",
         apply=migrate_005_starting_housing,
+    ),
+    Migration(
+        version=6,
+        name="legal_jobs",
+        apply=migrate_006_legal_jobs,
     ),
 )
 

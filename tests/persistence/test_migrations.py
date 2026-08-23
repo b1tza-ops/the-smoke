@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5),
+            (1, 2, 3, 4, 5, 6),
         )
 
         with closing(
@@ -109,6 +109,12 @@ class MigrationTests(unittest.TestCase):
                     "travel_destination",
                     "travel_until",
                     "residence_key",
+                    "career_key",
+                    "job_role_key",
+                    "career_xp",
+                    "shifts_completed",
+                    "shift_started_at",
+                    "shift_until",
                 }.issubset(columns)
             )
 
@@ -129,7 +135,13 @@ class MigrationTests(unittest.TestCase):
                     current_district,
                     travel_destination,
                     travel_until,
-                    residence_key
+                    residence_key,
+                    career_key,
+                    job_role_key,
+                    career_xp,
+                    shifts_completed,
+                    shift_started_at,
+                    shift_until
                 FROM players
                 WHERE user_id = 1
                 """
@@ -159,6 +171,12 @@ class MigrationTests(unittest.TestCase):
                     None,
                     None,
                     "tent",
+                    None,
+                    None,
+                    0,
+                    0,
+                    None,
+                    None,
                 ),
             )
 
@@ -187,6 +205,7 @@ class MigrationTests(unittest.TestCase):
                         5,
                         "starting_housing",
                     ),
+                    (6, "legal_jobs"),
                 ],
             )
 
@@ -211,7 +230,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5),
+            (1, 2, 3, 4, 5, 6),
         )
         self.assertEqual(second_run, ())
 
@@ -265,7 +284,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=6,
+            version=7,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -315,7 +334,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5],
+                [1, 2, 3, 4, 5, 6],
             )
             self.assertEqual(money, 777)
 
@@ -350,7 +369,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5],
+                [1, 2, 3, 4, 5, 6],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -359,6 +378,12 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("travel_destination", columns)
             self.assertIn("travel_until", columns)
             self.assertIn("residence_key", columns)
+            self.assertIn("career_key", columns)
+            self.assertIn("job_role_key", columns)
+            self.assertIn("career_xp", columns)
+            self.assertIn("shifts_completed", columns)
+            self.assertIn("shift_started_at", columns)
+            self.assertIn("shift_until", columns)
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(

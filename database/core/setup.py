@@ -46,6 +46,14 @@ def create_tables():
             travel_until TEXT,
             residence_key TEXT NOT NULL DEFAULT 'tent'
                 CHECK (TRIM(residence_key) <> ''),
+            career_key TEXT,
+            job_role_key TEXT,
+            career_xp INTEGER NOT NULL DEFAULT 0
+                CHECK (career_xp >= 0),
+            shifts_completed INTEGER NOT NULL DEFAULT 0
+                CHECK (shifts_completed >= 0),
+            shift_started_at TEXT,
+            shift_until TEXT,
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE
