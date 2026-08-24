@@ -1,7 +1,9 @@
+import hmac
 import logging
 import os
 import secrets
 import sqlite3
+from functools import wraps
 from logging.handlers import RotatingFileHandler
 from game.world.districts import (
     DISTRICTS,
@@ -39,6 +41,15 @@ from flask import (
 )
 from database.core.connection import get_connection
 from database.core.setup import create_tables
+from database.repositories.activity import (
+    get_recent_activity,
+    record_activity,
+)
+from database.repositories.admin import (
+    get_admin_player_overview,
+    is_user_suspended,
+    set_user_suspended,
+)
 from database.repositories.users import (
     create_user,
     get_user_by_email,
@@ -208,6 +219,36 @@ def record_authenticated_activity():
         mark_player_online(session["user_id"])
 
 
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("admin_authenticated"):
+            return redirect("/admin/login")
+
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def record_player_action(action_type, summary, metadata=None):
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return
+
+    try:
+        record_activity(
+            user_id,
+            action_type,
+            summary,
+            metadata=metadata,
+        )
+    except sqlite3.Error:
+        app.logger.exception(
+            "Could not record player activity."
+        )
+
+
 def percentage(value, maximum):
     if maximum <= 0:
         return 0
@@ -243,6 +284,113 @@ def internal_server_error(error):
             "Please try again shortly."
         ),
     ), 500
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if session.get("admin_authenticated"):
+        return redirect("/admin")
+
+    error = None
+
+    if request.method == "POST":
+        expected_username = os.environ.get(
+            "THE_SMOKE_ADMIN_USERNAME",
+            "",
+        )
+        password_hash = os.environ.get(
+            "THE_SMOKE_ADMIN_PASSWORD_HASH",
+            "",
+        )
+        supplied_username = request.form.get(
+            "username",
+            "",
+        )
+        supplied_password = request.form.get(
+            "password",
+            "",
+        )
+
+        valid_username = bool(
+            expected_username
+            and hmac.compare_digest(
+                supplied_username,
+                expected_username,
+            )
+        )
+        valid_password = False
+
+        if password_hash:
+            try:
+                valid_password = verify_password(
+                    supplied_password,
+                    password_hash,
+                )
+            except ValueError:
+                app.logger.error(
+                    "Invalid admin password hash."
+                )
+
+        if valid_username and valid_password:
+            session.clear()
+            session["admin_authenticated"] = True
+            record_activity(
+                None,
+                "admin_login",
+                "Administrator signed in.",
+            )
+            return redirect("/admin")
+
+        error = "Invalid administrator credentials."
+
+    return render_template(
+        "admin_login.html",
+        error=error,
+    )
+
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    return render_template(
+        "admin_dashboard.html",
+        players=get_admin_player_overview(),
+        activities=get_recent_activity(limit=100),
+    )
+
+
+@app.route(
+    "/admin/users/<int:user_id>/suspension",
+    methods=["POST"],
+)
+@admin_required
+def admin_user_suspension(user_id):
+    suspended = (
+        request.form.get("suspended") == "1"
+    )
+
+    if set_user_suspended(user_id, suspended):
+        record_activity(
+            user_id,
+            (
+                "admin_suspend"
+                if suspended
+                else "admin_reactivate"
+            ),
+            (
+                "Account suspended by administrator."
+                if suspended
+                else "Account reactivated by administrator."
+            ),
+        )
+
+    return redirect("/admin")
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_authenticated", None)
+    return redirect("/admin/login")
 
 
 @app.route("/")
@@ -353,6 +501,13 @@ def jobs_inventory():
             error = str(action_error)
 
     save_player(player)
+
+    if request.method == "POST" and message:
+        record_player_action(
+            f"job_{request.form.get('action', 'action')}",
+            message,
+        )
+
     career = get_career(player.career_key)
     role = get_job_role(player.job_role_key)
     shift_state = get_shift_state(player)
@@ -431,6 +586,10 @@ def character():
             xp_needed,
         ),
         next_level_xp=next_level_xp,
+        recent_activity=get_recent_activity(
+            user_id=session["user_id"],
+            limit=12,
+        ),
     )
 
 
@@ -477,6 +636,18 @@ def travel():
             error = str(travel_error)
 
     save_player(player)
+
+    if (
+        request.method == "POST"
+        and message
+        and error is None
+    ):
+        record_player_action(
+            "travel_started",
+            message,
+            {"destination": destination_key},
+        )
+
     active_travel = get_active_travel(player)
     current = get_district(player.current_district)
     destinations = []
@@ -601,6 +772,23 @@ def gym():
         except (ValueError, GymError) as gym_error:
             error = str(gym_error)
 
+    if (
+        request.method == "POST"
+        and message
+        and error is None
+    ):
+        record_player_action(
+            f"gym_{request.form.get('action', 'action')}",
+            message,
+            {
+                "gym_key": request.form.get(
+                    "gym_key",
+                    "",
+                ),
+                "stat": request.form.get("stat", ""),
+            },
+        )
+
     gyms = get_district_gyms(
         player.current_district
     )
@@ -652,6 +840,18 @@ def crimes():
         else:
             result = commit_crime(player, crime)
             save_player(player)
+            record_player_action(
+                "crime_attempt",
+                (
+                    f"Attempted {crime.name}: "
+                    f"{'success' if result.success else 'failed'}."
+                ),
+                {
+                    "crime_key": crime.key,
+                    "success": result.success,
+                    "attempted": result.attempted,
+                },
+            )
 
     district_crimes = tuple(
         crime
@@ -736,6 +936,11 @@ def register():
                 hash_password(password),
             )
             create_player(user_id, username)
+            record_activity(
+                user_id,
+                "account_created",
+                "Player account created.",
+            )
             session[
                 "pending_verification_user_id"
             ] = user_id
@@ -967,7 +1172,13 @@ def login():
         elif not verify_password(password, user[3]):
             error = "Incorrect password."
 
-        elif not is_email_verified(user[0]):
+        elif is_user_suspended(user[0]):
+            error = (
+                "This account has been suspended. "
+                "Contact support if you believe this is an error."
+            )
+
+                elif not is_email_verified(user[0]):
             session[
                 "pending_verification_user_id"
             ] = user[0]
@@ -978,6 +1189,10 @@ def login():
 
         else:
             session["user_id"] = user[0]
+            record_player_action(
+                "login",
+                "Player signed in.",
+            )
             return redirect("/")
 
     return render_template(
