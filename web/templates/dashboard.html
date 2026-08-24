@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='game-icons-hotfix-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='home-overview-1') }}">
 </head>
 
 <body class="dashboard-page">
@@ -58,75 +58,66 @@
                 </div>
             </section>
 
-            <div class="dashboard-columns">
-                <section class="action-panel" aria-labelledby="actions-title">
-                    <div class="section-heading">
-                        <div>
-                            <p class="eyebrow">City access</p>
-                            <h2 id="actions-title">Choose your next move</h2>
-                        </div>
-                        <span class="section-note">Live web actions</span>
+            <section class="home-overview" aria-labelledby="overview-title">
+                <div class="section-heading home-overview__heading">
+                    <div>
+                        <p class="eyebrow">Player overview</p>
+                        <h2 id="overview-title">At a glance</h2>
                     </div>
+                    <span class="section-note">Your life in The Smoke</span>
+                </div>
 
-                    <div class="action-grid">
-                        <a class="action-card action-card--link" href="{{ url_for('character') }}">
-                            <span class="action-card__number">01</span>
-                            <div><h3>Character</h3><p>Review your progress, status and battle stats.</p></div>
-                            <span class="action-card__status">View</span>
-                        </a>
-                        <a class="action-card action-card--link" href="{{ url_for('gym') }}">
-                            <span class="action-card__number">02</span>
-                            <div><h3>Gym</h3><p>Train strength, defence, speed and dexterity.</p></div>
-                            <span class="action-card__status">Play</span>
-                        </a>
-                        <a class="action-card action-card--link" href="{{ url_for('crimes') }}">
-                            <span class="action-card__number">03</span>
-                            <div><h3>Crimes</h3><p>Risk your nerve for cash, XP and reputation.</p></div>
-                            <span class="action-card__status">Play</span>
-                        </a>
-                        <a class="action-card action-card--link" href="{{ url_for('travel') }}">
-                            <span class="action-card__number">04</span>
-                            <div><h3>London travel</h3><p>Move between districts and discover new opportunities.</p></div>
-                            <span class="action-card__status">Play</span>
-                        </a>
-                        <a class="action-card action-card--link" href="{{ url_for('jobs') }}">
-                            <span class="action-card__number">05</span>
-                            <div><h3>Jobs</h3><p>Take a legal career, work shifts and earn reliable wages.</p></div>
-                            <span class="action-card__status">Work</span>
-                        </a>
-                        <a class="action-card action-card--link" href="{{ url_for('inventory') }}">
-                            <span class="action-card__number">06</span>
-                            <div><h3>Inventory</h3><p>Review, equip and use the items you carry.</p></div>
-                            <span class="action-card__status">View</span>
-                        </a>
-                        <a class="action-card action-card--link" href="{{ url_for('district_shop') }}">
-                            <span class="action-card__number">07</span>
-                            <div><h3>Local Shop</h3><p>Browse district-specific supplies before the daily stock runs out.</p></div>
-                            <span class="action-card__status">Shop</span>
-                        </a>
-                    </div>
-                </section>
+                <div class="home-overview__grid">
+                    <details class="overview-panel" open>
+                        <summary><span>General information</span><span aria-hidden="true">⌄</span></summary>
+                        <dl class="overview-list">
+                            <div><dt>Character</dt><dd>{{ player.name }}</dd></div>
+                            <div><dt>Level</dt><dd>{{ player.level }}</dd></div>
+                            <div><dt>District</dt><dd>{{ player.current_district|title }}</dd></div>
+                            <div><dt>Cash</dt><dd>£{{ "{:,}".format(player.money) }}</dd></div>
+                            <div><dt>Bank</dt><dd>£{{ "{:,}".format(player.bank_balance) }}</dd></div>
+                            <div><dt>Wanted</dt><dd>{{ player.wanted_level }}/100</dd></div>
+                        </dl>
+                    </details>
 
-                <aside class="side-stack">
-                    <section class="panel battle-panel" aria-labelledby="battle-title">
-                        <div class="section-heading section-heading--compact">
-                            <div><p class="eyebrow">Combat profile</p><h2 id="battle-title">Battle stats</h2></div>
-                        </div>
-                        <dl class="battle-list">
+                    <details class="overview-panel" open>
+                        <summary><span>Battle stats</span><span aria-hidden="true">⌄</span></summary>
+                        <dl class="overview-list">
                             <div><dt>Strength</dt><dd>{{ player.strength }}</dd></div>
                             <div><dt>Defence</dt><dd>{{ player.defence }}</dd></div>
                             <div><dt>Speed</dt><dd>{{ player.speed }}</dd></div>
                             <div><dt>Dexterity</dt><dd>{{ player.dexterity }}</dd></div>
+                            <div class="overview-list__total"><dt>Total</dt><dd>{{ player.strength + player.defence + player.speed + player.dexterity }}</dd></div>
                         </dl>
-                    </section>
+                    </details>
 
-                    <section class="panel dispatch-panel" aria-labelledby="dispatch-title">
-                        <p class="eyebrow">City dispatch</p>
-                        <h2 id="dispatch-title">Welcome back to London</h2>
-                        <p>Your resources recovered while you were away. Keep building momentum—every choice shapes your path through The Smoke.</p>
-                    </section>
-                </aside>
-            </div>
+                    <details class="overview-panel" open>
+                        <summary><span>Current status</span><span aria-hidden="true">⌄</span></summary>
+                        <dl class="overview-list">
+                            <div><dt>Health</dt><dd>{{ player.health }}/100</dd></div>
+                            <div><dt>Energy</dt><dd>{{ player.energy }}/{{ player.max_energy }}</dd></div>
+                            <div><dt>Nerve</dt><dd>{{ player.nerve }}/{{ player.max_nerve }}</dd></div>
+                            <div><dt>Hospital</dt><dd>{{ "Admitted" if player.hospital_until else "Clear" }}</dd></div>
+                            <div><dt>Jail</dt><dd>{{ "Detained" if player.jail_until else "Clear" }}</dd></div>
+                            <div><dt>Travel</dt><dd>{{ "In transit" if player.travel_destination else "In district" }}</dd></div>
+                        </dl>
+                    </details>
+
+                    <details class="overview-panel" open>
+                        <summary><span>Possessions & career</span><span aria-hidden="true">⌄</span></summary>
+                        <dl class="overview-list">
+                            <div><dt>Inventory</dt><dd>{{ player.inventory|length }} item types</dd></div>
+                            <div><dt>Career</dt><dd>{{ player.career_key|replace("_", " ")|title if player.career_key else "Unemployed" }}</dd></div>
+                            <div><dt>Role</dt><dd>{{ player.job_role_key|replace("_", " ")|title if player.job_role_key else "—" }}</dd></div>
+                            <div><dt>Gym</dt><dd>{{ player.selected_gym_key|replace("_", " ")|title if player.selected_gym_key else "None selected" }}</dd></div>
+                        </dl>
+                        <div class="overview-panel__links">
+                            <a href="{{ url_for('inventory') }}">View items</a>
+                            <a href="{{ url_for('jobs') }}">View career</a>
+                        </div>
+                    </details>
+                </div>
+            </section>
         </main>
 
         <footer class="app-footer">
