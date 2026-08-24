@@ -10,6 +10,12 @@ class WebRegistrationTests(unittest.TestCase):
             TESTING=True,
             SECRET_KEY="test-secret",
         )
+        self.turnstile_patch = patch(
+            "web.application.validate_turnstile",
+            return_value=True,
+        )
+        self.turnstile_patch.start()
+        self.addCleanup(self.turnstile_patch.stop)
         self.client = app.test_client()
 
     def test_login_page_links_to_registration(self):

@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#090b0d">
     <title>Join The Smoke</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://challenges.cloudflare.com">
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 
 <body class="auth-page">
@@ -82,6 +84,14 @@
                         autocomplete="new-password"
                         placeholder="Enter your password again"
                         minlength="8" maxlength="128" required>
+                </div>
+
+                <div class="turnstile-wrap">
+                    <div class="cf-turnstile"
+                        data-sitekey="{{ turnstile_site_key }}"
+                        data-action="register"
+                        data-theme="dark"
+                        data-size="flexible"></div>
                 </div>
 
                 <button class="primary-button" type="submit">
