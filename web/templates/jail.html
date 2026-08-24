@@ -13,6 +13,8 @@
 </header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main hospital-main">
+{% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 <section class="hospital-hero custody-hero">
 <div><p class="eyebrow">London custody</p><h1>Jail</h1><p>Review the current inmate register. Inmates cannot commit crimes, travel, work or train until their sentence expires.</p></div>
 <div class="ward-count ward-count--jail"><span>Players detained</span><strong>{{ inmates|length }}</strong><small>Live custody register</small></div>
@@ -35,12 +37,26 @@
 {% if inmates %}
 <div class="patient-list">
 {% for inmate in inmates %}
-<article class="patient-row inmate-row {{ 'is-you' if inmate.id == player.id }}">
+<article class="inmate-card {{ 'is-you' if inmate.id == player.id }}">
+<div class="patient-row inmate-row">
 <div class="patient-avatar inmate-avatar">{{ inmate.name[:1]|upper }}</div>
 <div class="patient-identity"><h3>{{ inmate.name }}{% if inmate.id == player.id %}<span>You</span>{% endif %}</h3><p>{{ inmate.reason }}</p></div>
 <div class="patient-health"><span>Wanted</span><strong>{{ inmate.wanted_level }}/100</strong></div>
 <div class="patient-level"><span>Level</span><strong>{{ inmate.level }}</strong></div>
 <div class="patient-time" data-inmate-time="{{ inmate.remaining_seconds }}"><span>Release</span><strong>--:--</strong></div>
+</div>
+{% if inmate.id != player.id %}
+<div class="inmate-actions">
+<form method="post" data-confirm="Pay £{{ '{:,}'.format(inmate.bail_cost) }} to release {{ inmate.name }}?">
+<input type="hidden" name="action" value="pay_bail"><input type="hidden" name="target_player_id" value="{{ inmate.id }}">
+<button class="custody-action custody-action--bail" type="submit" {% if not can_help or player.money < inmate.bail_cost %}disabled{% endif %}><span>Pay bail</span><strong>£{{ "{:,}".format(inmate.bail_cost) }}</strong></button>
+</form>
+<form method="post" data-confirm="Spend {{ breakout_nerve_cost }} nerve on a {{ inmate.breakout_chance }}% breakout attempt for {{ inmate.name }}?">
+<input type="hidden" name="action" value="attempt_breakout"><input type="hidden" name="target_player_id" value="{{ inmate.id }}">
+<button class="custody-action custody-action--breakout" type="submit" {% if not can_help or player.nerve < breakout_nerve_cost %}disabled{% endif %}><span>Attempt breakout</span><strong>{{ inmate.breakout_chance }}% · {{ breakout_nerve_cost }} nerve</strong></button>
+</form>
+</div>
+{% endif %}
 </article>
 {% endfor %}
 </div>
@@ -49,9 +65,6 @@
 {% endif %}
 </section>
 
-<section class="custody-actions-preview">
-<p class="eyebrow">Custody interactions</p><h2>Bail and breakout attempts</h2><p>Player-assisted releases will be added next with cash costs, nerve requirements, success chances and consequences. The live inmate register is ready for that system.</p>
-</section>
 </main>
 </div>
 <script>
@@ -71,6 +84,11 @@
    });
  };
  draw();window.setInterval(draw,1000);
+ document.querySelectorAll("[data-confirm]").forEach(form=>{
+   form.addEventListener("submit",event=>{
+     if(!window.confirm(form.dataset.confirm))event.preventDefault();
+   });
+ });
 })();
 </script>
 </body></html>

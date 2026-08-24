@@ -82,6 +82,11 @@ from database.repositories.hospital import (
     get_hospital_patients,
 )
 from database.repositories.jail import (
+    BREAKOUT_NERVE_COST,
+    JailInteractionError,
+    attempt_jail_break,
+    bail_out_inmate,
+    calculate_breakout_chance,
     get_jail_inmates,
 )
 
@@ -757,10 +762,95 @@ def hospital():
     )
 
 
-@app.route("/jail")
+@app.route("/jail", methods=["GET", "POST"])
 def jail():
     if "user_id" not in session:
         return redirect("/login")
+
+    notice = session.pop("jail_notice", {})
+    message = notice.get("message")
+    error = notice.get("error")
+    interaction_result = None
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        try:
+            target_player_id = int(
+                request.form.get("target_player_id", "0")
+            )
+            if action == "pay_bail":
+                interaction_result = bail_out_inmate(
+                    session["user_id"],
+                    target_player_id,
+                )
+                message = (
+                    f"£{interaction_result['cost']:,} bail "
+                    f"paid. {interaction_result['target_name']} "
+                    "has been released."
+                )
+                activity_type = "jail_bail_paid"
+            elif action == "attempt_breakout":
+                interaction_result = attempt_jail_break(
+                    session["user_id"],
+                    target_player_id,
+                )
+                if interaction_result["success"]:
+                    message = (
+                        "Breakout successful. "
+                        f"{interaction_result['target_name']} "
+                        "is free."
+                    )
+                elif (
+                    interaction_result["consequence"]
+                    == "caught"
+                ):
+                    error = (
+                        "Breakout failed. You gained wanted "
+                        "level and were jailed for 60 seconds."
+                    )
+                else:
+                    error = (
+                        "Breakout failed. You gained "
+                        f"{BREAKOUT_NERVE_COST - 2} wanted "
+                        "level."
+                    )
+                activity_type = (
+                    "jail_breakout_success"
+                    if interaction_result["success"]
+                    else "jail_breakout_failed"
+                )
+            else:
+                raise JailInteractionError(
+                    "Unknown jail action."
+                )
+
+            summary = message or error
+            record_player_action(
+                activity_type,
+                summary,
+                {
+                    "target_player_id": target_player_id,
+                    "success": interaction_result["success"],
+                },
+            )
+            if interaction_result["success"]:
+                record_activity(
+                    interaction_result["target_user_id"],
+                    "jail_released_by_player",
+                    summary,
+                    {
+                        "helper_user_id": session["user_id"],
+                        "method": interaction_result["action"],
+                    },
+                )
+        except (JailInteractionError, ValueError) as jail_error:
+            error = str(jail_error)
+
+        session["jail_notice"] = {
+            "message": message,
+            "error": error,
+        }
+        return redirect("/jail")
 
     player_data = get_player_by_user_id(
         session["user_id"]
@@ -773,6 +863,18 @@ def jail():
     save_player(player)
 
     inmates = get_jail_inmates()
+    helper_stats = {
+        "speed": player.speed,
+        "dexterity": player.dexterity,
+    }
+    for inmate in inmates:
+        inmate["breakout_chance"] = (
+            calculate_breakout_chance(
+                helper_stats,
+                inmate["level"],
+            )
+        )
+
     own_inmate = next(
         (
             inmate
@@ -781,12 +883,22 @@ def jail():
         ),
         None,
     )
+    can_help = (
+        own_inmate is None
+        and player.hospital_until is None
+        and player.travel_destination is None
+    )
 
     return render_template(
         "jail.html",
         player=player,
         inmates=inmates,
         own_inmate=own_inmate,
+        can_help=can_help,
+        breakout_nerve_cost=BREAKOUT_NERVE_COST,
+        message=message,
+        error=error,
+        interaction_result=interaction_result,
     )
 
 
