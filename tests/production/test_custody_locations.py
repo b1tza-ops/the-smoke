@@ -1,14 +1,18 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from database.core.connection import get_connection
 from database.core.setup import create_tables
 from database.repositories.hospital import (
     get_hospital_patients,
 )
-from database.repositories.jail import get_jail_inmates
+from database.repositories.jail import (
+    attempt_jail_break,
+    bail_out_inmate,
+    get_jail_inmates,
+)
 from database.repositories.players import create_player
 from database.repositories.users import create_user
 
@@ -45,6 +49,114 @@ class CustodyLocationTests(unittest.TestCase):
     def tearDown(self):
         self.database_patch.stop()
         self.temp.cleanup()
+
+    def admit_inmate(self, minutes=2):
+        connection = get_connection()
+        connection.execute(
+            """
+            UPDATE players
+            SET jail_until = DATETIME(
+                CURRENT_TIMESTAMP,
+                ?
+            )
+            WHERE user_id = ?
+            """,
+            (f"+{minutes} minutes", self.inmate_user),
+        )
+        inmate_id = connection.execute(
+            "SELECT id FROM players WHERE user_id = ?",
+            (self.inmate_user,),
+        ).fetchone()[0]
+        connection.commit()
+        connection.close()
+        return inmate_id
+
+    def test_player_can_pay_another_players_bail(self):
+        inmate_id = self.admit_inmate()
+        result = bail_out_inmate(
+            self.expired_user,
+            inmate_id,
+        )
+
+        self.assertTrue(result["success"])
+        self.assertGreater(result["cost"], 0)
+
+        connection = get_connection()
+        helper_money = connection.execute(
+            "SELECT money FROM players WHERE user_id = ?",
+            (self.expired_user,),
+        ).fetchone()[0]
+        inmate_until = connection.execute(
+            "SELECT jail_until FROM players WHERE id = ?",
+            (inmate_id,),
+        ).fetchone()[0]
+        connection.close()
+
+        self.assertEqual(
+            helper_money,
+            500 - result["cost"],
+        )
+        self.assertIsNone(inmate_until)
+
+    def test_successful_breakout_spends_nerve_and_releases(self):
+        inmate_id = self.admit_inmate()
+        rng = Mock()
+        rng.randint.return_value = 1
+
+        result = attempt_jail_break(
+            self.expired_user,
+            inmate_id,
+            rng=rng,
+        )
+
+        self.assertTrue(result["success"])
+        connection = get_connection()
+        helper_nerve = connection.execute(
+            "SELECT nerve FROM players WHERE user_id = ?",
+            (self.expired_user,),
+        ).fetchone()[0]
+        inmate_until = connection.execute(
+            "SELECT jail_until FROM players WHERE id = ?",
+            (inmate_id,),
+        ).fetchone()[0]
+        connection.close()
+
+        self.assertEqual(helper_nerve, 15)
+        self.assertIsNone(inmate_until)
+
+    def test_caught_breakout_adds_wanted_and_jails_helper(self):
+        inmate_id = self.admit_inmate()
+        rng = Mock()
+        rng.randint.return_value = 100
+
+        result = attempt_jail_break(
+            self.expired_user,
+            inmate_id,
+            rng=rng,
+        )
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["consequence"], "caught")
+
+        connection = get_connection()
+        helper = connection.execute(
+            """
+            SELECT nerve, wanted_level, jail_until
+            FROM players
+            WHERE user_id = ?
+            """,
+            (self.expired_user,),
+        ).fetchone()
+        inmate_until = connection.execute(
+            "SELECT jail_until FROM players WHERE id = ?",
+            (inmate_id,),
+        ).fetchone()[0]
+        connection.close()
+
+        self.assertEqual(helper[0], 15)
+        self.assertEqual(helper[1], 3)
+        self.assertIsNotNone(helper[2])
+        self.assertIsNotNone(inmate_until)
 
     def test_live_hospital_and_jail_registers(self):
         connection = get_connection()
