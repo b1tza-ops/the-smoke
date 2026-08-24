@@ -922,3 +922,14 @@ input { font: inherit; }
 .admin-page #admin-stats .game-icon--defence{color:#88a9ff;background:rgba(136,169,255,.12)}
 .admin-page #admin-stats .game-icon--speed{color:#d49cff;background:rgba(212,156,255,.12)}
 .admin-page #admin-stats .admin-metric--gym{grid-column:1/-1}
+
+
+/* Shared player icon rollout */
+.game-nav .game-icon{width:1.45rem;height:1.45rem}
+.restriction-banner>.game-icon{width:1.25rem;height:1.25rem}
+.hud-meter .game-icon{width:1rem;height:1rem}
+.hud-meter--health .game-icon{color:#ff6975;fill:currentColor;stroke:none}
+.hud-meter--energy .game-icon{color:#ffc857;fill:currentColor;stroke:none}
+.hud-meter--nerve .game-icon{color:#4ed4e6;fill:currentColor;stroke:none}
+.hud-meter--xp .game-icon{color:#a78bfa}
+.hud-status-icon .game-icon{width:1rem;height:1rem}
