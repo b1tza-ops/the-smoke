@@ -3,25 +3,25 @@
      data-energy-full="{{ 1 if player.energy >= player.max_energy else 0 }}"
      data-nerve-full="{{ 1 if player.nerve >= player.max_nerve else 0 }}">
     <nav class="game-nav" aria-label="Game sections">
-        <a href="{{ url_for('home') }}"><span>⌂</span><strong>Home</strong></a>
-        <a href="{{ url_for('character') }}"><span>◉</span><strong>Character</strong></a>
-        <a href="{{ url_for('gym') }}"><span>✦</span><strong>Gym</strong></a>
-        <a href="{{ url_for('crimes') }}"><span>◆</span><strong>Crimes</strong></a>
-        <a href="{{ url_for('travel') }}"><span>➤</span><strong>Travel</strong></a>
-        <a href="{{ url_for('hospital') }}"><span>+</span><strong>Hospital</strong></a>
-        <a href="{{ url_for('jail') }}"><span>▥</span><strong>Jail</strong></a>
-        <a href="{{ url_for('inventory') }}"><span>⬡</span><strong>Items</strong></a>
-        <a href="{{ url_for('jobs') }}"><span>▣</span><strong>Job</strong></a>
-        <a class="game-nav__mission" href="{{ url_for('prologue') }}"><span>!</span><strong>Operations</strong></a>
+        <a href="{{ url_for('home') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#home"></use></svg><strong>Home</strong></a>
+        <a href="{{ url_for('character') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#character"></use></svg><strong>Character</strong></a>
+        <a href="{{ url_for('gym') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#gym"></use></svg><strong>Gym</strong></a>
+        <a href="{{ url_for('crimes') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#crimes"></use></svg><strong>Crimes</strong></a>
+        <a href="{{ url_for('travel') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#travel"></use></svg><strong>Travel</strong></a>
+        <a href="{{ url_for('hospital') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#hospital"></use></svg><strong>Hospital</strong></a>
+        <a href="{{ url_for('jail') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#jail"></use></svg><strong>Jail</strong></a>
+        <a href="{{ url_for('inventory') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#inventory"></use></svg><strong>Items</strong></a>
+        <a href="{{ url_for('jobs') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#job"></use></svg><strong>Job</strong></a>
+        <a class="game-nav__mission" href="{{ url_for('prologue') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#operations"></use></svg><strong>Operations</strong></a>
     </nav>
 
     {% if player.hospital_until %}
     <a class="restriction-banner restriction-banner--hospital" href="{{ url_for('hospital') }}">
-        <span>+</span><strong>You are in hospital</strong><small>View recovery time →</small>
+        <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#hospital"></use></svg><strong>You are in hospital</strong><small>View recovery time →</small>
     </a>
     {% elif player.jail_until %}
     <a class="restriction-banner restriction-banner--jail" href="{{ url_for('jail') }}">
-        <span>!</span><strong>You are in jail</strong><small>View release time →</small>
+        <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#jail"></use></svg><strong>You are in jail</strong><small>View release time →</small>
     </a>
     {% endif %}
 
@@ -31,24 +31,24 @@
             {% set xp_start = hud_level_xp(player.level) %}
             {% set xp_percent = (((player.xp - xp_start) / (next_level_xp - xp_start)) * 100)|round if next_level_xp > xp_start else 0 %}
             {% for label, icon, value, maximum, percent, tone in (
-                ("Health", "+", player.health, 100, (player.health / 100 * 100)|round, "health"),
-                ("Energy", "ϟ", player.energy, player.max_energy, (player.energy / player.max_energy * 100)|round if player.max_energy else 0, "energy"),
-                ("Nerve", "◆", player.nerve, player.max_nerve, (player.nerve / player.max_nerve * 100)|round if player.max_nerve else 0, "nerve"),
-                ("XP", "★", player.xp, next_level_xp, xp_percent, "xp")
+                ("Health", "health", player.health, 100, (player.health / 100 * 100)|round, "health"),
+                ("Energy", "energy", player.energy, player.max_energy, (player.energy / player.max_energy * 100)|round if player.max_energy else 0, "energy"),
+                ("Nerve", "nerve", player.nerve, player.max_nerve, (player.nerve / player.max_nerve * 100)|round if player.max_nerve else 0, "nerve"),
+                ("XP", "xp", player.xp, next_level_xp, xp_percent, "xp")
             ) %}
             <div class="hud-meter hud-meter--{{ tone }}">
-                <div><span aria-hidden="true">{{ icon }}</span><strong>{{ value }}/{{ maximum }}</strong></div>
+                <div><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#{{ icon }}"></use></svg><strong>{{ value }}/{{ maximum }}</strong></div>
                 <small>{{ label }}</small>
                 <div class="hud-meter__track"><i style="--progress:{{ percent }}%"></i></div>
             </div>
             {% endfor %}
         </div>
         <div class="compact-hud__status">
-            <div><span class="hud-status-icon hud-status-icon--cash">£</span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></div>
-            <div><span class="hud-status-icon hud-status-icon--bank">▣</span><small>Bank</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong></div>
-            <div><span class="hud-status-icon hud-status-icon--wanted">!</span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></div>
-            <div><span class="hud-status-icon hud-status-icon--level">★</span><small>Level</small><strong>{{ player.level }}</strong></div>
-            <div class="hud-cycle"><span class="hud-status-icon">↻</span><small>Next cycle</small><strong data-cycle-timer>--:--</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--cash"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#cash"></use></svg></span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--bank"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#bank"></use></svg></span><small>Bank</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--wanted"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#wanted"></use></svg></span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--level"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#level"></use></svg></span><small>Level</small><strong>{{ player.level }}</strong></div>
+            <div class="hud-cycle"><span class="hud-status-icon"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons.svg') }}#cycle"></use></svg></span><small>Next cycle</small><strong data-cycle-timer>--:--</strong></div>
         </div>
     </section>
 </div>
