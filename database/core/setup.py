@@ -59,6 +59,7 @@ def create_tables():
             shift_until TEXT,
             current_gym_key TEXT NOT NULL DEFAULT 'camden_community'
                 CHECK (TRIM(current_gym_key) <> ''),
+            last_seen TEXT,
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE
