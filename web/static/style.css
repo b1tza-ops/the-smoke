@@ -952,3 +952,98 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 
 /* Global inventory artwork */
 .inventory-grid .item-card{display:grid;grid-template-columns:7rem minmax(0,1fr);gap:.8rem;align-items:start}.item-card__image{width:7rem;height:4.5rem;object-fit:contain;border:1px solid #2e393e;border-radius:.7rem;background:#090c0e}.item-card__body{min-width:0}.inventory-grid .item-card form,.inventory-grid .item-card>.item-passive{grid-column:1/-1}@media(max-width:520px){.inventory-grid .item-card{grid-template-columns:5.4rem minmax(0,1fr);padding:.8rem}.item-card__image{width:5.4rem;height:3.6rem}}
+
+
+/* Home overview: navigation belongs in the sticky HUD; Home is information. */
+.home-overview {
+    margin-top: 2rem;
+}
+.home-overview__heading {
+    margin-bottom: .85rem;
+}
+.home-overview__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .85rem;
+}
+.overview-panel {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(17, 22, 26, .9);
+}
+.overview-panel summary {
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .8rem 1rem;
+    background: linear-gradient(180deg, rgba(255,255,255,.045), transparent);
+    cursor: pointer;
+    font-weight: 850;
+    list-style: none;
+}
+.overview-panel summary::-webkit-details-marker {
+    display: none;
+}
+.overview-panel summary span:last-child {
+    color: var(--muted);
+    transition: transform .18s ease;
+}
+.overview-panel[open] summary span:last-child {
+    transform: rotate(180deg);
+}
+.overview-list {
+    margin: 0;
+    padding: 0 1rem .35rem;
+}
+.overview-list div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    padding: .6rem 0;
+    border-top: 1px solid #222a2f;
+}
+.overview-list dt {
+    color: var(--muted);
+    font-size: .8rem;
+}
+.overview-list dd {
+    margin: 0;
+    font-size: .82rem;
+    font-weight: 800;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+.overview-list__total dd {
+    color: var(--accent);
+}
+.overview-panel__links {
+    display: flex;
+    gap: .55rem;
+    padding: .15rem 1rem 1rem;
+}
+.overview-panel__links a {
+    border: 1px solid rgba(185, 243, 75, .3);
+    border-radius: 999px;
+    padding: .45rem .7rem;
+    color: var(--accent);
+    font-size: .72rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+@media (max-width: 620px) {
+    .player-hero {
+        padding-bottom: .5rem;
+    }
+    .home-overview {
+        margin-top: 1rem;
+    }
+    .home-overview__grid {
+        grid-template-columns: 1fr;
+    }
+    .home-overview__heading .section-note {
+        display: none;
+    }
+}
