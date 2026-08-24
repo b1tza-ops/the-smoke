@@ -1,3 +1,5 @@
+import sqlite3
+
 from database.core.connection import get_connection
 
 
@@ -69,7 +71,7 @@ def is_user_suspended(user_id):
 
 def get_admin_player_details(user_id):
     connection = get_connection()
-    connection.row_factory = __import__("sqlite3").Row
+    connection.row_factory = sqlite3.Row
 
     try:
         account_row = connection.execute(
