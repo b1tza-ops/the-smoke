@@ -111,6 +111,70 @@ class WebGameplayTests(unittest.TestCase):
 
 
 
+
+    @patch(
+        "web.application.render_template",
+        return_value="jobs rendered",
+    )
+    @patch(
+        "web.application.get_shift_state",
+        return_value=None,
+    )
+    @patch(
+        "web.application.get_job_role",
+        return_value=Mock(name="Construction Labourer"),
+    )
+    @patch("web.application.get_career")
+    @patch("web.application.save_player")
+    @patch(
+        "web.application.join_career",
+        return_value=Mock(
+            role_key="construction_labourer",
+        ),
+    )
+    @patch("web.application.update_player_status")
+    @patch("web.application.update_travel")
+    @patch("web.application.Player")
+    @patch(
+        "web.application.get_player_by_user_id",
+        return_value=(1,),
+    )
+    def test_web_player_can_join_career(
+        self,
+        get_player_by_user_id,
+        player_class,
+        update_travel,
+        update_player_status,
+        join_career,
+        save_player,
+        get_career,
+        get_job_role,
+        get_shift_state,
+        render_template,
+    ):
+        player = self.make_player()
+        player.career_key = None
+        player.job_role_key = None
+        player.inventory = {}
+        player_class.return_value = player
+
+        response = self.client.post(
+            "/jobs-inventory",
+            data={
+                "action": "join_career",
+                "section": "jobs",
+                "career_key": "construction",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        join_career.assert_called_once_with(
+            player,
+            "construction",
+        )
+        save_player.assert_called_once_with(player)
+
+
     @patch(
         "web.application.render_template",
         return_value="character rendered",
