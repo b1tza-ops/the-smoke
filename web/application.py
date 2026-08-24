@@ -847,6 +847,17 @@ def gym():
                 )
 
             elif action == "train":
+                active_block = get_training_block(player)
+                if active_block is not None:
+                    location = (
+                        f"in {active_block}"
+                        if active_block in {"hospital", "jail"}
+                        else active_block
+                    )
+                    raise GymError(
+                        f"You cannot train while {location}."
+                    )
+
                 stat = request.form.get("stat", "")
                 raw_trains = request.form.get("trains")
                 energy = (
