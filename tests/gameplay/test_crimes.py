@@ -143,11 +143,11 @@ class CrimeEngineTests(unittest.TestCase):
         self.assertEqual(result.consequence, "jail")
         self.assertEqual(
             result.jail_until,
-            "2026-08-22 15:01:00",
+            "2026-08-22 15:10:00",
         )
         self.assertEqual(
             player.jail_until,
-            "2026-08-22 15:01:00",
+            "2026-08-22 15:10:00",
         )
         self.assertEqual(player.health, 100)
         self.assertEqual(player.money, 100)
@@ -183,11 +183,11 @@ class CrimeEngineTests(unittest.TestCase):
         self.assertEqual(player.health, 91)
         self.assertEqual(
             result.hospital_until,
-            "2026-08-22 15:01:00",
+            "2026-08-22 15:10:00",
         )
         self.assertEqual(
             player.hospital_until,
-            "2026-08-22 15:01:00",
+            "2026-08-22 15:10:00",
         )
         self.assertEqual(player.money, 100)
 
