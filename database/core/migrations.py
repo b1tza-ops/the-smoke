@@ -908,6 +908,45 @@ def migrate_020_npc_combat_records(cursor):
     )
 
 
+def migrate_021_player_pvp(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_pvp_attacks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            attacker_id INTEGER NOT NULL,
+            defender_id INTEGER NOT NULL,
+            approach TEXT NOT NULL CHECK (
+                approach IN ('aggressive', 'defensive', 'precise', 'evasive')
+            ),
+            outcome TEXT NOT NULL CHECK (
+                outcome IN ('victory', 'defeat')
+            ),
+            cash_stolen INTEGER NOT NULL DEFAULT 0 CHECK (cash_stolen >= 0),
+            xp_reward INTEGER NOT NULL DEFAULT 0 CHECK (xp_reward >= 0),
+            reward_multiplier REAL NOT NULL DEFAULT 1
+                CHECK (reward_multiplier >= 0 AND reward_multiplier <= 1),
+            rounds_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (attacker_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (defender_id) REFERENCES players(id) ON DELETE CASCADE,
+            CHECK (attacker_id != defender_id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_pvp_attacker_target_time
+        ON player_pvp_attacks(attacker_id, defender_id, created_at)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_pvp_defender_time
+        ON player_pvp_attacks(defender_id, created_at)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1008,6 +1047,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=20,
         name="npc_combat_records",
         apply=migrate_020_npc_combat_records,
+    ),
+    Migration(
+        version=21,
+        name="player_pvp",
+        apply=migrate_021_player_pvp,
     ),
 )
 
