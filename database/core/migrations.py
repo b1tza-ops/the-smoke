@@ -702,6 +702,7 @@ def migrate_015_operations_v1(cursor):
         ),
         "operation_started_at": "TEXT",
         "operation_ready_at": "TEXT",
+        "operation_approach": "TEXT",
     }
     for name, definition in additions.items():
         if name not in columns:
