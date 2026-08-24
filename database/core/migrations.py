@@ -1020,6 +1020,31 @@ def migrate_023_pvp_ratings(cursor):
     )
 
 
+def migrate_024_pvp_daily_contracts(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_pvp_contracts (
+            player_id INTEGER NOT NULL,
+            day_key TEXT NOT NULL,
+            contract_key TEXT NOT NULL,
+            progress INTEGER NOT NULL DEFAULT 0
+                CHECK (progress >= 0),
+            claimed_at TEXT,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (player_id, day_key, contract_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id) ON DELETE CASCADE
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_pvp_contract_day
+        ON player_pvp_contracts(day_key, contract_key)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1135,6 +1160,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=23,
         name="pvp_ratings",
         apply=migrate_023_pvp_ratings,
+    ),
+    Migration(
+        version=24,
+        name="pvp_daily_contracts",
+        apply=migrate_024_pvp_daily_contracts,
     ),
 )
 

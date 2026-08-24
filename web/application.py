@@ -114,6 +114,12 @@ from database.repositories.players import (
     get_player_by_user_id,
     save_player,
 )
+from database.repositories.pvp_contracts import (
+    ContractClaimError,
+    claim_contract,
+    get_contract_board,
+    record_contract_fight,
+)
 from database.repositories.pvp import (
     AttackReservationError,
     get_attack_limits,
@@ -1763,6 +1769,12 @@ def pvp():
                 result,
                 limits.reward_multiplier,
             )
+            record_contract_fight(
+                player.id,
+                result,
+                selected_approach,
+                rated=rating_update.rated,
+            )
             record_player_action(
                 "pvp_combat",
                 (
@@ -1828,6 +1840,40 @@ def pvp():
         notifications=notifications,
         pvp_profile=pvp_profile,
         rating_update=rating_update,
+    )
+
+
+
+@app.route("/pvp/contracts", methods=["GET", "POST"])
+def pvp_contracts():
+    if "user_id" not in session:
+        return redirect("/login")
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+    player = Player(*player_data)
+    message = None
+    error = None
+    if request.method == "POST":
+        try:
+            reward = claim_contract(
+                player.id,
+                request.form.get("contract_key", ""),
+            )
+            message = (
+                f"{reward.contract_name} claimed: "
+                f"£{reward.cash_reward} and {reward.xp_reward} XP."
+            )
+            player_data = get_player_by_user_id(session["user_id"])
+            player = Player(*player_data)
+        except ContractClaimError as claim_error:
+            error = str(claim_error)
+    return render_template(
+        "pvp_contracts.html",
+        player=player,
+        board=get_contract_board(player.id),
+        message=message,
+        error=error,
     )
 
 

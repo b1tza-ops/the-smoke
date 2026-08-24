@@ -7,7 +7,7 @@
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('fight') }}">NPC fights</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page pvp-page">
-<nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
+<nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_contracts') }}">Contracts</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
 <section class="pvp-rating-strip"><div><span>Your rating</span><strong>{{ pvp_profile.rating }}</strong></div><div><span>Record</span><strong>{{ pvp_profile.wins }}–{{ pvp_profile.losses }}</strong></div><div><span>Win streak</span><strong>{{ pvp_profile.streak }}</strong></div><div><span>Personal best</span><strong>{{ pvp_profile.best_rating }}</strong></div></section>
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} rivalries</p><h1>Player fights</h1><p>Choose a target and a tactical approach. Only cash carried on the street can be mugged.</p></div><div class="combat-cost"><span>Each attack</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
