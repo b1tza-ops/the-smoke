@@ -544,3 +544,257 @@ input { font: inherit; }
 .turnstile-wrap .cf-turnstile {
     width: 100%;
 }
+
+
+.action-card--link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.action-card--link .action-card__status {
+    color: var(--accent);
+}
+
+.game-page {
+    width: min(920px, 100%);
+    margin: auto;
+}
+
+.game-page__header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.game-page__header h1 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(3rem, 8vw, 5rem);
+    font-weight: 500;
+    letter-spacing: -.05em;
+}
+
+.game-page__header p:last-child {
+    margin-bottom: 0;
+    color: var(--muted);
+}
+
+.resource-pill {
+    display: grid;
+    min-width: 7rem;
+    gap: .15rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: .7rem .9rem;
+    color: var(--muted);
+    font-size: .72rem;
+}
+
+.resource-pill strong {
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.resource-pill--small {
+    min-width: auto;
+    color: var(--nerve);
+    text-align: right;
+}
+
+.game-notice,
+.game-result {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem 1.15rem;
+}
+
+.game-notice--success,
+.game-result--success {
+    border-color: rgba(185, 243, 75, .4);
+    background: rgba(185, 243, 75, .07);
+    color: #d2ff79;
+}
+
+.game-notice--error,
+.game-result--failure {
+    border-color: rgba(255, 100, 105, .4);
+    background: rgba(255, 100, 105, .07);
+    color: #ffb1b4;
+}
+
+.game-result h2 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2rem;
+}
+
+.game-result p:last-child {
+    margin-bottom: 0;
+}
+
+.stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .7rem;
+    margin: 1.5rem 0;
+}
+
+.stat-strip div {
+    display: grid;
+    gap: .2rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(17, 22, 26, .82);
+    padding: .8rem;
+}
+
+.stat-strip span {
+    color: var(--muted);
+    font-size: .7rem;
+}
+
+.game-card-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.game-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgba(17, 22, 26, .86);
+    padding: clamp(1rem, 4vw, 1.5rem);
+}
+
+.game-card__top {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.game-card h2 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.game-card > p {
+    color: var(--muted);
+}
+
+.game-price {
+    color: var(--accent);
+    font-weight: 800;
+}
+
+.multiplier-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 1.2rem 0;
+}
+
+.multiplier-grid span {
+    border-radius: 999px;
+    background: #0b0f11;
+    color: #aeb7b4;
+    padding: .35rem .6rem;
+    font-size: .7rem;
+}
+
+.game-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: .8rem;
+    margin-top: 1.2rem;
+}
+
+.game-form label {
+    display: grid;
+    gap: .4rem;
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.game-form select {
+    min-height: 2.9rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #0d1114;
+    color: var(--text);
+    padding: .65rem;
+}
+
+.game-form .primary-button {
+    margin: 0;
+    min-width: 9rem;
+}
+
+.primary-button:disabled {
+    cursor: not-allowed;
+    filter: grayscale(1);
+    opacity: .45;
+    transform: none;
+}
+
+.reward-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 1.2rem 0;
+}
+
+.reward-list div {
+    display: grid;
+    gap: .15rem;
+    border-right: 1px solid var(--border);
+    padding-right: .8rem;
+}
+
+.reward-list div:last-child {
+    border-right: 0;
+    padding-left: .8rem;
+}
+
+.reward-list div:nth-child(2) {
+    padding-left: .8rem;
+}
+
+.reward-list dt {
+    color: var(--muted);
+    font-size: .7rem;
+}
+
+.reward-list dd {
+    margin: 0;
+    font-weight: 800;
+}
+
+@media (max-width: 640px) {
+    .game-page__header {
+        align-items: start;
+    }
+
+    .stat-strip {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .game-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .game-form .primary-button {
+        grid-column: 1 / -1;
+    }
+
+    .game-card__top {
+        align-items: start;
+    }
+}
