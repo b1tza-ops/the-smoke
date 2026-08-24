@@ -46,6 +46,7 @@ from database.repositories.activity import (
     record_activity,
 )
 from database.repositories.admin import (
+    get_admin_player_details,
     get_admin_player_overview,
     is_user_suspended,
     set_user_suspended,
@@ -356,6 +357,29 @@ def admin_dashboard():
         "admin_dashboard.html",
         players=get_admin_player_overview(),
         activities=get_recent_activity(limit=100),
+    )
+
+
+@app.route("/admin/users/<int:user_id>")
+@admin_required
+def admin_user_details(user_id):
+    details = get_admin_player_details(user_id)
+
+    if details is None:
+        return render_template(
+            "error.html",
+            title="Player not found",
+            message="That player account does not exist.",
+        ), 404
+
+    return render_template(
+        "admin_player_details.html",
+        details=details,
+        activities=get_recent_activity(
+            user_id=user_id,
+            limit=100,
+        ),
+        item_catalog=ITEMS,
     )
 
 
