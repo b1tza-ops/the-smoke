@@ -16,7 +16,6 @@ DAILY_REWARDED_ATTACKS = 3
 
 
 @dataclass(frozen=True)
-@dataclass(frozen=True)
 class RecordedAttack:
     attack_id: int
     attacker_before: int
