@@ -1,8 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-import pytest
-
 from game.combat import (
     COMBAT_ENERGY_COST,
     CombatError,
@@ -80,26 +78,27 @@ def test_defeat_sends_player_to_hospital():
     assert fighter.hospital_until is not None
 
 
-@pytest.mark.parametrize(
-    "changes,reason",
-    [
+def test_combat_restrictions():
+    cases = (
         ({"current_district": "soho"}, "Camden"),
         ({"hospital_until": "2099-01-01 00:00:00"}, "Hospital"),
         ({"jail_until": "2099-01-01 00:00:00"}, "Jail"),
         ({"travel_destination": "soho"}, "travelling"),
         ({"shift_until": "2099-01-01 00:00:00"}, "working"),
         ({"energy": 0}, "energy"),
-    ],
-)
-def test_combat_restrictions(changes, reason):
-    assert reason in get_combat_block(player(**changes))
-
+    )
+    for changes, reason in cases:
+        assert reason in get_combat_block(player(**changes))
 
 def test_blocked_fight_does_not_spend_energy():
     fighter = player(energy=0)
-    with pytest.raises(CombatError):
+    try:
         fight_camden_opponent(
             fighter,
             Mock(strength_bonus=0, defence_bonus=0),
         )
+    except CombatError:
+        pass
+    else:
+        raise AssertionError("Blocked fight should raise CombatError")
     assert fighter.energy == 0
