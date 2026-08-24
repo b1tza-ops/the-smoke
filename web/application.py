@@ -81,6 +81,9 @@ from database.repositories.presence import (
 from database.repositories.hospital import (
     get_hospital_patients,
 )
+from database.repositories.jail import (
+    get_jail_inmates,
+)
 
 from database.repositories.players import (
     create_player,
@@ -751,6 +754,39 @@ def hospital():
         player=player,
         patients=patients,
         own_patient=own_patient,
+    )
+
+
+@app.route("/jail")
+def jail():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_player_status(player)
+    save_player(player)
+
+    inmates = get_jail_inmates()
+    own_inmate = next(
+        (
+            inmate
+            for inmate in inmates
+            if inmate["id"] == player.id
+        ),
+        None,
+    )
+
+    return render_template(
+        "jail.html",
+        player=player,
+        inmates=inmates,
+        own_inmate=own_inmate,
     )
 
 
