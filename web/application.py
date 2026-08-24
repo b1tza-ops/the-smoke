@@ -122,7 +122,7 @@ from utils.security import (
     verify_password,
 )
 from game.housing import get_residence
-from game.shop import ShopError, get_camden_shop, purchase
+from game.shop import ShopError, get_district_shop, purchase
 from game.inventory import (
     INVENTORY_SLOT_CAPACITY,
     ITEMS,
@@ -661,8 +661,8 @@ def prologue():
 
 
 
-@app.route("/shops/camden-corner", methods=["GET", "POST"])
-def camden_corner_shop():
+@app.route("/shop", methods=["GET", "POST"])
+def district_shop():
     if "user_id" not in session:
         return redirect("/login")
 
@@ -682,6 +682,7 @@ def camden_corner_shop():
             quantity = int(request.form.get("quantity", "0"))
             result = purchase(
                 session["user_id"],
+                player.current_district,
                 request.form.get("item_key", ""),
                 quantity,
             )
@@ -707,7 +708,7 @@ def camden_corner_shop():
     return render_template(
         "shop.html",
         player=player,
-        shop=get_camden_shop(),
+        shop=get_district_shop(player.current_district),
         message=message,
         error=error,
         accessible=(
