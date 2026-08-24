@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Email verification · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="atmosphere atmosphere--one" aria-hidden="true"></div>
+    <div class="atmosphere atmosphere--two" aria-hidden="true"></div>
+    <main class="auth-shell auth-shell--single">
+        <section class="auth-card" aria-labelledby="result-title">
+            <div class="auth-card__header">
+                <p class="eyebrow">{{ "Account activated" if success else "Verification problem" }}</p>
+                <h2 id="result-title">{{ "Welcome to The Smoke" if success else "Link unavailable" }}</h2>
+                <p>{{ message }}</p>
+            </div>
+            <a class="primary-button primary-button--link" href="{{ url_for('login') }}">
+                <span>Continue to sign in</span>
+                <span aria-hidden="true">→</span>
+            </a>
+        </section>
+    </main>
+</body>
+</html>
