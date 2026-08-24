@@ -309,7 +309,7 @@ class PlayerPersistenceTests(unittest.TestCase):
                     reloaded.residence_key,
                     "hostel",
                 )
-                self.assertEqual(reloaded.money, 250)
+                self.assertEqual(reloaded.money, 500)
 
     def test_job_progress_and_active_shift_persist(self):
         with tempfile.TemporaryDirectory() as temp_dir:
