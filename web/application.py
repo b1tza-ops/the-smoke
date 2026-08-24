@@ -243,7 +243,7 @@ def record_player_action(action_type, summary, metadata=None):
             summary,
             metadata=metadata,
         )
-    except sqlite3.Error:
+    except (sqlite3.Error, TypeError):
         app.logger.exception(
             "Could not record player activity."
         )
@@ -936,11 +936,16 @@ def register():
                 hash_password(password),
             )
             create_player(user_id, username)
-            record_activity(
-                user_id,
-                "account_created",
-                "Player account created.",
-            )
+            try:
+                record_activity(
+                    user_id,
+                    "account_created",
+                    "Player account created.",
+                )
+            except sqlite3.Error:
+                app.logger.exception(
+                    "Could not record account creation."
+                )
             session[
                 "pending_verification_user_id"
             ] = user_id
