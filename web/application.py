@@ -212,6 +212,13 @@ def gym():
         gyms=gyms,
         unlocked_gyms=get_unlocked_gyms(player),
         valid_stats=VALID_BATTLE_STATS,
+        stat_descriptions={
+            "strength": "Damage dealt on impact",
+            "defence": "Ability to withstand damage",
+            "speed": "Chance of landing an attack",
+            "dexterity": "Ability to evade an attack",
+        },
+        max_trains=min(10, player.energy // 10),
         message=message,
         error=error,
         block_reason=get_training_block(player),
