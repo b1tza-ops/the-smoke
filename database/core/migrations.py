@@ -817,6 +817,76 @@ def migrate_018_expanded_item_catalogue(cursor):
     )
 
 
+def migrate_019_full_equipment_slots(cursor):
+    cursor.execute(
+        """
+        ALTER TABLE player_equipment
+        RENAME TO player_equipment_legacy
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE player_equipment (
+            player_id INTEGER NOT NULL,
+            slot TEXT NOT NULL CHECK (
+                slot IN (
+                    'primary',
+                    'secondary',
+                    'head',
+                    'body',
+                    'hands',
+                    'legs',
+                    'feet'
+                )
+            ),
+            item_key TEXT NOT NULL,
+            equipped_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (player_id, slot),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO player_equipment (
+            player_id,
+            slot,
+            item_key,
+            equipped_at
+        )
+        SELECT
+            player_id,
+            CASE item_key
+                WHEN 'kitchen_knife' THEN 'secondary'
+                WHEN 'screwdriver' THEN 'secondary'
+                WHEN 'claw_hammer' THEN 'primary'
+                WHEN 'crowbar' THEN 'primary'
+                WHEN 'baseball_bat' THEN 'primary'
+                WHEN 'machete' THEN 'primary'
+                WHEN 'leather_gloves' THEN 'hands'
+                WHEN 'work_boots' THEN 'feet'
+                WHEN 'motorcycle_helmet' THEN 'head'
+                WHEN 'padded_jacket' THEN 'body'
+                WHEN 'heavy_coat' THEN 'body'
+                WHEN 'stab_vest' THEN 'body'
+                WHEN 'weapon' THEN 'primary'
+                ELSE 'body'
+            END,
+            item_key,
+            equipped_at
+        FROM player_equipment_legacy
+        """
+    )
+    cursor.execute("DROP TABLE player_equipment_legacy")
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -907,6 +977,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=18,
         name="expanded_item_catalogue",
         apply=migrate_018_expanded_item_catalogue,
+    ),
+    Migration(
+        version=19,
+        name="full_equipment_slots",
+        apply=migrate_019_full_equipment_slots,
     ),
 )
 
