@@ -131,8 +131,12 @@ from game.shop import ShopError, get_district_shop, purchase
 from game.inventory import (
     INVENTORY_SLOT_CAPACITY,
     ITEMS,
+    EquipmentError,
     InventoryError,
+    equip_item,
+    get_equipment_summary,
     get_item,
+    unequip_item,
     use_item,
 )
 from game.jobs import (
@@ -843,7 +847,7 @@ def _work_page(active_section):
             "start_shift",
             "complete_shift",
         },
-        "inventory": {"use_item"},
+        "inventory": {"use_item", "equip_item", "unequip_item"},
     }
 
     if request.method == "POST":
@@ -892,7 +896,20 @@ def _work_page(active_section):
                     f"{used.amount_restored} "
                     f"{used.effect_key} restored."
                 )
-        except (JobError, InventoryError) as action_error:
+            elif action == "equip_item":
+                item = equip_item(
+                    player.id,
+                    request.form.get("item_key", ""),
+                )
+                message = (
+                    f"{item.name} equipped in your "
+                    f"{item.equipment_slot} slot."
+                )
+            elif action == "unequip_item":
+                slot = request.form.get("slot", "")
+                unequip_item(player.id, slot)
+                message = f"{slot.title()} unequipped."
+        except (JobError, InventoryError, EquipmentError) as action_error:
             error = str(action_error)
 
     save_player(player)
@@ -911,10 +928,34 @@ def _work_page(active_section):
     career = get_career(player.career_key)
     role = get_job_role(player.job_role_key)
     shift_state = get_shift_state(player)
+    equipment = get_equipment_summary(getattr(player, "id", 0))
     owned_items = [
         {
             "item": get_item(item_key),
             "quantity": quantity,
+            "equipped": (
+                get_item(item_key).equipment_slot is not None
+                and equipment.items.get(
+                    get_item(item_key).equipment_slot
+                ) == get_item(item_key)
+            ),
+            "comparison": (
+                get_item(item_key).strength_bonus
+                - (
+                    equipment.items.get("weapon").strength_bonus
+                    if equipment.items.get("weapon")
+                    else 0
+                )
+                if get_item(item_key).equipment_slot == "weapon"
+                else get_item(item_key).defence_bonus
+                - (
+                    equipment.items.get("armour").defence_bonus
+                    if equipment.items.get("armour")
+                    else 0
+                )
+                if get_item(item_key).equipment_slot == "armour"
+                else 0
+            ),
         }
         for item_key, quantity
         in sorted(player.inventory.items())
@@ -930,6 +971,7 @@ def _work_page(active_section):
         shift_state=shift_state,
         owned_items=owned_items,
         inventory_capacity=INVENTORY_SLOT_CAPACITY,
+        equipment=equipment,
         active_section=active_section,
         message=message,
         error=error,
@@ -1164,6 +1206,7 @@ def character():
             limit=12,
         ),
         growth=get_growth_profile(session["user_id"]),
+        equipment=get_equipment_summary(getattr(player, "id", 0)),
     )
 
 

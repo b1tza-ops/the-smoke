@@ -21,6 +21,9 @@ class ItemDefinition:
     max_quantity: int
     effect_key: str | None = None
     effect_amount: int = 0
+    equipment_slot: str | None = None
+    strength_bonus: int = 0
+    defence_bonus: int = 0
 
 
 ITEMS = (
@@ -54,6 +57,8 @@ ITEMS = (
         image_filename="shop-kitchen-knife.svg",
         stackable=False,
         max_quantity=1,
+        equipment_slot="weapon",
+        strength_bonus=5,
     ),
     ItemDefinition(
         key="padded_jacket",
@@ -63,6 +68,8 @@ ITEMS = (
         image_filename="shop-padded-jacket.svg",
         stackable=False,
         max_quantity=1,
+        equipment_slot="armour",
+        defence_bonus=5,
     ),
     ItemDefinition(
         key="lockpick",

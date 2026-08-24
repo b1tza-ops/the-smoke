@@ -76,6 +76,9 @@ class TrainingResult:
 
 
 def get_training_block(player, now=None):
+    if getattr(player, "shift_until", None) is not None:
+        return "working a shift"
+
     active_travel = get_active_travel(
         player,
         now=now,
@@ -109,6 +112,11 @@ def display_training_block(block_reason):
     elif block_reason == "travelling":
         print(
             "\nYou cannot train while travelling."
+        )
+
+    elif block_reason == "working a shift":
+        print(
+            "\nYou cannot train while working a shift."
         )
 
 

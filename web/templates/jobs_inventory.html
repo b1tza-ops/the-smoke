@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d">
 <title>{{ 'Jobs' if active_section == 'jobs' else 'Inventory' }} · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='compact-inventory-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='equipment-loadouts-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
@@ -33,6 +33,17 @@
 <section id="inventory-panel" class="work-panel is-active inventory-browser" aria-labelledby="inventory-heading">
 <div class="inventory-heading"><div><p class="eyebrow">Carried items</p><h2 id="inventory-heading">Your inventory</h2></div><span>{{ player.inventory|length }} of {{ inventory_capacity }} slots</span></div>
 {% if owned_items %}
+<section class="loadout-panel" aria-labelledby="loadout-heading">
+    <div class="loadout-panel__heading"><div><p class="eyebrow">Active loadout</p><h3 id="loadout-heading">Equipped gear</h3></div><div class="loadout-bonuses"><span>+{{ equipment.strength_bonus }} STR</span><span>+{{ equipment.defence_bonus }} DEF</span></div></div>
+    <div class="loadout-slots">
+    {% for slot in ("weapon", "armour") %}{% set equipped=equipment.items.get(slot) %}
+        <article class="loadout-slot {{ 'is-empty' if not equipped }}">
+            {% if equipped %}<img src="{{ url_for('static', filename='icons/' + equipped.image_filename) }}" alt=""><div><small>{{ slot }}</small><strong>{{ equipped.name }}</strong><span>{% if slot == "weapon" %}+{{ equipped.strength_bonus }} Strength{% else %}+{{ equipped.defence_bonus }} Defence{% endif %}</span></div><form method="post" action="{{ url_for('inventory') }}#inventory-panel"><input type="hidden" name="action" value="unequip_item"><input type="hidden" name="slot" value="{{ slot }}"><button type="submit">Unequip</button></form>
+            {% else %}<div class="loadout-slot__empty"><small>{{ slot }}</small><strong>Empty slot</strong><span>Equip an item below</span></div>{% endif %}
+        </article>
+    {% endfor %}
+    </div>
+</section>
 <div class="inventory-tools">
     <label class="inventory-search"><span class="sr-only">Search inventory</span><input type="search" placeholder="Search items…" data-inventory-search autocomplete="off"></label>
     <div class="inventory-filters" aria-label="Filter items">
@@ -61,7 +72,17 @@
             <button class="inventory-row__action" type="submit">Use one</button>
         </form>
         {% else %}
-        <span class="inventory-row__passive">Equipment item</span>
+        <div class="inventory-equipment-meta">
+            <span>{% if item.equipment_slot == "weapon" %}+{{ item.strength_bonus }} Strength{% else %}+{{ item.defence_bonus }} Defence{% endif %}</span>
+            {% if not owned.equipped %}<small class="{{ 'is-up' if owned.comparison > 0 else 'is-down' if owned.comparison < 0 else '' }}">{{ '+' if owned.comparison > 0 else '' }}{{ owned.comparison }} vs equipped</small>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('inventory') }}#item-{{ item.key }}">
+            {% if owned.equipped %}
+            <input type="hidden" name="action" value="unequip_item"><input type="hidden" name="slot" value="{{ item.equipment_slot }}"><button class="inventory-row__action inventory-row__action--secondary" type="submit">Unequip</button>
+            {% else %}
+            <input type="hidden" name="action" value="equip_item"><input type="hidden" name="item_key" value="{{ item.key }}"><button class="inventory-row__action" type="submit">Equip</button>
+            {% endif %}
+        </form>
         {% endif %}
     </div>
 </details>

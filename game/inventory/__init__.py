@@ -7,6 +7,14 @@ from game.inventory.items import (
     ItemDefinition,
     get_item,
 )
+from game.inventory.equipment import (
+    EQUIPMENT_SLOTS,
+    EquipmentError,
+    equip_item,
+    get_equipment,
+    get_equipment_summary,
+    unequip_item,
+)
 from game.inventory.service import (
     INVENTORY_SLOT_CAPACITY,
     InsufficientItemError,
@@ -26,6 +34,8 @@ from game.inventory.service import (
 )
 
 __all__ = [
+    "EQUIPMENT_SLOTS",
+    "EquipmentError",
     "INVENTORY_SLOT_CAPACITY",
     "ITEM_CATEGORIES",
     "ITEMS",
@@ -42,8 +52,12 @@ __all__ = [
     "ResourceAlreadyFullError",
     "UnknownItemError",
     "add_item",
+    "equip_item",
+    "get_equipment",
+    "get_equipment_summary",
     "get_item",
     "inventory_menu",
     "remove_item",
+    "unequip_item",
     "use_item",
 ]
