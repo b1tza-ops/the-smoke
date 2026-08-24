@@ -943,8 +943,15 @@ def crimes():
     result = None
     attempted_crime_key = None
     error = None
+    work_shift = get_shift_state(player)
 
-    if request.method == "POST":
+    if request.method == "POST" and work_shift is not None:
+        error = (
+            "You cannot attempt crimes while working a shift. "
+            "Finish or collect your shift first."
+        )
+
+    elif request.method == "POST":
         crime_key = request.form.get("crime_key", "")
         attempted_crime_key = crime_key
         crime = CRIMES_BY_KEY.get(crime_key)
@@ -980,6 +987,7 @@ def crimes():
         result=result,
         attempted_crime_key=attempted_crime_key,
         error=error,
+        work_shift=work_shift,
     )
 
 
