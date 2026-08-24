@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ shop.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='district-shops-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='district-shops-2') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -21,7 +21,7 @@
         </section>
         {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
         {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
-        {% if not accessible %}<div class="game-notice game-notice--error">You must be free and physically present in Camden to shop.</div>{% endif %}
+        {% if not accessible %}<div class="game-notice game-notice--error">You must be free and physically present in {{ shop.district|title }} to shop.</div>{% endif %}
         <section class="shop-counter" aria-label="Available stock">
             <div class="shop-counter__heading">
                 <strong>Items for sale</strong>

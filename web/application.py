@@ -751,6 +751,7 @@ def district_shop():
     save_player(player)
     message = None
     error = None
+    shop = get_district_shop(player.current_district)
 
     if request.method == "POST":
         try:
@@ -769,7 +770,7 @@ def district_shop():
                 "shop_purchase",
                 message,
                 {
-                    "shop": "camden_corner",
+                    "shop": shop["key"],
                     "item_key": result["item"].item_key,
                     "quantity": result["quantity"],
                     "total": result["total"],
@@ -787,8 +788,7 @@ def district_shop():
         message=message,
         error=error,
         accessible=(
-            player.current_district == "camden"
-            and player.travel_destination is None
+            player.travel_destination is None
             and player.jail_until is None
             and player.hospital_until is None
         ),
