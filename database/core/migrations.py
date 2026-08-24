@@ -491,6 +491,22 @@ def migrate_010_player_presence(cursor):
     )
 
 
+
+def migrate_011_email_verification_rollout(cursor):
+    cursor.execute(
+        """
+        UPDATE users
+        SET
+            email_verified = 1,
+            email_verified_at = COALESCE(
+                email_verified_at,
+                CURRENT_TIMESTAMP
+            )
+        WHERE email_verified = 0
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -541,6 +557,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=10,
         name="player_presence",
         apply=migrate_010_player_presence,
+    ),
+    Migration(
+        version=11,
+        name="email_verification_rollout",
+        apply=migrate_011_email_verification_rollout,
     ),
 )
 

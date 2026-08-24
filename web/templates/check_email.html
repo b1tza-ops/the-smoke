@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Check your email · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="atmosphere atmosphere--one" aria-hidden="true"></div>
+    <div class="atmosphere atmosphere--two" aria-hidden="true"></div>
+    <main class="auth-shell">
+        <section class="auth-intro" aria-labelledby="brand-title">
+            <a class="brand" href="{{ url_for('login') }}">
+                <span class="brand__mark">TS</span>
+                <span class="brand__name">The Smoke</span>
+            </a>
+            <div class="auth-intro__copy">
+                <p class="eyebrow">Account activation</p>
+                <h1 id="brand-title">One last step.</h1>
+                <p class="lede">Confirm your email to enter London and protect your account.</p>
+            </div>
+        </section>
+        <section class="auth-card" aria-labelledby="email-title">
+            <div class="auth-card__header">
+                <p class="eyebrow">Check your inbox</p>
+                <h2 id="email-title">Verify your email</h2>
+                <p>We sent a 24-hour verification link to <strong>{{ email }}</strong>.</p>
+            </div>
+            {% if notice %}
+                <div class="alert alert--success" role="status">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span>{{ notice }}</span>
+                </div>
+            {% endif %}
+            {% if error %}
+                <div class="alert" role="alert">
+                    <span class="alert__icon" aria-hidden="true">!</span>
+                    <span>{{ error }}</span>
+                </div>
+            {% endif %}
+            <form class="auth-form" action="{{ url_for('resend_verification') }}" method="post">
+                <button class="primary-button" type="submit">
+                    <span>Resend verification email</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
+            <p class="auth-switch"><a href="{{ url_for('login') }}">Back to sign in</a></p>
+        </section>
+    </main>
+</body>
+</html>

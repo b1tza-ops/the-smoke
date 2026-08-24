@@ -516,3 +516,20 @@ input { font: inherit; }
 .auth-switch a:hover {
     color: #d2ff79;
 }
+
+
+.alert--success {
+    border-color: rgba(185, 243, 75, .35);
+    background: rgba(185, 243, 75, .08);
+    color: #d2ff79;
+}
+
+.auth-shell--single {
+    grid-template-columns: minmax(20rem, 34rem);
+    justify-content: center;
+}
+
+.primary-button--link {
+    margin-top: 2rem;
+    text-decoration: none;
+}
