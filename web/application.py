@@ -72,6 +72,23 @@ from utils.security import (
     verify_password,
 )
 from game.housing import get_residence
+from game.inventory import (
+    INVENTORY_SLOT_CAPACITY,
+    ITEMS,
+    InventoryError,
+    get_item,
+    use_item,
+)
+from game.jobs import (
+    CAREERS,
+    JobError,
+    complete_shift,
+    get_career,
+    get_job_role,
+    get_shift_state,
+    join_career,
+    start_shift,
+)
 from game.player import Player
 from game.player.progression import xp_required_for_level
 from game.player.status import update_player_status
@@ -135,6 +152,105 @@ def home():
         player=player,
         dashboard=dashboard,
         online_players=get_online_player_count(),
+    )
+
+
+@app.route("/jobs-inventory", methods=["GET", "POST"])
+def jobs_inventory():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    message = None
+    error = None
+    active_section = request.form.get(
+        "section",
+        "jobs",
+    )
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+
+        try:
+            if action == "join_career":
+                employment = join_career(
+                    player,
+                    request.form.get("career_key", ""),
+                )
+                role = get_job_role(employment.role_key)
+                message = (
+                    f"Career joined. You are now "
+                    f"{role.name}."
+                )
+            elif action == "start_shift":
+                shift = start_shift(player)
+                message = (
+                    f"Shift started. {shift.energy_spent} "
+                    f"energy used."
+                )
+            elif action == "complete_shift":
+                completed = complete_shift(player)
+                message = (
+                    f"Shift complete. £{completed.salary:,} "
+                    f"earned and {completed.work_xp} XP gained."
+                )
+                if completed.promoted_to is not None:
+                    promoted = get_job_role(
+                        completed.promoted_to
+                    )
+                    message += (
+                        f" Promoted to {promoted.name}."
+                    )
+            elif action == "use_item":
+                used = use_item(
+                    player,
+                    request.form.get("item_key", ""),
+                )
+                item = get_item(used.item_key)
+                message = (
+                    f"{item.name} used. "
+                    f"{used.amount_restored} "
+                    f"{used.effect_key} restored."
+                )
+            else:
+                error = "Unknown action."
+        except (JobError, InventoryError) as action_error:
+            error = str(action_error)
+
+    save_player(player)
+    career = get_career(player.career_key)
+    role = get_job_role(player.job_role_key)
+    shift_state = get_shift_state(player)
+    owned_items = [
+        {
+            "item": get_item(item_key),
+            "quantity": quantity,
+        }
+        for item_key, quantity
+        in sorted(player.inventory.items())
+        if get_item(item_key) is not None
+    ]
+
+    return render_template(
+        "jobs_inventory.html",
+        player=player,
+        careers=CAREERS,
+        career=career,
+        role=role,
+        shift_state=shift_state,
+        owned_items=owned_items,
+        inventory_capacity=INVENTORY_SLOT_CAPACITY,
+        active_section=active_section,
+        message=message,
+        error=error,
     )
 
 
