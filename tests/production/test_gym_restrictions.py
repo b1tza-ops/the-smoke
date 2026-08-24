@@ -9,7 +9,7 @@ from database.repositories.players import (
     get_player_by_user_id,
 )
 from database.repositories.users import create_user
-from game.gym import TrainingRestrictedError, train
+from game.gym import train
 from game.player import Player
 from game.player.status import send_to_hospital, send_to_jail
 
@@ -41,13 +41,13 @@ class GymRestrictionTests(unittest.TestCase):
         energy_before = self.player.energy
         strength_before = self.player.strength
 
-        with self.assertRaises(TrainingRestrictedError):
-            train(
-                self.player,
-                "strength",
-                energy=10,
-                gym_key="camden_community",
-            )
+        trained = train(
+            self.player,
+            "strength",
+            energy=10,
+            gym_key="camden_community",
+        )
+        self.assertFalse(trained)
 
         self.assertEqual(self.player.energy, energy_before)
         self.assertEqual(
