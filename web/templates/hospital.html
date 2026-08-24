@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Hospital · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='hospital-1') }}">
+</head>
+<body class="dashboard-page hospital-page">
+<div class="app-shell">
+<header class="topbar">
+<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+<span class="hospital-location">St Pancras Hospital · Ward C</span>
+</header>
+{% include "_player_hud.html" %}
+<main class="dashboard-main hospital-main">
+<section class="hospital-hero">
+<div><p class="eyebrow">London health service</p><h1>Hospital</h1><p>See who has been unlucky today. Patients remain unavailable for criminal activity, travel, work and training until discharged.</p></div>
+<div class="ward-count"><span>Patients admitted</span><strong>{{ patients|length }}</strong><small>Live ward register</small></div>
+</section>
+
+{% if own_patient %}
+<section class="patient-status" aria-labelledby="recovery-title">
+<div class="patient-status__pulse" aria-hidden="true">+</div>
+<div><p class="eyebrow">You are in hospital</p><h2 id="recovery-title">Recovery in progress</h2><p>You cannot perform restricted actions until your treatment is complete.</p></div>
+<div class="patient-countdown" data-hospital-countdown="{{ own_patient.remaining_seconds }}"><span>Discharge in</span><strong>--:--</strong><small>{{ own_patient.hospital_until }}</small></div>
+</section>
+{% else %}
+<section class="hospital-visitor">
+<span aria-hidden="true">+</span><div><strong>You are visiting the ward</strong><p>You are not currently admitted and may continue playing normally.</p></div>
+</section>
+{% endif %}
+
+<section class="ward-panel">
+<div class="section-heading"><div><p class="eyebrow">Ward register</p><h2>Players in hospital</h2></div><span class="section-note">Updates live</span></div>
+{% if patients %}
+<div class="patient-list">
+{% for patient in patients %}
+<article class="patient-row {{ 'is-you' if patient.id == player.id }}">
+<div class="patient-avatar">{{ patient.name[:1]|upper }}</div>
+<div class="patient-identity"><h3>{{ patient.name }}{% if patient.id == player.id %}<span>You</span>{% endif %}</h3><p>{{ patient.reason }}</p></div>
+<div class="patient-health"><span>Health</span><strong>{{ patient.health }}/100</strong></div>
+<div class="patient-level"><span>Level</span><strong>{{ patient.level }}</strong></div>
+<div class="patient-time" data-patient-time="{{ patient.remaining_seconds }}"><span>Discharge</span><strong>--:--</strong></div>
+</article>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-ward"><span>+</span><h2>The ward is empty</h2><p>Nobody is currently recovering in hospital.</p></div>
+{% endif %}
+</section>
+</main>
+</div>
+<script>
+(() => {
+ const format=n => {
+   n=Math.max(0,n);
+   const h=Math.floor(n/3600),m=Math.floor((n%3600)/60),s=n%60;
+   return h>0 ? h+"h "+String(m).padStart(2,"0")+"m" : String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+ };
+ const timers=[...document.querySelectorAll("[data-hospital-countdown],[data-patient-time]")];
+ const draw=()=>{
+   timers.forEach(el=>{
+     const key=el.hasAttribute("data-hospital-countdown")?"hospitalCountdown":"patientTime";
+     let n=Number(el.dataset[key]);
+     el.querySelector("strong").textContent=n<=0?"Discharged":format(n);
+     el.dataset[key]=String(Math.max(0,n-1));
+   });
+ };
+ draw();window.setInterval(draw,1000);
+})();
+</script>
+</body></html>

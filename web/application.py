@@ -78,6 +78,12 @@ from database.repositories.presence import (
     mark_player_offline,
     mark_player_online,
 )
+from database.repositories.hospital import (
+    get_hospital_patients,
+)
+from database.repositories.jail import (
+    get_jail_inmates,
+)
 
 from database.repositories.players import (
     create_player,
@@ -715,6 +721,72 @@ def _work_page(active_section):
         active_section=active_section,
         message=message,
         error=error,
+    )
+
+
+@app.route("/hospital")
+def hospital():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_player_status(player)
+    save_player(player)
+
+    patients = get_hospital_patients()
+    own_patient = next(
+        (
+            patient
+            for patient in patients
+            if patient["id"] == player.id
+        ),
+        None,
+    )
+
+    return render_template(
+        "hospital.html",
+        player=player,
+        patients=patients,
+        own_patient=own_patient,
+    )
+
+
+@app.route("/jail")
+def jail():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_player_status(player)
+    save_player(player)
+
+    inmates = get_jail_inmates()
+    own_inmate = next(
+        (
+            inmate
+            for inmate in inmates
+            if inmate["id"] == player.id
+        ),
+        None,
+    )
+
+    return render_template(
+        "jail.html",
+        player=player,
+        inmates=inmates,
+        own_inmate=own_inmate,
     )
 
 
