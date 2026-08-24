@@ -1045,6 +1045,34 @@ def migrate_024_pvp_daily_contracts(cursor):
     )
 
 
+def migrate_025_item_catalogue_batch_one(cursor):
+    from game.inventory.items import ITEMS_BY_KEY
+
+    item_keys = (
+        "sports_drink", "painkillers", "bandage_roll", "protein_bar",
+        "bolt_cutters", "glass_cutter", "burner_phone", "duct_tape",
+        "police_baton", "tire_iron", "hatchet", "survival_knife",
+        "denim_jacket", "hard_hat", "combat_gloves", "cargo_trousers",
+        "trainers", "tactical_boots", "reinforced_jeans", "riot_helmet",
+    )
+    cursor.executemany(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key, name, category, description, stackable,
+            max_quantity, effect_key, effect_amount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            (
+                item.key, item.name, item.category, item.description,
+                int(item.stackable), item.max_quantity,
+                item.effect_key, item.effect_amount,
+            )
+            for item in (ITEMS_BY_KEY[key] for key in item_keys)
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1165,6 +1193,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=24,
         name="pvp_daily_contracts",
         apply=migrate_024_pvp_daily_contracts,
+    ),
+    Migration(
+        version=25,
+        name="item_catalogue_batch_one",
+        apply=migrate_025_item_catalogue_batch_one,
     ),
 )
 
