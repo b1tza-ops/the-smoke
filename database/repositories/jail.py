@@ -86,7 +86,11 @@ def bail_out_inmate(helper_user_id, target_player_id):
             helper_user_id,
             target_player_id,
         )
-        _validate_interaction(helper, target)
+        _validate_interaction(
+            connection,
+            helper,
+            target,
+        )
 
         remaining = _remaining_seconds(
             connection,
@@ -155,7 +159,11 @@ def attempt_jail_break(
             helper_user_id,
             target_player_id,
         )
-        _validate_interaction(helper, target)
+        _validate_interaction(
+            connection,
+            helper,
+            target,
+        )
 
         if helper["nerve"] < BREAKOUT_NERVE_COST:
             raise JailInteractionError(
@@ -302,29 +310,36 @@ def _load_participants(
     )
 
 
-def _validate_interaction(helper, target):
+def _validate_interaction(connection, helper, target):
     if helper["id"] == target["id"]:
         raise JailInteractionError(
             "You cannot release yourself."
         )
     if (
         target["jail_until"] is None
-        or _timestamp_expired(target["jail_until"])
+        or not _timestamp_active(
+            connection,
+            target["jail_until"],
+        )
     ):
         raise JailInteractionError(
             "This player is no longer in jail."
         )
     if (
         helper["jail_until"] is not None
-        and not _timestamp_expired(helper["jail_until"])
+        and _timestamp_active(
+            connection,
+            helper["jail_until"],
+        )
     ):
         raise JailInteractionError(
             "You cannot help someone while in jail."
         )
     if (
         helper["hospital_until"] is not None
-        and not _timestamp_expired(
-            helper["hospital_until"]
+        and _timestamp_active(
+            connection,
+            helper["hospital_until"],
         )
     ):
         raise JailInteractionError(
@@ -336,15 +351,11 @@ def _validate_interaction(helper, target):
         )
 
 
-def _timestamp_expired(timestamp):
-    connection = get_connection()
-    try:
-        return connection.execute(
-            "SELECT ? <= CURRENT_TIMESTAMP",
-            (timestamp,),
-        ).fetchone()[0] == 1
-    finally:
-        connection.close()
+def _timestamp_active(connection, timestamp):
+    return connection.execute(
+        "SELECT ? > CURRENT_TIMESTAMP",
+        (timestamp,),
+    ).fetchone()[0] == 1
 
 
 def _remaining_seconds(connection, timestamp):
