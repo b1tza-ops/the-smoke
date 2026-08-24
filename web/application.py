@@ -1,5 +1,8 @@
+import logging
 import os
 import secrets
+import sqlite3
+from logging.handlers import RotatingFileHandler
 from game.world.districts import (
     DISTRICTS,
     get_district,
@@ -27,7 +30,14 @@ from game.gym import (
     train,
     unlock_gym,
 )
-from flask import Flask, render_template, request, redirect, session
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+)
+from database.core.connection import get_connection
 from database.core.setup import create_tables
 from database.repositories.users import (
     create_user,
@@ -67,6 +77,7 @@ from auth.validation import (
     validate_password,
     validate_username,
 )
+from utils.rate_limit import FixedWindowRateLimiter
 from utils.security import (
     hash_password,
     verify_password,
@@ -100,9 +111,94 @@ app.config.update(
     SECRET_KEY=os.environ.get("THE_SMOKE_SECRET_KEY") or secrets.token_hex(32),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=(
+        os.environ.get("THE_SMOKE_COOKIE_SECURE", "1")
+        == "1"
+    ),
 )
 
 create_tables()
+
+rate_limiter = FixedWindowRateLimiter()
+SENSITIVE_LIMITS = {
+    "/login": (10, 60),
+    "/register": (5, 300),
+    "/forgot-password": (5, 300),
+    "/resend-verification": (3, 300),
+}
+
+
+def configure_logging():
+    log_path = os.environ.get("THE_SMOKE_LOG_PATH")
+
+    if not log_path:
+        return
+
+    try:
+        handler = RotatingFileHandler(
+            log_path,
+            maxBytes=5 * 1024 * 1024,
+            backupCount=5,
+        )
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s "
+            "%(name)s %(message)s"
+        ))
+        handler.setLevel(logging.INFO)
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.INFO)
+    except OSError:
+        app.logger.exception(
+            "Could not initialise file logging."
+        )
+
+
+configure_logging()
+
+
+@app.before_request
+def enforce_maintenance_and_rate_limits():
+    if request.path == "/healthz":
+        return None
+
+    if (
+        os.environ.get("THE_SMOKE_MAINTENANCE", "0")
+        == "1"
+        and not request.path.startswith("/static/")
+    ):
+        return render_template("maintenance.html"), 503
+
+    if (
+        request.method == "POST"
+        and request.path in SENSITIVE_LIMITS
+    ):
+        limit, window = SENSITIVE_LIMITS[request.path]
+        forwarded = request.headers.get(
+            "CF-Connecting-IP",
+            request.remote_addr or "unknown",
+        )
+        key = f"{request.path}:{forwarded}"
+
+        if not rate_limiter.allow(
+            key,
+            limit=limit,
+            window_seconds=window,
+        ):
+            app.logger.warning(
+                "rate_limit path=%s ip=%s",
+                request.path,
+                forwarded,
+            )
+            return render_template(
+                "error.html",
+                title="Too many attempts",
+                message=(
+                    "Please wait a few minutes and "
+                    "try again."
+                ),
+            ), 429
+
+    return None
 
 
 @app.before_request
@@ -116,6 +212,36 @@ def percentage(value, maximum):
         return 0
 
     return max(0, min(100, round((value / maximum) * 100)))
+
+
+@app.route("/healthz")
+def healthcheck():
+    try:
+        connection = get_connection()
+        connection.execute("SELECT 1").fetchone()
+        connection.close()
+    except sqlite3.Error:
+        app.logger.exception("Database health check failed.")
+        return {"status": "unhealthy"}, 503
+
+    return {"status": "ok"}, 200
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    app.logger.exception(
+        "Unhandled server error path=%s",
+        request.path,
+        exc_info=error,
+    )
+    return render_template(
+        "error.html",
+        title="Something went wrong",
+        message=(
+            "The Smoke encountered an unexpected error. "
+            "Please try again shortly."
+        ),
+    ), 500
 
 
 @app.route("/")
