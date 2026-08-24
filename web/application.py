@@ -243,10 +243,12 @@ def crimes():
     update_travel(player)
     update_player_status(player)
     result = None
+    attempted_crime_key = None
     error = None
 
     if request.method == "POST":
         crime_key = request.form.get("crime_key", "")
+        attempted_crime_key = crime_key
         crime = CRIMES_BY_KEY.get(crime_key)
 
         if crime is None:
@@ -266,6 +268,7 @@ def crimes():
         player=player,
         crimes=district_crimes,
         result=result,
+        attempted_crime_key=attempted_crime_key,
         error=error,
     )
 
