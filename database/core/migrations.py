@@ -947,6 +947,45 @@ def migrate_021_player_pvp(cursor):
     )
 
 
+def migrate_022_pvp_reliability(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pvp_attack_reservations (
+            defender_id INTEGER PRIMARY KEY,
+            attacker_id INTEGER NOT NULL,
+            reserved_at TEXT NOT NULL,
+            FOREIGN KEY (defender_id)
+                REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (attacker_id)
+                REFERENCES players(id) ON DELETE CASCADE,
+            CHECK (defender_id != attacker_id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pvp_notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            attack_id INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            read_at TEXT,
+            FOREIGN KEY (player_id)
+                REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (attack_id)
+                REFERENCES player_pvp_attacks(id) ON DELETE CASCADE
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_pvp_notifications_unread
+        ON pvp_notifications(player_id, read_at, id)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1052,6 +1091,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=21,
         name="player_pvp",
         apply=migrate_021_player_pvp,
+    ),
+    Migration(
+        version=22,
+        name="pvp_reliability",
+        apply=migrate_022_pvp_reliability,
     ),
 )
 

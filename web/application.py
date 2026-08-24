@@ -114,11 +114,17 @@ from database.repositories.players import (
     save_player,
 )
 from database.repositories.pvp import (
+    AttackReservationError,
     get_attack_limits,
     get_pvp_targets,
     get_recent_pvp_attacks,
+    get_pvp_report,
     get_target_user_id,
+    get_unread_pvp_notifications,
+    mark_pvp_notifications_read,
     record_pvp_attack,
+    release_pvp_attack,
+    reserve_pvp_attack,
 )
 
 from auth.email_delivery import (
@@ -1734,12 +1740,7 @@ def pvp():
             update_travel(defender)
             update_player_status(defender)
 
-            limits = get_attack_limits(player.id, defender.id)
-            if limits.protected_seconds > 0:
-                raise PvpError(
-                    "That player is under attack protection for "
-                    f"{limits.protected_seconds} seconds."
-                )
+            limits = reserve_pvp_attack(player.id, defender.id)
 
             result = fight_player(
                 player,
@@ -1751,7 +1752,7 @@ def pvp():
             )
             save_player(player)
             save_player(defender)
-            record_pvp_attack(
+            attack_id = record_pvp_attack(
                 player.id,
                 defender.id,
                 selected_approach,
@@ -1772,8 +1773,10 @@ def pvp():
                     "approach": selected_approach,
                 },
             )
-        except (PvpError, ValueError) as pvp_error:
+        except (PvpError, AttackReservationError, ValueError) as pvp_error:
             error = str(pvp_error)
+            if defender is not None:
+                release_pvp_attack(player.id, defender.id)
 
     save_player(player)
     targets = get_pvp_targets(player.id, player.current_district)
@@ -1788,6 +1791,10 @@ def pvp():
         target["estimate"] = estimate_target(player, target_view)
         target["limits"] = get_attack_limits(player.id, target["id"])
 
+    notifications = get_unread_pvp_notifications(player.id)
+    if notifications:
+        mark_pvp_notifications_read(player.id)
+
     return render_template(
         "pvp.html",
         player=player,
@@ -1800,6 +1807,25 @@ def pvp():
         defender=defender,
         error=error,
         history=get_recent_pvp_attacks(player.id),
+        notifications=notifications,
+    )
+
+
+@app.route("/pvp/report/<int:attack_id>")
+def pvp_report(attack_id):
+    if "user_id" not in session:
+        return redirect("/login")
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+    player = Player(*player_data)
+    report = get_pvp_report(attack_id, player.id)
+    if report is None:
+        return redirect("/pvp")
+    return render_template(
+        "pvp_report.html",
+        player=player,
+        report=report,
     )
 
 

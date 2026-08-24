@@ -9,6 +9,7 @@
 <main class="dashboard-main game-page pvp-page">
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} rivalries</p><h1>Player fights</h1><p>Choose a target and a tactical approach. Only cash carried on the street can be mugged.</p></div><div class="combat-cost"><span>Each attack</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+{% for notice in notifications %}<a class="game-notice pvp-notification" href="{{ url_for('pvp_report', attack_id=notice.attack_id) }}"><strong>Incoming attack</strong> · {{ notice.message }} View report →</a>{% endfor %}
 {% if result %}
 <section id="pvp-arena" class="pvp-arena {{ 'is-victory' if result.victory else 'is-defeat' }}" data-playback>
 <div class="pvp-fighters"><article><span class="combat-avatar">{{ player.name[:2]|upper }}</span><strong>{{ player.name }}</strong><div class="pvp-health"><i data-player-health style="width:100%"></i></div><span data-player-value>{{ player.health }}/100</span></article><div class="pvp-versus">VS</div><article><span class="combat-avatar">{{ defender.name[:2]|upper }}</span><strong>{{ defender.name }}</strong><div class="pvp-health"><i data-target-health style="width:100%"></i></div><span data-target-value>100/100</span></article></div>
@@ -26,17 +27,17 @@
 {% for target in targets %}
 <article class="pvp-target">
 <div class="pvp-target__identity"><span class="combat-avatar">{{ target.name[:2]|upper }}</span><div><small>Level {{ target.level }} · {{ target.estimate }}</small><h2>{{ target.name }}</h2><p>{{ target.health }}/100 health · carries visible street cash</p></div></div>
-{% if target.restricted %}<p class="combat-block">Currently unavailable</p>{% elif target.limits.protected_seconds %}<p class="combat-block">Protected for {{ target.limits.protected_seconds }} seconds</p>{% endif %}
+{% if target.beginner_protection_seconds %}<p class="combat-block">New player protection · {{ (target.beginner_protection_seconds // 3600) + 1 }}h</p>{% elif target.restricted %}<p class="combat-block">Currently unavailable</p>{% elif target.limits.protected_seconds %}<p class="combat-block">Protected for {{ target.limits.protected_seconds }} seconds</p>{% endif %}
 <form method="post" action="{{ url_for('pvp') }}#pvp-arena">
 <input type="hidden" name="target_id" value="{{ target.id }}">
 <label class="pvp-approach-select"><span>Approach</span><select name="approach">{% for key in approaches %}<option value="{{ key }}">{{ key|title }}</option>{% endfor %}</select></label>
-<button class="work-button" type="submit" {% if block_reason or target.restricted or target.limits.blocked %}disabled{% endif %}><span>Attack {{ target.name }}</span><span>→</span></button>
+<button class="work-button" type="submit" {% if block_reason or target.beginner_protection_seconds or target.restricted or target.limits.blocked %}disabled{% endif %}><span>Attack {{ target.name }}</span><span>→</span></button>
 {% if target.limits.reward_multiplier < 1 %}<small class="combat-warning">Repeat-target rewards reduced to {{ (target.limits.reward_multiplier * 100)|int }}%.</small>{% endif %}
 </form></article>
 {% else %}<section class="combat-card"><h2>No available players here</h2><p>Invite another player or travel to a busier district.</p></section>{% endfor %}
 </div>
 {% if block_reason %}<p class="combat-block">{{ block_reason }}</p>{% endif %}
-<section class="combat-log"><div class="section-heading"><div><p class="eyebrow">Recent threats</p><h2>Combat history</h2></div></div><ol>{% for attack in history %}<li>{% if attack.was_attacker %}You attacked {{ attack.defender_name }}{% else %}{{ attack.attacker_name }} attacked you{% endif %} · {{ attack.outcome }} · £{{ attack.cash_stolen }}</li>{% else %}<li>No player fights yet.</li>{% endfor %}</ol></section>
+<section class="combat-log"><div class="section-heading"><div><p class="eyebrow">Recent threats</p><h2>Combat history</h2></div></div><ol>{% for attack in history %}<li><div>{% if attack.was_attacker %}You attacked {{ attack.defender_name }}{% else %}{{ attack.attacker_name }} attacked you{% endif %} · {{ attack.outcome }} · £{{ attack.cash_stolen }}</div><div class="pvp-history-actions"><a href="{{ url_for('pvp_report', attack_id=attack.id) }}">Report</a>{% if not attack.was_attacker %}<form method="post" action="{{ url_for('pvp') }}#pvp-arena"><input type="hidden" name="target_id" value="{{ attack.attacker_id }}"><input type="hidden" name="approach" value="aggressive"><button type="submit">Revenge</button></form>{% endif %}</div></li>{% else %}<li>No player fights yet.</li>{% endfor %}</ol></section>
 {% endif %}
 </main></div>
 {% if result %}<script>
