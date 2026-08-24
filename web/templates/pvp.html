@@ -21,7 +21,7 @@
 </section>
 <a class="character-link" href="{{ url_for('pvp') }}">Return to target board →</a>
 {% else %}
-<section class="pvp-approaches"><p class="eyebrow">Combat approach</p><div>{% for key in approaches %}<label><input form="target-form-placeholder" type="radio" disabled><span><strong>{{ key|title }}</strong><small>{% if key == 'aggressive' %}More damage, less defence{% elif key == 'defensive' %}Higher defence, lower damage{% elif key == 'precise' %}Improved accuracy{% else %}Harder to hit{% endif %}</small></span></label>{% endfor %}</div></section>
+<section class="pvp-approaches"><p class="eyebrow">Combat approach</p><div>{% for key in approaches %}<label><input form="target-form-placeholder" type="radio" disabled hidden><span><strong>{{ key|title }}</strong><small>{% if key == 'aggressive' %}More damage, less defence{% elif key == 'defensive' %}Higher defence, lower damage{% elif key == 'precise' %}Improved accuracy{% else %}Harder to hit{% endif %}</small></span></label>{% endfor %}</div></section>
 <div class="pvp-targets">
 {% for target in targets %}
 <article class="pvp-target">
