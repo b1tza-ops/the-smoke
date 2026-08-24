@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ shop.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='district-shops-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='raster-equipment-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -29,9 +29,9 @@
             </div>
         {% for item in shop["items"] %}
             {% set category = {"energy_drink": "Boost", "first_aid_kit": "Medical", "lockpick": "Utility", "kitchen_knife": "Weapon", "padded_jacket": "Armour"}[item.key] %}
-            {% set image = {"energy_drink": "shop-energy-drink.svg", "first_aid_kit": "shop-first-aid.svg", "lockpick": "shop-lockpick.svg", "kitchen_knife": "shop-kitchen-knife.svg", "padded_jacket": "shop-padded-jacket.svg"}[item.key] %}
+            {% set image = {"energy_drink": "icons/shop-energy-drink.svg", "first_aid_kit": "icons/shop-first-aid.svg", "lockpick": "icons/shop-lockpick.svg", "kitchen_knife": "items/kitchen-knife.webp", "padded_jacket": "items/padded-hoodie.webp"}[item.key] %}
             <article class="shop-row {{ 'shop-row--sold' if item.stock == 0 }}">
-                <img class="shop-row__image" src="{{ url_for('static', filename='icons/' + image) }}" alt="">
+                <img class="shop-row__image" src="{{ url_for('static', filename=image) }}" alt="">
                 <div class="shop-row__details">
                     <h2>{{ item.name }}</h2>
                     <strong>£{{ item.price }}</strong>
