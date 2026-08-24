@@ -1,119 +1,33 @@
 <!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#090b0d">
-    <title>Gym · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="dashboard-page">
-    <div class="app-shell">
-        <header class="topbar">
-            <a class="brand" href="{{ url_for('home') }}">
-                <span class="brand__mark">TS</span>
-                <span class="brand__name">The Smoke</span>
-            </a>
-            <a class="logout-link" href="{{ url_for('home') }}">Dashboard</a>
-        </header>
-        <main class="dashboard-main game-page">
-            <section class="game-page__header">
-                <div>
-                    <p class="eyebrow">{{ player.current_district|title }}</p>
-                    <h1>Gym</h1>
-                    <p>Spend energy to build your battle stats.</p>
-                </div>
-                <div class="resource-pill">
-                    <span>Energy</span>
-                    <strong>{{ player.energy }}/{{ player.max_energy }}</strong>
-                </div>
-            </section>
-
-            {% if message %}
-                <div class="game-notice game-notice--success" role="status">{{ message }}</div>
-            {% endif %}
-            {% if error %}
-                <div class="game-notice game-notice--error" role="alert">{{ error }}</div>
-            {% endif %}
-            {% if block_reason %}
-                <div class="game-notice game-notice--error">
-                    Training is unavailable while {{ block_reason }}.
-                </div>
-            {% endif %}
-
-            <section class="stat-strip" aria-label="Battle stats">
-                {% for stat in valid_stats %}
-                    <div>
-                        <span>{{ stat|title }}</span>
-                        <strong>{{ player|attr(stat) }}</strong>
-                    </div>
-                {% endfor %}
-            </section>
-
-            <section class="game-card-grid">
-                {% for gym in gyms %}
-                    <article class="game-card">
-                        <div class="game-card__top">
-                            <div>
-                                <p class="eyebrow">Level {{ gym.required_level }}+</p>
-                                <h2>{{ gym.name }}</h2>
-                            </div>
-                            {% if gym.key in unlocked_gyms %}
-                                <span class="level-badge">Unlocked</span>
-                            {% else %}
-                                <span class="game-price">£{{ "{:,}".format(gym.membership_cost) }}</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="multiplier-grid">
-                            {% for stat in valid_stats %}
-                                <span>{{ stat|title }} ×{{ gym.multiplier_for(stat)|string }}</span>
-                            {% endfor %}
-                        </div>
-
-                        {% if gym.key in unlocked_gyms %}
-                            <form class="game-form" method="post">
-                                <input type="hidden" name="action" value="train">
-                                <input type="hidden" name="gym_key" value="{{ gym.key }}">
-                                <label>
-                                    Stat
-                                    <select name="stat" required>
-                                        {% for stat in valid_stats %}
-                                            <option value="{{ stat }}">{{ stat|title }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </label>
-                                <label>
-                                    Energy
-                                    <select name="energy" required>
-                                        {% for amount in range(10, 101, 10) %}
-                                            <option value="{{ amount }}">{{ amount }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </label>
-                                <button class="primary-button" type="submit"
-                                    {% if block_reason %}disabled{% endif %}>
-                                    <span>Train now</span><span>→</span>
-                                </button>
-                            </form>
-                        {% else %}
-                            <form method="post">
-                                <input type="hidden" name="action" value="unlock">
-                                <input type="hidden" name="gym_key" value="{{ gym.key }}">
-                                <button class="primary-button" type="submit">
-                                    <span>Buy membership</span><span>→</span>
-                                </button>
-                            </form>
-                        {% endif %}
-                    </article>
-                {% else %}
-                    <article class="game-card">
-                        <h2>No gym in this district</h2>
-                        <p>Travel to Camden, Brixton or Soho to find one.</p>
-                    </article>
-                {% endfor %}
-            </section>
-        </main>
-    </div>
-</body>
-</html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Gym · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body class="dashboard-page"><div class="app-shell">
+<header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
+<main class="dashboard-main game-page gym-page">
+<section class="gym-hero"><div><p class="eyebrow">{{ player.current_district|title }} training district</p><h1>Gym</h1><p>Choose a discipline and put in the work.</p></div><div class="gym-energy"><span>Energy available</span><strong>{{ player.energy }}<small>/{{ player.max_energy }}</small></strong></div></section>
+{% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if block_reason %}<div class="game-notice game-notice--error">Training is unavailable while {{ block_reason }}.</div>{% endif %}
+{% for gym in gyms %}
+<section class="gym-club" aria-labelledby="gym-{{ gym.key }}">
+<header class="gym-club__header"><div><p class="eyebrow">Level {{ gym.required_level }}+ · {{ player.current_district|title }}</p><h2 id="gym-{{ gym.key }}">{{ gym.name }}</h2></div>{% if gym.key in unlocked_gyms %}<span class="level-badge">Member</span>{% else %}<strong class="game-price">£{{ "{:,}".format(gym.membership_cost) }}</strong>{% endif %}</header>
+{% if gym.key in unlocked_gyms %}
+<div class="gym-stat-grid">
+{% for stat in valid_stats %}
+<article class="gym-stat-card gym-stat-card--{{ stat }}">
+<div class="gym-stat-card__title"><span class="gym-stat-icon" aria-hidden="true">{% if stat == "strength" %}◆{% elif stat == "defence" %}⬢{% elif stat == "speed" %}➜{% else %}✦{% endif %}</span><h3>{{ stat|title }}</h3><strong>{{ player|attr(stat) }}</strong></div>
+<p>{{ stat_descriptions[stat] }}</p><span class="gym-cost">10 energy per train</span>
+<form class="gym-train-form" method="post"><input type="hidden" name="action" value="train"><input type="hidden" name="gym_key" value="{{ gym.key }}"><input type="hidden" name="stat" value="{{ stat }}">
+<div class="gym-stepper"><button type="button" data-step="-1" aria-label="Decrease {{ stat }} trains">−</button><input type="number" name="trains" value="1" min="1" max="{{ max_trains if max_trains > 0 else 1 }}" aria-label="{{ stat|title }} training count" readonly><button type="button" data-step="1" aria-label="Increase {{ stat }} trains">+</button></div>
+<button class="gym-train-button" type="submit" {% if block_reason or max_trains < 1 %}disabled{% endif %}>Train</button></form>
+</article>
+{% endfor %}</div><p class="gym-prompt">What would you like to train today?</p>
+{% else %}
+<div class="gym-locked"><p>Purchase membership to train at this gym.</p><div class="multiplier-grid">{% for stat in valid_stats %}<span>{{ stat|title }} ×{{ gym.multiplier_for(stat)|string }}</span>{% endfor %}</div><form method="post"><input type="hidden" name="action" value="unlock"><input type="hidden" name="gym_key" value="{{ gym.key }}"><button class="primary-button" type="submit" {% if player.level < gym.required_level or player.money < gym.membership_cost %}disabled{% endif %}><span>Purchase membership</span><span>→</span></button></form></div>
+{% endif %}</section>
+{% else %}<div class="game-notice game-notice--error">No gym is available in this district.</div>{% endfor %}
+</main><footer class="app-footer"><span>The Smoke</span><a class="logout-link" href="{{ url_for('home') }}">Back to dashboard</a></footer></div>
+<script>document.querySelectorAll(".gym-stepper").forEach(s=>{const i=s.querySelector("input");s.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const n=Number(i.value)+Number(b.dataset.step);i.value=Math.min(Number(i.max),Math.max(Number(i.min),n))}))});</script>
+</body></html>

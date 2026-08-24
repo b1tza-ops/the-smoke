@@ -90,7 +90,7 @@ class WebGameplayTests(unittest.TestCase):
                 "action": "train",
                 "gym_key": "camden_community",
                 "stat": "strength",
-                "energy": "10",
+                "trains": "2",
             },
         )
 
@@ -98,7 +98,7 @@ class WebGameplayTests(unittest.TestCase):
         train.assert_called_once_with(
             player,
             "strength",
-            energy=10,
+            energy=20,
             gym_key="camden_community",
         )
         save_player.assert_called_once_with(player)
