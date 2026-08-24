@@ -147,6 +147,13 @@ app.config.update(
 
 create_tables()
 
+app.jinja_env.globals.update(
+    hud_level_xp=xp_required_for_level,
+    hud_next_level_xp=lambda level: xp_required_for_level(
+        level + 1
+    ),
+)
+
 rate_limiter = FixedWindowRateLimiter()
 SENSITIVE_LIMITS = {
     "/login": (10, 60),

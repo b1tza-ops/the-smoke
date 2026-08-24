@@ -1,0 +1,82 @@
+<div class="player-hud" data-energy-last="{{ player.last_energy_update }}"
+     data-nerve-last="{{ player.last_nerve_update }}"
+     data-energy-full="{{ 1 if player.energy >= player.max_energy else 0 }}"
+     data-nerve-full="{{ 1 if player.nerve >= player.max_nerve else 0 }}">
+    <nav class="game-nav" aria-label="Game sections">
+        <a href="{{ url_for('home') }}"><span>⌂</span><strong>Home</strong></a>
+        <a href="{{ url_for('character') }}"><span>◉</span><strong>Character</strong></a>
+        <a href="{{ url_for('gym') }}"><span>✦</span><strong>Gym</strong></a>
+        <a href="{{ url_for('crimes') }}"><span>◆</span><strong>Crimes</strong></a>
+        <a href="{{ url_for('travel') }}"><span>➤</span><strong>Travel</strong></a>
+        <a href="{{ url_for('jobs_inventory') }}"><span>▣</span><strong>Work</strong></a>
+        <a href="{{ url_for('prologue') }}"><span>!</span><strong>Mission</strong></a>
+    </nav>
+
+    <section class="compact-hud" aria-label="Player resources and status">
+        <div class="compact-hud__resources">
+            {% set next_level_xp = hud_next_level_xp(player.level) %}
+            {% set xp_start = hud_level_xp(player.level) %}
+            {% set xp_percent = (((player.xp - xp_start) / (next_level_xp - xp_start)) * 100)|round if next_level_xp > xp_start else 0 %}
+            {% for label, icon, value, maximum, percent, tone in (
+                ("Health", "+", player.health, 100, (player.health / 100 * 100)|round, "health"),
+                ("Energy", "ϟ", player.energy, player.max_energy, (player.energy / player.max_energy * 100)|round if player.max_energy else 0, "energy"),
+                ("Nerve", "◆", player.nerve, player.max_nerve, (player.nerve / player.max_nerve * 100)|round if player.max_nerve else 0, "nerve"),
+                ("XP", "★", player.xp, next_level_xp, xp_percent, "xp")
+            ) %}
+            <div class="hud-meter hud-meter--{{ tone }}">
+                <div><span aria-hidden="true">{{ icon }}</span><strong>{{ value }}/{{ maximum }}</strong></div>
+                <small>{{ label }}</small>
+                <div class="hud-meter__track"><i style="--progress:{{ percent }}%"></i></div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="compact-hud__status">
+            <div><span class="hud-status-icon hud-status-icon--cash">£</span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--bank">▣</span><small>Bank</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--wanted">!</span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--level">★</span><small>Level</small><strong>{{ player.level }}</strong></div>
+            <div class="hud-cycle"><span class="hud-status-icon">↻</span><small>Next cycle</small><strong data-cycle-timer>--:--</strong></div>
+        </div>
+    </section>
+</div>
+<script>
+(() => {
+    const hud = document.querySelector(".player-hud");
+    const timer = hud && hud.querySelector("[data-cycle-timer]");
+    if (!hud || !timer) return;
+
+    const parseUtc = value => {
+        if (!value) return null;
+        const normalized = value.includes("T") ? value : value.replace(" ", "T") + "Z";
+        const parsed = new Date(normalized);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+    const sources = [
+        {last: parseUtc(hud.dataset.energyLast), seconds: 600, full: hud.dataset.energyFull === "1"},
+        {last: parseUtc(hud.dataset.nerveLast), seconds: 300, full: hud.dataset.nerveFull === "1"}
+    ];
+
+    const update = () => {
+        const now = Date.now();
+        const remaining = sources
+            .filter(source => !source.full && source.last)
+            .map(source => {
+                const elapsed = Math.max(0, Math.floor((now - source.last.getTime()) / 1000));
+                const remainder = elapsed % source.seconds;
+                return remainder === 0 && elapsed > 0 ? 0 : source.seconds - remainder;
+            });
+
+        if (!remaining.length) {
+            timer.textContent = "Full";
+            return;
+        }
+
+        const seconds = Math.min(...remaining);
+        timer.textContent = String(Math.floor(seconds / 60)).padStart(2, "0")
+            + ":" + String(seconds % 60).padStart(2, "0");
+    };
+
+    update();
+    window.setInterval(update, 1000);
+})();
+</script>
