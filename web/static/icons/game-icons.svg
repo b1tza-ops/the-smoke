@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="health" viewBox="0 0 24 24">
+    <path d="M12 20.2 4.4 13A5.2 5.2 0 0 1 12 5.9 5.2 5.2 0 0 1 19.6 13Z"/>
+  </symbol>
+  <symbol id="energy" viewBox="0 0 24 24">
+    <path d="M13.6 2 5 13h6l-.6 9L19 10h-6Z"/>
+  </symbol>
+  <symbol id="nerve" viewBox="0 0 24 24">
+    <path d="m12 2 8.5 10L12 22 3.5 12Z"/>
+    <path d="m12 7 3.8 5-3.8 5-3.8-5Z" class="icon-cut"/>
+  </symbol>
+  <symbol id="strength" viewBox="0 0 24 24">
+    <path d="M7 7.5v9M17 7.5v9M4 9.5v5M20 9.5v5M7 12h10"/>
+  </symbol>
+  <symbol id="defence" viewBox="0 0 24 24">
+    <path d="M12 2.5 20 6v5.5c0 5-3.3 8.3-8 10-4.7-1.7-8-5-8-10V6Z"/>
+    <path d="M12 6v11"/>
+  </symbol>
+  <symbol id="speed" viewBox="0 0 24 24">
+    <path d="M3 12h12M11 6l6 6-6 6M5 7h4M5 17h4"/>
+  </symbol>
+  <symbol id="dexterity" viewBox="0 0 24 24">
+    <path d="M8 4v8M12 3v9M16 5v7M5 8v7c0 4 3 7 7 7s7-3 7-7v-4"/>
+  </symbol>
+  <symbol id="gym" viewBox="0 0 24 24">
+    <path d="M4 9v6M7 6v12M17 6v12M20 9v6M7 12h10"/>
+  </symbol>
+</svg>
