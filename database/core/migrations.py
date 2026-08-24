@@ -786,6 +786,37 @@ def migrate_017_player_equipment(cursor):
         """
     )
 
+def migrate_018_expanded_item_catalogue(cursor):
+    cursor.executemany(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key,
+            name,
+            category,
+            description,
+            stackable,
+            max_quantity,
+            effect_key,
+            effect_amount
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            ("bottled_water", "Bottled Water", "boost", "Restores up to 10 energy.", 1, 10, "energy", 10),
+            ("screwdriver", "Heavy Screwdriver", "weapon", "A common tool that offers a small combat advantage.", 0, 1, None, 0),
+            ("claw_hammer", "Claw Hammer", "weapon", "A solid improvised weapon.", 0, 1, None, 0),
+            ("crowbar", "Crowbar", "weapon", "Heavy steel with serious leverage.", 0, 1, None, 0),
+            ("baseball_bat", "Baseball Bat", "weapon", "A weighty bat with a taped grip.", 0, 1, None, 0),
+            ("machete", "Machete", "weapon", "A formidable heavy blade.", 0, 1, None, 0),
+            ("leather_gloves", "Leather Gloves", "armour", "Light hand protection.", 0, 1, None, 0),
+            ("work_boots", "Reinforced Work Boots", "armour", "Steel-toe boots with modest protection.", 0, 1, None, 0),
+            ("motorcycle_helmet", "Motorcycle Helmet", "armour", "Strong head protection with a dark visor.", 0, 1, None, 0),
+            ("heavy_coat", "Heavy Coat", "armour", "A thick coat that softens incoming blows.", 0, 1, None, 0),
+            ("stab_vest", "Protective Vest", "armour", "Serious protection for dangerous streets.", 0, 1, None, 0),
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -871,6 +902,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=17,
         name="player_equipment",
         apply=migrate_017_player_equipment,
+    ),
+    Migration(
+        version=18,
+        name="expanded_item_catalogue",
+        apply=migrate_018_expanded_item_catalogue,
     ),
 )
 
