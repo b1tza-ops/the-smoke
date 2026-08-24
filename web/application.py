@@ -1,6 +1,22 @@
 import os
 import secrets
 from game.world.travel import update_travel
+from game.crime import (
+    CRIMES,
+    CRIMES_BY_KEY,
+    commit_crime,
+)
+from game.gym import (
+    GymError,
+    VALID_BATTLE_STATS,
+    calculate_training_gain,
+    get_district_gyms,
+    get_training_block,
+    get_unlocked_gyms,
+    select_gym,
+    train,
+    unlock_gym,
+)
 from flask import Flask, render_template, request, redirect, session
 from database.core.setup import create_tables
 from database.repositories.users import (
@@ -108,6 +124,134 @@ def home():
         player=player,
         dashboard=dashboard,
         online_players=get_online_player_count(),
+    )
+
+
+@app.route("/gym", methods=["GET", "POST"])
+def gym():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    message = None
+    error = None
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        gym_key = request.form.get("gym_key", "")
+
+        try:
+            if action == "unlock":
+                result = unlock_gym(player, gym_key)
+                select_gym(player, gym_key)
+                message = (
+                    "Membership purchased for "
+                    f"£{result.membership_cost:,}."
+                )
+
+            elif action == "train":
+                stat = request.form.get("stat", "")
+                energy = int(
+                    request.form.get("energy", "0")
+                )
+                select_gym(player, gym_key)
+                gain = calculate_training_gain(
+                    gym_key,
+                    stat,
+                    energy,
+                )
+                trained = train(
+                    player,
+                    stat,
+                    energy=energy,
+                    gym_key=gym_key,
+                )
+
+                if trained:
+                    message = (
+                        f"{stat.title()} increased by "
+                        f"{gain:g}. {energy} energy used."
+                    )
+                else:
+                    block = get_training_block(player)
+                    if block:
+                        error = (
+                            "Training is unavailable while "
+                            f"{block}."
+                        )
+                    else:
+                        error = "Not enough energy."
+
+            else:
+                error = "Unknown gym action."
+
+            save_player(player)
+
+        except (ValueError, GymError) as gym_error:
+            error = str(gym_error)
+
+    gyms = get_district_gyms(
+        player.current_district
+    )
+    return render_template(
+        "gym.html",
+        player=player,
+        gyms=gyms,
+        unlocked_gyms=get_unlocked_gyms(player),
+        valid_stats=VALID_BATTLE_STATS,
+        message=message,
+        error=error,
+        block_reason=get_training_block(player),
+    )
+
+
+@app.route("/crimes", methods=["GET", "POST"])
+def crimes():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    result = None
+    error = None
+
+    if request.method == "POST":
+        crime_key = request.form.get("crime_key", "")
+        crime = CRIMES_BY_KEY.get(crime_key)
+
+        if crime is None:
+            error = "Crime does not exist."
+        else:
+            result = commit_crime(player, crime)
+            save_player(player)
+
+    district_crimes = tuple(
+        crime
+        for crime in CRIMES
+        if crime.district.casefold()
+        == player.current_district
+    )
+    return render_template(
+        "crimes.html",
+        player=player,
+        crimes=district_crimes,
+        result=result,
+        error=error,
     )
 
 
