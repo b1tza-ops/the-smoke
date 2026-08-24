@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
         )
 
         with closing(
@@ -214,6 +214,10 @@ class MigrationTests(unittest.TestCase):
                     (8, "starter_inventory"),
                     (9, "authentication_hardening"),
                     (10, "player_presence"),
+                    (
+                        11,
+                        "email_verification_rollout",
+                    ),
                 ],
             )
 
@@ -301,7 +305,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
         )
         self.assertEqual(second_run, ())
 
@@ -336,7 +340,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 10)
+            self.assertEqual(migration_count, 11)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -355,7 +359,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=11,
+            version=12,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -405,7 +409,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             )
             self.assertEqual(money, 777)
 
@@ -440,7 +444,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
