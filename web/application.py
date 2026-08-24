@@ -351,7 +351,6 @@ def admin_login():
         if valid_username and valid_password:
             session.clear()
             session["admin_authenticated"] = True
-            session.permanent = True
             record_activity(
                 None,
                 "admin_login",
