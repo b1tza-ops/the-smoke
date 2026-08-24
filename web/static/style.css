@@ -805,3 +805,5 @@ input { font: inherit; }
 @media(max-width:470px){.gym-hero{flex-direction:column}.gym-energy{width:100%}.gym-stat-grid{grid-template-columns:1fr}.gym-stat-card:nth-child(odd){border-right:0}}
 
 .gym-inline-result{margin-top:.85rem;border:1px solid rgba(185,243,75,.35);border-radius:9px;background:rgba(185,243,75,.08);color:#d2ff79;padding:.7rem .8rem;font-size:.78rem;font-weight:750;text-align:center}
+
+.gym-stat-card,.gym-club{scroll-margin-top:1rem}.gym-cost--unavailable{color:#ffb1b4}.gym-progression-note{color:var(--accent)!important;font-size:.78rem}.gym-train-button:disabled{background:#596066}
