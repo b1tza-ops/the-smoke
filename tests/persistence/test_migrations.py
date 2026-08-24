@@ -355,7 +355,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=10,
+            version=11,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
