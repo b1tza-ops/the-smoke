@@ -45,6 +45,12 @@ from database.repositories.activity import (
     get_recent_activity,
     record_activity,
 )
+from database.repositories.growth import (
+    apply_referral,
+    get_growth_profile,
+    get_recent_feedback,
+    submit_feedback,
+)
 from database.repositories.admin import (
     get_admin_player_details,
     get_admin_player_overview,
@@ -357,6 +363,7 @@ def admin_dashboard():
         "admin_dashboard.html",
         players=get_admin_player_overview(),
         activities=get_recent_activity(limit=100),
+        feedback=get_recent_feedback(limit=100),
     )
 
 
@@ -614,6 +621,7 @@ def character():
             user_id=session["user_id"],
             limit=12,
         ),
+        growth=get_growth_profile(session["user_id"]),
     )
 
 
@@ -893,6 +901,50 @@ def crimes():
     )
 
 
+
+@app.route("/feedback", methods=["GET", "POST"])
+def feedback():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    error = None
+    notice = None
+    category = request.form.get("category", "idea")
+    message = request.form.get("message", "")
+
+    if request.method == "POST":
+        try:
+            submit_feedback(
+                session["user_id"],
+                category,
+                message,
+                request.form.get("page_path", ""),
+            )
+            record_player_action(
+                "feedback_submitted",
+                f"Submitted {category} feedback.",
+            )
+            notice = (
+                "Thank you. Your feedback has been sent "
+                "directly to the development dashboard."
+            )
+            message = ""
+        except ValueError as feedback_error:
+            error = str(feedback_error)
+
+    return render_template(
+        "feedback.html",
+        error=error,
+        notice=notice,
+        category=category,
+        message=message,
+        page_path=request.args.get(
+            "from",
+            request.form.get("page_path", ""),
+        ),
+    )
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if "user_id" in session:
@@ -902,6 +954,7 @@ def register():
     form_data = {
         "username": "",
         "email": "",
+        "invite_code": request.args.get("invite", ""),
     }
 
     if request.method == "POST":
@@ -911,6 +964,10 @@ def register():
         )
         form_data["email"] = request.form.get(
             "email",
+            "",
+        )
+        form_data["invite_code"] = request.form.get(
+            "invite_code",
             "",
         )
         password = request.form.get("password", "")
@@ -960,6 +1017,10 @@ def register():
                 hash_password(password),
             )
             create_player(user_id, username)
+            apply_referral(
+                user_id,
+                form_data["invite_code"],
+            )
             try:
                 record_activity(
                     user_id,
