@@ -224,17 +224,6 @@ ITEMS = (
         effect_amount=25,
     ),
     ItemDefinition(
-        key="fish_and_chips",
-        name="Fish and Chips",
-        category="boost",
-        description="A hot takeaway that restores up to 25 happiness.",
-        image_filename="items/protein-bar.webp",
-        stackable=True,
-        max_quantity=10,
-        effect_key="happiness",
-        effect_amount=25,
-    ),
-    ItemDefinition(
         key="lockpick",
         name="Lockpick",
         category="utility",
