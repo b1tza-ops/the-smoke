@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Jobs & Inventory · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='jobs-1') }}">
+</head><body class="dashboard-page"><div class="app-shell">
+<header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
+<main class="dashboard-main game-page work-page">
+<section class="work-hero"><div><p class="eyebrow">Legal work</p><h1>Jobs &amp; gear</h1><p>Build a career, earn reliable wages and use the items you carry.</p></div><div class="work-resources"><span>Cash <strong>£{{ "{:,}".format(player.money) }}</strong></span><span>Energy <strong>{{ player.energy }}/{{ player.max_energy }}</strong></span></div></section>
+{% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+<nav class="work-tabs"><button type="button" data-panel="jobs" class="{{ 'is-active' if active_section == 'jobs' }}">Jobs</button><button type="button" data-panel="inventory" class="{{ 'is-active' if active_section == 'inventory' }}">Inventory <span>{{ player.inventory|length }}/{{ inventory_capacity }}</span></button></nav>
+<section id="jobs-panel" class="work-panel {{ 'is-active' if active_section == 'jobs' }}">
+{% if career and role %}
+<article class="career-card"><header><div><p class="eyebrow">{{ career.name }}</p><h2>{{ role.name }}</h2></div><span class="career-pay">£{{ role.salary }}/shift</span></header>
+<div class="career-metrics"><div><span>Career XP</span><strong>{{ player.career_xp }}</strong></div><div><span>Shifts</span><strong>{{ player.shifts_completed }}</strong></div><div><span>Energy cost</span><strong>{{ role.energy_cost }}</strong></div></div>
+{% if shift_state %}
+<div class="shift-status"><span>{{ 'Shift ready to claim' if shift_state.ready_to_complete else 'Shift in progress' }}</span>{% if not shift_state.ready_to_complete %}<strong id="shift-countdown" data-seconds="{{ shift_state.remaining_seconds }}">--:--:--</strong>{% endif %}</div>
+{% if shift_state.ready_to_complete %}<form method="post" action="{{ url_for('jobs_inventory') }}#jobs-panel"><input type="hidden" name="section" value="jobs"><input type="hidden" name="action" value="complete_shift"><button class="work-button" type="submit"><span>Collect wages</span><span>→</span></button></form>{% endif %}
+{% else %}<form method="post" action="{{ url_for('jobs_inventory') }}#jobs-panel"><input type="hidden" name="section" value="jobs"><input type="hidden" name="action" value="start_shift"><button class="work-button" type="submit" {% if player.energy < role.energy_cost %}disabled{% endif %}><span>Start three-hour shift</span><span>→</span></button></form>{% endif %}
+</article>
+{% else %}
+<div class="career-grid">{% for option in careers %}{% set entry=option.roles[0] %}<article class="career-card"><p class="eyebrow">Career opportunity</p><h2>{{ option.name }}</h2><p>{{ option.description }}</p><dl><div><dt>Starting role</dt><dd>{{ entry.name }}</dd></div><div><dt>Pay</dt><dd>£{{ entry.salary }}/shift</dd></div><div><dt>Required level</dt><dd>{{ entry.required_level }}</dd></div></dl><form method="post" action="{{ url_for('jobs_inventory') }}#jobs-panel"><input type="hidden" name="section" value="jobs"><input type="hidden" name="action" value="join_career"><input type="hidden" name="career_key" value="{{ option.key }}"><button class="work-button" type="submit" {% if player.level < entry.required_level %}disabled{% endif %}><span>Apply for job</span><span>→</span></button></form></article>{% endfor %}</div>
+{% endif %}</section>
+<section id="inventory-panel" class="work-panel {{ 'is-active' if active_section == 'inventory' }}">
+<div class="inventory-heading"><div><p class="eyebrow">Carried items</p><h2>Inventory</h2></div><span>{{ player.inventory|length }} of {{ inventory_capacity }} slots</span></div>
+{% if owned_items %}<div class="inventory-grid">{% for owned in owned_items %}{% set item=owned.item %}<article class="item-card"><header><span class="item-category">{{ item.category }}</span><strong>×{{ owned.quantity }}</strong></header><h3>{{ item.name }}</h3><p>{{ item.description }}</p>{% if item.effect_key %}<form method="post" action="{{ url_for('jobs_inventory') }}#inventory-panel"><input type="hidden" name="section" value="inventory"><input type="hidden" name="action" value="use_item"><input type="hidden" name="item_key" value="{{ item.key }}"><button class="item-button" type="submit">Use item</button></form>{% else %}<span class="item-passive">Equipment</span>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty-inventory"><h2>Your inventory is empty</h2><p>Items earned or purchased during play will appear here.</p></div>{% endif %}
+</section>
+</main></div>
+<script>
+document.querySelectorAll(".work-tabs button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".work-tabs button,.work-panel").forEach(x=>x.classList.remove("is-active"));b.classList.add("is-active");document.getElementById(b.dataset.panel+"-panel").classList.add("is-active")}));
+const timer=document.getElementById("shift-countdown");if(timer){let n=Number(timer.dataset.seconds);const draw=()=>{const h=Math.floor(n/3600),m=Math.floor(n%3600/60),s=n%60;timer.textContent=[h,m,s].map(v=>String(v).padStart(2,"0")).join(":");if(n<=0){location.reload();return}n--};draw();setInterval(draw,1000)}
+</script></body></html>
