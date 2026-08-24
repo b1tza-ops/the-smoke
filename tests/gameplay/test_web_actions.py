@@ -31,6 +31,12 @@ class WebGameplayTests(unittest.TestCase):
             max_nerve=20,
             money=500,
             level=1,
+            travel_destination=None,
+            travel_until=None,
+            wanted_level=0,
+            last_wanted_update=None,
+            jail_until=None,
+            hospital_until=None,
         )
 
     @patch(
@@ -102,6 +108,57 @@ class WebGameplayTests(unittest.TestCase):
             gym_key="camden_community",
         )
         save_player.assert_called_once_with(player)
+
+
+    @patch(
+        "web.application.render_template",
+        return_value="travel rendered",
+    )
+    @patch("web.application.get_active_travel")
+    @patch("web.application.save_player")
+    @patch("web.application.start_travel")
+    @patch("web.application.update_player_status")
+    @patch("web.application.update_travel")
+    @patch("web.application.Player")
+    @patch(
+        "web.application.get_player_by_user_id",
+        return_value=(1,),
+    )
+    def test_web_travel_departure_is_saved(
+        self,
+        get_player_by_user_id,
+        player_class,
+        update_travel,
+        update_player_status,
+        start_travel,
+        save_player,
+        get_active_travel,
+        render_template,
+    ):
+        player = self.make_player()
+        player_class.return_value = player
+        update_travel.return_value = False
+        get_active_travel.return_value = Mock(
+            destination_key="brixton",
+            remaining_seconds=600,
+        )
+        start_travel.return_value = Mock(
+            destination_key="brixton",
+            cost=35,
+        )
+
+        response = self.client.post(
+            "/travel",
+            data={"destination_key": "brixton"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        start_travel.assert_called_once_with(
+            player,
+            "brixton",
+        )
+        save_player.assert_called_once_with(player)
+
 
     @patch(
         "web.application.render_template",
