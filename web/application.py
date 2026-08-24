@@ -64,6 +64,13 @@ from database.repositories.users import (
     get_user_by_username,
     is_email_verified,
 )
+from database.repositories.prologue import (
+    BACKGROUNDS,
+    OPENING_CHOICES,
+    choose_background,
+    complete_opening_mission,
+    get_or_create_prologue,
+)
 from database.repositories.presence import (
     get_online_player_count,
     mark_player_offline,
@@ -429,6 +436,11 @@ def home():
     if "user_id" not in session:
         return redirect("/login")
 
+    prologue = get_or_create_prologue(session["user_id"])
+
+    if prologue["completed_at"] is None:
+        return redirect("/prologue")
+
     player_data = get_player_by_user_id(session["user_id"])
 
     if player_data is None:
@@ -458,6 +470,73 @@ def home():
         player=player,
         dashboard=dashboard,
         online_players=get_online_player_count(),
+        prologue=prologue,
+    )
+
+
+@app.route("/prologue", methods=["GET", "POST"])
+def prologue():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    state = get_or_create_prologue(session["user_id"])
+    error = None
+    mission_result = None
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+
+        try:
+            if action == "choose_background":
+                background = request.form.get("background", "")
+                choose_background(
+                    session["user_id"],
+                    background,
+                )
+                record_player_action(
+                    "prologue_background",
+                    (
+                        "Chose the "
+                        f"{BACKGROUNDS[background]['name']} background."
+                    ),
+                )
+            elif action == "opening_mission":
+                choice = request.form.get("choice", "")
+                mission_result = complete_opening_mission(
+                    session["user_id"],
+                    choice,
+                )
+                record_player_action(
+                    "prologue_mission",
+                    (
+                        "Completed opening path: "
+                        f"{OPENING_CHOICES[choice]['name']}."
+                    ),
+                    {"choice": choice},
+                )
+            else:
+                raise ValueError("Unknown story action.")
+        except ValueError as story_error:
+            error = str(story_error)
+
+        state = get_or_create_prologue(
+            session["user_id"]
+        )
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    return render_template(
+        "prologue.html",
+        player=Player(*player_data),
+        state=state,
+        backgrounds=BACKGROUNDS,
+        choices=OPENING_CHOICES,
+        error=error,
+        mission_result=mission_result,
     )
 
 
