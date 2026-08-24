@@ -142,6 +142,7 @@ def gym():
     update_travel(player)
     update_player_status(player)
     message = None
+    trained_stat = None
     error = None
 
     if request.method == "POST":
@@ -181,6 +182,7 @@ def gym():
                 )
 
                 if trained:
+                    trained_stat = stat
                     message = (
                         f"{stat.title()} increased by "
                         f"{gain:g}. {energy} energy used."
@@ -219,6 +221,7 @@ def gym():
             "dexterity": "Ability to evade an attack",
         },
         max_trains=min(10, player.energy // 10),
+        trained_stat=trained_stat,
         message=message,
         error=error,
         block_reason=get_training_block(player),
