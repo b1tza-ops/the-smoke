@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>{{ player.name }} · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='character-1') }}">
+</head><body class="dashboard-page"><div class="app-shell">
+<header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
+<main class="dashboard-main game-page character-page">
+<section class="character-hero"><div><p class="eyebrow">Character profile</p><h1>{{ player.name }}</h1><div class="identity-meta"><span class="level-badge">Level {{ player.level }}</span><span>{{ status }}</span></div></div><div class="character-money"><span>Net funds</span><strong>£{{ "{:,}".format(player.money + player.bank_balance) }}</strong><small>Cash £{{ "{:,}".format(player.money) }} · Bank £{{ "{:,}".format(player.bank_balance) }}</small></div></section>
+<section class="character-xp"><div class="progress-heading"><span>Level progress</span><strong>{{ player.xp }} / {{ next_level_xp }} XP</strong></div><div class="progress-track"><span class="progress-fill progress-fill--xp" style="--progress:{{ xp_percent }}%"></span></div></section>
+<div class="character-layout">
+<section class="character-panel"><p class="eyebrow">Battle profile</p><div class="character-stat-grid">{% for stat in ("strength","defence","speed","dexterity") %}<div><span>{{ stat|title }}</span><strong>{{ player|attr(stat) }}</strong></div>{% endfor %}</div><a class="character-link" href="{{ url_for('gym') }}">Train at the gym <span>→</span></a></section>
+<section class="character-panel"><p class="eyebrow">Current state</p><dl class="character-details"><div><dt>Location</dt><dd>{{ player.current_district|title }}</dd></div><div><dt>Residence</dt><dd>{{ residence.name if residence else player.residence_key|title }}</dd></div><div><dt>Job</dt><dd>{{ player.job_role_key|replace("_"," ")|title if player.job_role_key else "Unemployed" }}</dd></div><div><dt>Wanted</dt><dd>{{ player.wanted_level }}/100</dd></div><div><dt>Status</dt><dd>{{ status }}</dd></div>{% if status_until %}<div><dt>Until</dt><dd>{{ status_until }}</dd></div>{% endif %}</dl></section>
+</div>
+<section class="character-resources">{% for label,value,max_value in (("Health",player.health,100),("Energy",player.energy,player.max_energy),("Nerve",player.nerve,player.max_nerve)) %}<div><span>{{ label }}</span><strong>{{ value }}/{{ max_value }}</strong><div class="progress-track progress-track--thin"><span class="progress-fill" style="--progress:{{ (value / max_value * 100)|round if max_value else 0 }}%"></span></div></div>{% endfor %}</section>
+</main></div></body></html>
