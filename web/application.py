@@ -133,9 +133,11 @@ from game.inventory import (
     ITEMS,
     EquipmentError,
     InventoryError,
+    add_item,
     equip_item,
     get_equipment_summary,
     get_item,
+    remove_item,
     unequip_item,
     use_item,
 )
@@ -460,6 +462,78 @@ def admin_user_suspension(user_id):
         )
 
     return redirect("/admin")
+
+
+@app.route(
+    "/admin/users/<int:user_id>/inventory",
+    methods=["POST"],
+)
+@admin_required
+def admin_user_inventory(user_id):
+    player_data = get_player_by_user_id(user_id)
+
+    if player_data is None:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": "This account has no character.",
+        }
+        return redirect(f"/admin/users/{user_id}#admin-inventory")
+
+    player = Player(*player_data)
+    action = request.form.get("action", "")
+    item_key = request.form.get("item_key", "")
+    item = get_item(item_key)
+
+    try:
+        quantity = int(request.form.get("quantity", "0"))
+
+        if action == "grant":
+            result = add_item(player, item_key, quantity)
+            verb = "Granted"
+            action_type = "admin_item_grant"
+        elif action == "remove":
+            result = remove_item(player, item_key, quantity)
+            verb = "Removed"
+            action_type = "admin_item_remove"
+
+            if result.quantity_after == 0 and item is not None:
+                equipment = get_equipment_summary(player.id)
+                slot = item.equipment_slot
+                if slot and equipment.items.get(slot) == item:
+                    unequip_item(player.id, slot)
+        else:
+            raise InventoryError("Choose grant or remove.")
+
+        save_player(player)
+        summary = (
+            f"{verb} {quantity} × {item.name}. "
+            f"Player now owns {result.quantity_after}."
+        )
+        record_activity(
+            user_id,
+            action_type,
+            summary,
+            {
+                "item_key": item_key,
+                "quantity": quantity,
+                "quantity_after": result.quantity_after,
+            },
+        )
+        session["admin_player_notice"] = {
+            "type": "success",
+            "message": summary,
+        }
+    except (ValueError, InventoryError) as inventory_error:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": (
+                "Enter a positive whole-number quantity."
+                if isinstance(inventory_error, ValueError)
+                else str(inventory_error)
+            ),
+        }
+
+    return redirect(f"/admin/users/{user_id}#admin-inventory")
 
 
 @app.route(
