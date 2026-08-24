@@ -507,6 +507,62 @@ def migrate_011_email_verification_rollout(cursor):
     )
 
 
+
+
+def migrate_012_admin_activity_and_suspension(cursor):
+    existing_user_columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(users)"
+        )
+    }
+
+    if "suspended_at" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN suspended_at TEXT
+            """
+        )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_activity (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action_type TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE SET NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_player_activity_user_created
+        ON player_activity (
+            user_id,
+            created_at DESC
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_player_activity_created
+        ON player_activity (created_at DESC)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -562,6 +618,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=11,
         name="email_verification_rollout",
         apply=migrate_011_email_verification_rollout,
+    ),
+    Migration(
+        version=12,
+        name="admin_activity_and_suspension",
+        apply=migrate_012_admin_activity_and_suspension,
     ),
 )
 
