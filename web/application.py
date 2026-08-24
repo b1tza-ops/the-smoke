@@ -24,11 +24,14 @@ from database.repositories.players import (
 
 from auth.email_delivery import (
     EmailDeliveryError,
+    send_password_reset_email,
     send_verification_email,
 )
 from auth.services.password_reset import (
     AccountTokenError,
     request_email_verification,
+    request_password_reset,
+    reset_password,
     verify_email_token,
 )
 from auth.turnstile import validate_turnstile
@@ -299,6 +302,95 @@ def verify_email():
             success=False,
             message=str(token_error),
         ), 400
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    error = None
+    notice = None
+    email = ""
+
+    if request.method == "POST":
+        email = request.form.get("email", "")
+
+        if not validate_turnstile(
+            request.form.get(
+                "cf-turnstile-response",
+                "",
+            ),
+            remote_ip=request.remote_addr,
+            expected_action="password_reset",
+        ):
+            error = (
+                "Complete the human verification "
+                "and try again."
+            )
+        else:
+            try:
+                result = request_password_reset(
+                    email=email,
+                    delivery=send_password_reset_email,
+                )
+                notice = result.message
+            except EmailDeliveryError:
+                notice = (
+                    "If an account exists for that email, "
+                    "recovery instructions will be sent."
+                )
+
+    return render_template(
+        "forgot_password.html",
+        error=error,
+        notice=notice,
+        email=email,
+        turnstile_site_key=os.environ.get(
+            "TURNSTILE_SITE_KEY",
+            "",
+        ),
+    )
+
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password_route():
+    raw_token = request.args.get(
+        "token",
+        request.form.get("token", ""),
+    )
+    error = None
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        password_confirmation = request.form.get(
+            "password_confirmation",
+            "",
+        )
+
+        try:
+            if password != password_confirmation:
+                raise ValidationError(
+                    "Passwords do not match."
+                )
+
+            reset_password(raw_token, password)
+            return render_template(
+                "verification_result.html",
+                success=True,
+                message=(
+                    "Your password has been updated. "
+                    "You can now sign in."
+                ),
+            )
+        except (
+            ValidationError,
+            AccountTokenError,
+        ) as reset_error:
+            error = str(reset_error)
+
+    return render_template(
+        "reset_password.html",
+        error=error,
+        token=raw_token,
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
