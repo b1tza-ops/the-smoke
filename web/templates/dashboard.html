@@ -20,10 +20,10 @@
             </a>
 
             <div class="topbar__right">
-                <div class="world-status">
+                <div class="world-status" aria-label="{{ online_players }} players online">
                     <span class="status-dot" aria-hidden="true"></span>
-                    <span>London</span>
-                    <span class="world-status__label">Online</span>
+                    <span>Online Players</span>
+                    <strong class="world-status__label">{{ online_players }}</strong>
                 </div>
                 <a class="logout-link" href="{{ url_for('logout') }}">Log out</a>
             </div>
