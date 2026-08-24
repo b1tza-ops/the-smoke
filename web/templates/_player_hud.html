@@ -8,10 +8,22 @@
         <a href="{{ url_for('gym') }}"><span>✦</span><strong>Gym</strong></a>
         <a href="{{ url_for('crimes') }}"><span>◆</span><strong>Crimes</strong></a>
         <a href="{{ url_for('travel') }}"><span>➤</span><strong>Travel</strong></a>
+        <a href="{{ url_for('hospital') }}"><span>+</span><strong>Hospital</strong></a>
+        <a href="{{ url_for('jail') }}"><span>▥</span><strong>Jail</strong></a>
         <a href="{{ url_for('inventory') }}"><span>⬡</span><strong>Items</strong></a>
         <a href="{{ url_for('jobs') }}"><span>▣</span><strong>Job</strong></a>
         <a class="game-nav__mission" href="{{ url_for('prologue') }}"><span>!</span><strong>Operations</strong></a>
     </nav>
+
+    {% if player.hospital_until %}
+    <a class="restriction-banner restriction-banner--hospital" href="{{ url_for('hospital') }}">
+        <span>+</span><strong>You are in hospital</strong><small>View recovery time →</small>
+    </a>
+    {% elif player.jail_until %}
+    <a class="restriction-banner restriction-banner--jail" href="{{ url_for('jail') }}">
+        <span>!</span><strong>You are in jail</strong><small>View release time →</small>
+    </a>
+    {% endif %}
 
     <section class="compact-hud" aria-label="Player resources and status">
         <div class="compact-hud__resources">
