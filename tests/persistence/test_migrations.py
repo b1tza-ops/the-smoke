@@ -238,6 +238,7 @@ class MigrationTests(unittest.TestCase):
                         16,
                         "camden_corner_shop",
                     ),
+                    (17, "player_equipment"),
                 ],
             )
 
