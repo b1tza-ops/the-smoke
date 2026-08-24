@@ -12,7 +12,24 @@ THE_SMOKE_BACKUP_DIR=/var/backups/the-smoke
 THE_SMOKE_LOG_PATH=/var/log/the-smoke/app.log
 THE_SMOKE_COOKIE_SECURE=1
 THE_SMOKE_MAINTENANCE=0
+THE_SMOKE_ADMIN_USERNAME=replace-with-a-private-admin-name
+THE_SMOKE_ADMIN_PASSWORD_HASH=replace-with-a-bcrypt-hash
 ```
+
+## Configure the admin panel
+
+Generate the admin password hash interactively on the VPS so the
+plain-text password never enters Git or shell history:
+
+```bash
+cd /opt/the-smoke
+source .venv/bin/activate
+python -c "from getpass import getpass; from utils.security import hash_password; print(hash_password(getpass('Admin password: ')))"
+```
+
+Copy the resulting hash and a private username into
+`/etc/the-smoke.env`, restart the service, then visit
+`https://play.the-smoke.com/admin/login`.
 
 ## Prepare runtime directories
 
