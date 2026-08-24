@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Crimes · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dashboard-page">
+    <div class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="{{ url_for('home') }}">
+                <span class="brand__mark">TS</span>
+                <span class="brand__name">The Smoke</span>
+            </a>
+            <a class="logout-link" href="{{ url_for('home') }}">Dashboard</a>
+        </header>
+        <main class="dashboard-main game-page">
+            <section class="game-page__header">
+                <div>
+                    <p class="eyebrow">{{ player.current_district|title }}</p>
+                    <h1>Crimes</h1>
+                    <p>Risk nerve for cash, XP and district reputation.</p>
+                </div>
+                <div class="resource-pill">
+                    <span>Nerve</span>
+                    <strong>{{ player.nerve }}/{{ player.max_nerve }}</strong>
+                </div>
+            </section>
+
+            {% if error %}
+                <div class="game-notice game-notice--error" role="alert">{{ error }}</div>
+            {% endif %}
+
+            {% if result %}
+                <section class="game-result {{ 'game-result--success' if result.success else 'game-result--failure' }}">
+                    {% if result.success %}
+                        <p class="eyebrow">Crime successful</p>
+                        <h2>£{{ result.cash_reward }} gained</h2>
+                        <p>+{{ result.xp_reward }} XP · +{{ result.reputation_reward }} reputation · {{ result.nerve_spent }} nerve used</p>
+                    {% elif not result.attempted %}
+                        <p class="eyebrow">Action blocked</p>
+                        <h2>
+                            {% if result.reason == "wrong_district" %}Wrong district
+                            {% elif result.reason == "not_enough_nerve" %}Not enough nerve
+                            {% elif result.reason == "travelling" %}Currently travelling
+                            {% else %}Crime unavailable{% endif %}
+                        </h2>
+                    {% else %}
+                        <p class="eyebrow">Crime failed</p>
+                        <h2>{{ result.damage }} damage taken</h2>
+                        <p>{{ result.nerve_spent }} nerve used{% if result.consequence %} · {{ result.consequence|title }}{% endif %}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+
+            <section class="game-card-grid">
+                {% for crime in crimes %}
+                    <article class="game-card">
+                        <div class="game-card__top">
+                            <div>
+                                <p class="eyebrow">{{ crime.success_chance }}% base chance</p>
+                                <h2>{{ crime.name }}</h2>
+                            </div>
+                            <span class="resource-pill resource-pill--small">{{ crime.nerve_cost }} nerve</span>
+                        </div>
+                        <dl class="reward-list">
+                            <div><dt>Cash</dt><dd>£{{ crime.min_reward }}–£{{ crime.max_reward }}</dd></div>
+                            <div><dt>XP</dt><dd>{{ crime.xp_reward }}</dd></div>
+                            <div><dt>Wanted</dt><dd>+{{ crime.wanted_gain }}</dd></div>
+                        </dl>
+                        <form method="post">
+                            <input type="hidden" name="crime_key" value="{{ crime.key }}">
+                            <button class="primary-button" type="submit"
+                                {% if player.nerve < crime.nerve_cost %}disabled{% endif %}>
+                                <span>Attempt crime</span><span>→</span>
+                            </button>
+                        </form>
+                    </article>
+                {% else %}
+                    <article class="game-card">
+                        <h2>No crimes available here</h2>
+                        <p>Travel to another district to find opportunities.</p>
+                    </article>
+                {% endfor %}
+            </section>
+        </main>
+    </div>
+</body>
+</html>
