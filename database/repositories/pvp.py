@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import json
 
 from database.core.connection import get_connection
-from game.player.regeneration import parse_timestamp
+from game.player.regeneration import format_timestamp, parse_timestamp
 
 
 TARGET_PROTECTION_SECONDS = 10 * 60
@@ -30,7 +30,9 @@ class AttackLimits:
         return 1.0
 
 
-def get_pvp_targets(attacker_id, district):
+def get_pvp_targets(attacker_id, district, now=None):
+    now = _normalise_now(now)
+    timestamp = format_timestamp(now)
     connection = get_connection()
     try:
         rows = connection.execute(
@@ -41,11 +43,23 @@ def get_pvp_targets(attacker_id, district):
                 jail_until, hospital_until, travel_destination,
                 travel_until, shift_until
             FROM players
-            WHERE id != ? AND current_district = ?
+            WHERE id != ?
+              AND (
+                  CASE
+                      WHEN travel_destination IS NOT NULL
+                           AND travel_until <= ?
+                      THEN travel_destination
+                      ELSE current_district
+                  END
+              ) = ?
+              AND NOT (
+                  travel_destination IS NOT NULL
+                  AND travel_until > ?
+              )
             ORDER BY level ASC, name COLLATE NOCASE ASC
             LIMIT 40
             """,
-            (attacker_id, district),
+            (attacker_id, timestamp, district, timestamp),
         ).fetchall()
     finally:
         connection.close()
