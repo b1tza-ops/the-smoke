@@ -279,6 +279,9 @@ def _resource_values(player, effect_key):
     if effect_key == "energy":
         return player.energy, player.max_energy
 
+    if effect_key == "happiness":
+        return player.happiness, player.max_happiness
+
     raise ItemNotUsableError(
         "Item effect is not supported."
     )

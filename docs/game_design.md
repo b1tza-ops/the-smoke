@@ -51,6 +51,7 @@ Resources:
 - health / max_health
 - energy / max_energy
 - nerve / max_nerve
+- happiness / max_happiness
 
 Battle stats are separated from the main player record:
 
@@ -58,6 +59,13 @@ Battle stats are separated from the main player record:
 - defence
 - speed
 - dexterity
+
+Happiness is a resource stat that starts full and only falls when the
+player is sent to jail or hospital. It regenerates over time like energy
+and nerve, and items can restore it directly. It softens (never
+strengthens) gym training gains and crime success odds when it is below
+maximum, giving players a reason to stay out of trouble or top up with
+consumables rather than a permanent bonus for doing nothing.
 
 Temporary state is also separated:
 

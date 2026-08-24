@@ -60,6 +60,11 @@ def create_tables():
             current_gym_key TEXT NOT NULL DEFAULT 'camden_community'
                 CHECK (TRIM(current_gym_key) <> ''),
             last_seen TEXT,
+            happiness INTEGER NOT NULL DEFAULT 100
+                CHECK (happiness >= 0),
+            max_happiness INTEGER NOT NULL DEFAULT 100
+                CHECK (max_happiness > 0),
+            last_happiness_update TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

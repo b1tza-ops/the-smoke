@@ -9,6 +9,12 @@
     <path d="m12 2 8.5 10L12 22 3.5 12Z"/>
     <path d="m12 7 3.8 5-3.8 5-3.8-5Z" class="icon-cut"/>
   </symbol>
+  <symbol id="happiness" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9"/>
+    <circle cx="9" cy="10" r="1.1" class="icon-cut"/>
+    <circle cx="15" cy="10" r="1.1" class="icon-cut"/>
+    <path d="M8 14c1 1.5 2.4 2.3 4 2.3S15 15.5 16 14" class="icon-cut"/>
+  </symbol>
   <symbol id="strength" viewBox="0 0 24 24">
     <path d="M7 7.5v9M17 7.5v9M4 9.5v5M20 9.5v5M7 12h10"/>
   </symbol>

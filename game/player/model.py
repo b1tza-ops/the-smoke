@@ -37,6 +37,9 @@ class Player:
         shift_started_at,
         shift_until,
         current_gym_key,
+        happiness,
+        max_happiness,
+        last_happiness_update,
         crime_progress=None,
         district_reputation=None,
         unlocked_gyms=None,
@@ -80,6 +83,9 @@ class Player:
         self.last_wanted_update = last_wanted_update
         self.jail_until = jail_until
         self.hospital_until = hospital_until
+        self.happiness = happiness
+        self.max_happiness = max_happiness
+        self.last_happiness_update = last_happiness_update
         self.crime_progress = crime_progress or {}
         self.district_reputation = district_reputation or {}
 
@@ -134,6 +140,7 @@ class Player:
         print("Health: ", self.health)
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")
+        print(f"Happiness: {self.happiness}/{self.max_happiness}")
         print(f"Wanted: {self.wanted_level}/100")
 
         if self.jail_until is not None:
