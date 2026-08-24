@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ details.account.username }} · Operations · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='custom-icons-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-inventory-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -149,6 +149,26 @@
                     {% for item in details.inventory %}
                     <div><strong>{{ item.item_key|replace("_", " ")|title }}</strong><span>× {{ item.quantity }}</span></div>
                     {% else %}<p>Inventory is empty.</p>{% endfor %}
+                </div>
+                <div class="admin-inventory-control">
+                    <h3>Manage items</h3>
+                    <p>Grant an item or remove an existing quantity. Item stack and inventory limits still apply.</p>
+                    <form method="post" action="{{ url_for('admin_user_inventory', user_id=details.account.user_id) }}">
+                        <label>Item
+                            <select name="item_key" required>
+                                {% for item in item_catalog %}
+                                <option value="{{ item.key }}">{{ item.name }} · max {{ item.max_quantity }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Quantity
+                            <input name="quantity" type="number" min="1" value="1" inputmode="numeric" required>
+                        </label>
+                        <div class="admin-inventory-actions">
+                            <button name="action" value="grant" type="submit">Grant items</button>
+                            <button class="admin-action admin-action--danger" name="action" value="remove" type="submit">Remove items</button>
+                        </div>
+                    </form>
                 </div>
                 <h3 class="admin-subheading">Unlocked gyms</h3>
                 <div class="admin-chip-list">
