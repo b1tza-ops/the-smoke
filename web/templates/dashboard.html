@@ -66,45 +66,28 @@
                 </div>
             </section>
 
-            <section class="resource-grid" aria-label="Player resources">
-                <article class="resource-card resource-card--health">
-                    <div class="resource-card__header">
-                        <span class="resource-icon" aria-hidden="true">+</span>
-                        <span>Health</span>
-                        <strong>{{ player.health }}/100</strong>
+            <section class="compact-hud" aria-label="Player resources and status">
+                <div class="compact-hud__resources">
+                    {% for label, icon, value, maximum, percent, tone in (
+                        ("Health", "+", player.health, 100, dashboard.health_percent, "health"),
+                        ("Energy", "ϟ", player.energy, player.max_energy, dashboard.energy_percent, "energy"),
+                        ("Nerve", "◆", player.nerve, player.max_nerve, dashboard.nerve_percent, "nerve"),
+                        ("XP", "★", player.xp, dashboard.next_level_xp, dashboard.xp_percent, "xp")
+                    ) %}
+                    <div class="hud-meter hud-meter--{{ tone }}">
+                        <div><span aria-hidden="true">{{ icon }}</span><strong>{{ value }}/{{ maximum }}</strong></div>
+                        <small>{{ label }}</small>
+                        <div class="hud-meter__track"><i style="--progress:{{ percent }}%"></i></div>
                     </div>
-                    <div class="progress-track progress-track--thin" role="progressbar"
-                         aria-label="Health" aria-valuenow="{{ dashboard.health_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill" style="--progress: {{ dashboard.health_percent }}%"></span>
-                    </div>
-                </article>
-
-                <article class="resource-card resource-card--energy">
-                    <div class="resource-card__header">
-                        <span class="resource-icon" aria-hidden="true">ϟ</span>
-                        <span>Energy</span>
-                        <strong>{{ player.energy }}/{{ player.max_energy }}</strong>
-                    </div>
-                    <div class="progress-track progress-track--thin" role="progressbar"
-                         aria-label="Energy" aria-valuenow="{{ dashboard.energy_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill" style="--progress: {{ dashboard.energy_percent }}%"></span>
-                    </div>
-                </article>
-
-                <article class="resource-card resource-card--nerve">
-                    <div class="resource-card__header">
-                        <span class="resource-icon" aria-hidden="true">◆</span>
-                        <span>Nerve</span>
-                        <strong>{{ player.nerve }}/{{ player.max_nerve }}</strong>
-                    </div>
-                    <div class="progress-track progress-track--thin" role="progressbar"
-                         aria-label="Nerve" aria-valuenow="{{ dashboard.nerve_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-fill" style="--progress: {{ dashboard.nerve_percent }}%"></span>
-                    </div>
-                </article>
+                    {% endfor %}
+                </div>
+                <div class="compact-hud__status">
+                    <div><span class="hud-status-icon hud-status-icon--cash">£</span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></div>
+                    <div><span class="hud-status-icon hud-status-icon--bank">▣</span><small>Bank</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong></div>
+                    <div><span class="hud-status-icon hud-status-icon--wanted">!</span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></div>
+                    <div><span class="hud-status-icon hud-status-icon--level">★</span><small>Level</small><strong>{{ player.level }}</strong></div>
+                    <a href="{{ url_for('prologue') }}"><span class="hud-status-icon hud-status-icon--debt">↘</span><small>Debt</small><strong>£{{ "{:,}".format(prologue.debt_remaining) }}</strong></a>
+                </div>
             </section>
 
             <div class="dashboard-columns">
