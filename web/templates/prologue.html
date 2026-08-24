@@ -85,13 +85,15 @@
 
 {% else %}
 {% set completed=choices.get(state.operation_approach) %}
+{% set debt_repaid=completed.paydown if completed else 2000 - state.debt_remaining %}
 <section class="operation-outcome">
-<p class="eyebrow">Operation complete</p><h2>The ledger is yours.</h2>
+<p class="eyebrow">Operation complete</p><h2>£{{ "{:,}".format(debt_repaid) }} debt repaid.</h2>
+<p class="operation-copy">The Camden Collection succeeded. Your operation is finished, but the wider debt campaign continues.</p>
 <blockquote>{{ state.outcome_text }}</blockquote>
 <div class="outcome-grid">
-<div><span>Approach</span><strong>{{ completed.style if completed else state.opening_choice|replace("_"," ")|title }}</strong></div>
-<div><span>Debt remaining</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong></div>
-<div><span>Status</span><strong>Contact established</strong></div>
+<div><span>This operation</span><strong>£{{ "{:,}".format(debt_repaid) }} repaid</strong></div>
+<div><span>Total debt remaining</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong></div>
+<div><span>Next operation</span><strong>Unlocks at level 3</strong></div>
 </div>
 <a class="operation-resolve" href="{{ url_for('home') }}">Return to London <span>→</span></a>
 </section>
