@@ -54,10 +54,6 @@ class GymStatUnavailableError(GymError):
     """Raised when a gym does not train a selected stat."""
 
 
-class TrainingRestrictedError(GymError):
-    """Raised when player status prevents training."""
-
-
 @dataclass(frozen=True)
 class GymUnlockResult:
     gym_key: str
@@ -282,11 +278,8 @@ def train(
     )
 
     if block_reason is not None:
-        raise TrainingRestrictedError(
-            "You cannot train while "
-            f"{'in ' if block_reason in {'hospital', 'jail'} else ''}"
-            f"{block_reason}."
-        )
+        display_training_block(block_reason)
+        return False
 
     gym = _resolve_training_gym(
         player,
