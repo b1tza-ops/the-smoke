@@ -205,7 +205,7 @@ ITEMS = (
     ItemDefinition("hatchet", "Hatchet", "weapon", "A short, heavy chopping weapon.", "items/hatchet.webp", False, 1, equipment_slot="primary", strength_bonus=12),
     ItemDefinition("survival_knife", "Survival Knife", "weapon", "A stronger secondary blade.", "items/survival-knife.webp", False, 1, equipment_slot="secondary", strength_bonus=8),
     ItemDefinition("denim_jacket", "Reinforced Denim Jacket", "armour", "Street clothing with sewn-in padding.", "items/denim-jacket.webp", False, 1, equipment_slot="body", defence_bonus=7),
-    ItemDefinition("hard_hat", "Construction Hard Hat", "armour", "Basic protection against head impacts.", "items/motorcycle-helmet.webp", False, 1, equipment_slot="head", defence_bonus=5),
+    ItemDefinition("hard_hat", "Construction Hard Hat", "armour", "Basic protection against head impacts.", "items/hard-hat.webp", False, 1, equipment_slot="head", defence_bonus=5),
     ItemDefinition("combat_gloves", "Combat Gloves", "armour", "Padded gloves with reinforced knuckles.", "items/combat-gloves.webp", False, 1, equipment_slot="hands", defence_bonus=5),
     ItemDefinition("cargo_trousers", "Padded Cargo Trousers", "armour", "Hard-wearing trousers with light padding.", "items/cargo-trousers.webp", False, 1, equipment_slot="legs", defence_bonus=5),
     ItemDefinition("trainers", "Street Trainers", "armour", "Light footwear that offers minimal protection.", "items/street-trainers.webp", False, 1, equipment_slot="feet", defence_bonus=2),
