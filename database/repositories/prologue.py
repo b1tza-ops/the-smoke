@@ -130,6 +130,7 @@ def get_or_create_prologue(user_id):
                 operation_stage,
                 operation_started_at,
                 operation_ready_at,
+                operation_approach,
                 CASE
                     WHEN operation_ready_at IS NULL THEN 0
                     ELSE MAX(
@@ -156,7 +157,8 @@ def get_or_create_prologue(user_id):
             "operation_stage": row[6],
             "operation_started_at": row[7],
             "operation_ready_at": row[8],
-            "remaining_seconds": row[9],
+            "operation_approach": row[9] or row[1],
+            "remaining_seconds": row[10],
         }
     finally:
         connection.close()
@@ -295,7 +297,7 @@ def start_opening_operation(user_id, choice):
             """
             UPDATE player_prologue
             SET
-                opening_choice = ?,
+                operation_approach = ?,
                 operation_stage = 'active',
                 operation_started_at = CURRENT_TIMESTAMP,
                 operation_ready_at = DATETIME(CURRENT_TIMESTAMP, ?)
@@ -318,7 +320,7 @@ def resolve_opening_operation(user_id):
         connection.execute("BEGIN IMMEDIATE")
         state = connection.execute(
             """
-            SELECT opening_choice, operation_stage, operation_ready_at
+            SELECT operation_approach, operation_stage, operation_ready_at
             FROM player_prologue
             WHERE user_id = ?
             """,
