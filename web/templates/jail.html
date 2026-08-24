@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Jail · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='custody-1') }}">
+</head>
+<body class="dashboard-page custody-page">
+<div class="app-shell">
+<header class="topbar">
+<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+<span class="hospital-location">HMP Pentonville · Intake</span>
+</header>
+{% include "_player_hud.html" %}
+<main class="dashboard-main hospital-main">
+<section class="hospital-hero custody-hero">
+<div><p class="eyebrow">London custody</p><h1>Jail</h1><p>Review the current inmate register. Inmates cannot commit crimes, travel, work or train until their sentence expires.</p></div>
+<div class="ward-count ward-count--jail"><span>Players detained</span><strong>{{ inmates|length }}</strong><small>Live custody register</small></div>
+</section>
+
+{% if own_inmate %}
+<section class="patient-status patient-status--jail" aria-labelledby="release-title">
+<div class="patient-status__pulse" aria-hidden="true">!</div>
+<div><p class="eyebrow">You are in jail</p><h2 id="release-title">Sentence in progress</h2><p>Your city actions remain restricted until release.</p></div>
+<div class="patient-countdown" data-jail-countdown="{{ own_inmate.remaining_seconds }}"><span>Release in</span><strong>--:--</strong><small>{{ own_inmate.jail_until }}</small></div>
+</section>
+{% else %}
+<section class="hospital-visitor hospital-visitor--jail">
+<span aria-hidden="true">!</span><div><strong>You are visiting custody</strong><p>You are not currently detained and may continue playing normally.</p></div>
+</section>
+{% endif %}
+
+<section class="ward-panel">
+<div class="section-heading"><div><p class="eyebrow">Custody register</p><h2>Players in jail</h2></div><span class="section-note">Updates live</span></div>
+{% if inmates %}
+<div class="patient-list">
+{% for inmate in inmates %}
+<article class="patient-row inmate-row {{ 'is-you' if inmate.id == player.id }}">
+<div class="patient-avatar inmate-avatar">{{ inmate.name[:1]|upper }}</div>
+<div class="patient-identity"><h3>{{ inmate.name }}{% if inmate.id == player.id %}<span>You</span>{% endif %}</h3><p>{{ inmate.reason }}</p></div>
+<div class="patient-health"><span>Wanted</span><strong>{{ inmate.wanted_level }}/100</strong></div>
+<div class="patient-level"><span>Level</span><strong>{{ inmate.level }}</strong></div>
+<div class="patient-time" data-inmate-time="{{ inmate.remaining_seconds }}"><span>Release</span><strong>--:--</strong></div>
+</article>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-ward empty-ward--jail"><span>!</span><h2>The cells are empty</h2><p>Nobody is currently being held.</p></div>
+{% endif %}
+</section>
+
+<section class="custody-actions-preview">
+<p class="eyebrow">Custody interactions</p><h2>Bail and breakout attempts</h2><p>Player-assisted releases will be added next with cash costs, nerve requirements, success chances and consequences. The live inmate register is ready for that system.</p>
+</section>
+</main>
+</div>
+<script>
+(() => {
+ const format=n => {
+   n=Math.max(0,n);
+   const h=Math.floor(n/3600),m=Math.floor((n%3600)/60),s=n%60;
+   return h>0 ? h+"h "+String(m).padStart(2,"0")+"m" : String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+ };
+ const timers=[...document.querySelectorAll("[data-jail-countdown],[data-inmate-time]")];
+ const draw=()=>{
+   timers.forEach(el=>{
+     const key=el.hasAttribute("data-jail-countdown")?"jailCountdown":"inmateTime";
+     let n=Number(el.dataset[key]);
+     el.querySelector("strong").textContent=n<=0?"Released":format(n);
+     el.dataset[key]=String(Math.max(0,n-1));
+   });
+ };
+ draw();window.setInterval(draw,1000);
+})();
+</script>
+</body></html>
