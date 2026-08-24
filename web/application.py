@@ -169,7 +169,8 @@ def enforce_maintenance_and_rate_limits():
         return render_template("maintenance.html"), 503
 
     if (
-        request.method == "POST"
+        not app.config.get("TESTING", False)
+        and request.method == "POST"
         and request.path in SENSITIVE_LIMITS
     ):
         limit, window = SENSITIVE_LIMITS[request.path]
