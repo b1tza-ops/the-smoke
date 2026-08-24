@@ -986,6 +986,40 @@ def migrate_022_pvp_reliability(cursor):
     )
 
 
+def migrate_023_pvp_ratings(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_pvp_ratings (
+            player_id INTEGER PRIMARY KEY,
+            rating INTEGER NOT NULL DEFAULT 1000
+                CHECK (rating >= 100),
+            wins INTEGER NOT NULL DEFAULT 0 CHECK (wins >= 0),
+            losses INTEGER NOT NULL DEFAULT 0 CHECK (losses >= 0),
+            streak INTEGER NOT NULL DEFAULT 0 CHECK (streak >= 0),
+            best_rating INTEGER NOT NULL DEFAULT 1000
+                CHECK (best_rating >= 100),
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id)
+                REFERENCES players(id) ON DELETE CASCADE
+        )
+        """
+    )
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_pvp_ratings (
+            player_id, rating, best_rating
+        )
+        SELECT id, 1000, 1000 FROM players
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_pvp_rating_rank
+        ON player_pvp_ratings(rating DESC, wins DESC)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1096,6 +1130,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=22,
         name="pvp_reliability",
         apply=migrate_022_pvp_reliability,
+    ),
+    Migration(
+        version=23,
+        name="pvp_ratings",
+        apply=migrate_023_pvp_ratings,
     ),
 )
 
