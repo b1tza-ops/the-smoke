@@ -38,7 +38,7 @@
 <article class="patient-row {{ 'is-you' if patient.id == player.id }}">
 <div class="patient-avatar">{{ patient.name[:1]|upper }}</div>
 <div class="patient-identity"><h3>{{ patient.name }}{% if patient.id == player.id %}<span>You</span>{% endif %}</h3><p>{{ patient.reason }}</p></div>
-<div class="patient-health"><span>Health</span><strong>{{ patient.health }}/100</strong></div>
+<div class="patient-health"><span>Health</span><strong>{{ patient.health }}/{{ hud_max_health(patient.level) }}</strong></div>
 <div class="patient-level"><span>Level</span><strong>{{ patient.level }}</strong></div>
 <div class="patient-time" data-patient-time="{{ patient.remaining_seconds }}"><span>Discharge</span><strong>--:--</strong></div>
 </article>

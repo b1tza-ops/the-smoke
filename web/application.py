@@ -192,7 +192,10 @@ from game.jobs import (
     start_shift,
 )
 from game.player import Player
-from game.player.progression import xp_required_for_level
+from game.player.progression import (
+    max_health_for_level,
+    xp_required_for_level,
+)
 from game.player.status import update_player_status
 
 
@@ -214,6 +217,7 @@ create_tables()
 
 app.jinja_env.globals.update(
     hud_level_xp=xp_required_for_level,
+    hud_max_health=max_health_for_level,
     hud_next_level_xp=lambda level: xp_required_for_level(
         level + 1
     ),
@@ -679,7 +683,9 @@ def home():
     xp_for_next_level = next_level_xp - current_level_xp
 
     dashboard = {
-        "health_percent": percentage(player.health, 100),
+        "health_percent": percentage(
+            player.health, player.max_health
+        ),
         "energy_percent": percentage(player.energy, player.max_energy),
         "nerve_percent": percentage(player.nerve, player.max_nerve),
         "xp_percent": percentage(xp_into_level, xp_for_next_level),

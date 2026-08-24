@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26),
         )
 
         with closing(
@@ -96,6 +96,7 @@ class MigrationTests(unittest.TestCase):
                 {
                     "xp",
                     "nerve",
+                    "max_health",
                     "max_energy",
                     "max_nerve",
                     "last_energy_update",
@@ -247,6 +248,7 @@ class MigrationTests(unittest.TestCase):
                     (23, "pvp_ratings"),
                     (24, "pvp_daily_contracts"),
                 (25, "item_catalogue_batch_one"),
+                    (26, "level_scaled_health"),
                 ],
             )
 
@@ -411,7 +413,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 25)
+            self.assertEqual(migration_count, 26)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -430,7 +432,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=26,
+            version=27,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -480,7 +482,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
             )
             self.assertEqual(money, 777)
 
@@ -518,6 +520,7 @@ class MigrationTests(unittest.TestCase):
                 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
             )
             self.assertEqual(player_count, 1)
+            self.assertIn("max_health", columns)
             self.assertIn("bank_balance", columns)
             self.assertIn("wanted_level", columns)
             self.assertIn("current_district", columns)

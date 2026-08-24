@@ -30,6 +30,7 @@ def create_tables():
             bank_balance INTEGER NOT NULL DEFAULT 0
                 CHECK (bank_balance >= 0),
             health INTEGER DEFAULT 100,
+            max_health INTEGER NOT NULL DEFAULT 100,
             energy INTEGER DEFAULT 100,
             strength INTEGER DEFAULT 10,
             defence INTEGER DEFAULT 10,
