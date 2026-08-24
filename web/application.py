@@ -550,8 +550,33 @@ def prologue():
     )
 
 
+@app.route("/jobs", methods=["GET", "POST"])
+def jobs():
+    return _work_page("jobs")
+
+
+@app.route("/inventory", methods=["GET", "POST"])
+def inventory():
+    return _work_page("inventory")
+
+
 @app.route("/jobs-inventory", methods=["GET", "POST"])
 def jobs_inventory():
+    """Keep old bookmarks and cached forms working."""
+    active_section = request.form.get(
+        "section",
+        request.args.get("section", "jobs"),
+    )
+    if active_section not in {"jobs", "inventory"}:
+        active_section = "jobs"
+
+    if request.method == "GET":
+        return redirect(url_for(active_section))
+
+    return _work_page(active_section)
+
+
+def _work_page(active_section):
     if "user_id" not in session:
         return redirect("/login")
 
@@ -566,16 +591,23 @@ def jobs_inventory():
     update_player_status(player)
     message = None
     error = None
-    active_section = request.form.get(
-        "section",
-        "jobs",
-    )
+
+    allowed_actions = {
+        "jobs": {
+            "join_career",
+            "start_shift",
+            "complete_shift",
+        },
+        "inventory": {"use_item"},
+    }
 
     if request.method == "POST":
         action = request.form.get("action", "")
 
         try:
-            if action == "join_career":
+            if action not in allowed_actions[active_section]:
+                error = "That action is not available on this page."
+            elif action == "join_career":
                 employment = join_career(
                     player,
                     request.form.get("career_key", ""),
@@ -615,16 +647,19 @@ def jobs_inventory():
                     f"{used.amount_restored} "
                     f"{used.effect_key} restored."
                 )
-            else:
-                error = "Unknown action."
         except (JobError, InventoryError) as action_error:
             error = str(action_error)
 
     save_player(player)
 
     if request.method == "POST" and message:
+        action_prefix = (
+            "job" if active_section == "jobs"
+            else "inventory"
+        )
         record_player_action(
-            f"job_{request.form.get('action', 'action')}",
+            f"{action_prefix}_"
+            f"{request.form.get('action', 'action')}",
             message,
         )
 
