@@ -909,3 +909,16 @@ input { font: inherit; }
 .admin-page #admin-stats .admin-metric:last-child{grid-column:span 2}
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 @media(max-width:560px){.admin-page #admin-stats .admin-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page #admin-stats .admin-metric:last-child{grid-column:1/-1}}
+
+
+/* The Smoke custom icon system */
+.game-icon{display:inline-block;width:1.25rem;height:1.25rem;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.game-icon--health,.game-icon--energy,.game-icon--nerve{fill:currentColor;stroke:none}
+.game-icon .icon-cut{fill:var(--panel,#101519)}
+.admin-page #admin-stats svg.admin-metric-icon{display:block;padding:.35rem;width:1.9rem;height:1.9rem;box-sizing:border-box}
+.admin-page #admin-stats .game-icon--health{color:#ff6975;background:rgba(255,105,117,.12)}
+.admin-page #admin-stats .game-icon--energy{color:#ffc857;background:rgba(255,200,87,.12)}
+.admin-page #admin-stats .game-icon--nerve{color:#4ed4e6;background:rgba(78,212,230,.12)}
+.admin-page #admin-stats .game-icon--defence{color:#88a9ff;background:rgba(136,169,255,.12)}
+.admin-page #admin-stats .game-icon--speed{color:#d49cff;background:rgba(212,156,255,.12)}
+.admin-page #admin-stats .admin-metric--gym{grid-column:1/-1}
