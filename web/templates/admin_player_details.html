@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ details.account.username }} · Operations · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-mobile-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -40,8 +40,20 @@
             </div>
         </section>
 
+        <nav class="admin-section-nav" aria-label="Player record sections">
+            <a href="#admin-identity">Account</a>
+            <a href="#admin-economy">Economy</a>
+            {% if details.account.id %}
+            <a href="#admin-status">Status</a>
+            <a href="#admin-stats">Stats</a>
+            <a href="#admin-inventory">Inventory</a>
+            <a href="#admin-crimes">Crimes</a>
+            {% endif %}
+            <a href="#admin-activity">Activity</a>
+        </nav>
+
         <section class="admin-detail-grid">
-            <article class="admin-panel">
+            <article class="admin-panel" id="admin-identity">
                 <div class="section-heading"><div><p class="eyebrow">Account</p><h2>Identity & access</h2></div></div>
                 <dl class="admin-detail-list">
                     <div><dt>Character</dt><dd>{{ details.account.name or "Not created" }}</dd></div>
@@ -59,7 +71,7 @@
                 </form>
             </article>
 
-            <article class="admin-panel">
+            <article class="admin-panel" id="admin-economy">
                 <div class="section-heading"><div><p class="eyebrow">Economy</p><h2>Progress & balances</h2></div></div>
                 {% if details.account.id %}
                 <div class="admin-metric-grid">
@@ -76,7 +88,7 @@
 
         {% if details.account.id %}
         <section class="admin-detail-grid">
-            <article class="admin-panel">
+            <article class="admin-panel" id="admin-stats">
                 <div class="section-heading"><div><p class="eyebrow">Character</p><h2>Stats & resources</h2></div></div>
                 <div class="admin-metric-grid">
                     <div><span>Health</span><strong>{{ details.account.health }}/100</strong></div>
@@ -90,7 +102,7 @@
                 </div>
             </article>
 
-            <article class="admin-panel">
+            <article class="admin-panel" id="admin-status">
                 <div class="section-heading"><div><p class="eyebrow">World</p><h2>Location & status</h2></div></div>
                 <dl class="admin-detail-list">
                     <div><dt>District</dt><dd>{{ details.account.current_district|title }}</dd></div>
@@ -131,7 +143,7 @@
         </section>
 
         <section class="admin-detail-grid">
-            <article class="admin-panel">
+            <article class="admin-panel" id="admin-inventory">
                 <div class="section-heading"><div><p class="eyebrow">Possessions</p><h2>Inventory</h2></div></div>
                 <div class="admin-compact-list">
                     {% for item in details.inventory %}
@@ -144,7 +156,7 @@
                 </div>
             </article>
 
-            <article class="admin-panel">
+            <article class="admin-panel" id="admin-crimes">
                 <div class="section-heading"><div><p class="eyebrow">Criminal record</p><h2>Crime progress</h2></div></div>
                 <div class="admin-compact-list">
                     {% for crime in details.crime_progress %}
@@ -161,7 +173,7 @@
         </section>
         {% endif %}
 
-        <section class="admin-panel">
+        <section class="admin-panel" id="admin-activity">
             <div class="section-heading"><div><p class="eyebrow">Audit ledger</p><h2>Player activity</h2></div></div>
             <div class="activity-list">
                 {% for activity in activities %}
