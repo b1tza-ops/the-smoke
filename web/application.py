@@ -806,7 +806,7 @@ def jail():
                 ):
                     error = (
                         "Breakout failed. You gained wanted "
-                        "level and were jailed for 60 seconds."
+                        "level and were jailed for 6 hours."
                     )
                 else:
                     error = (
