@@ -533,3 +533,14 @@ input { font: inherit; }
     margin-top: 2rem;
     text-decoration: none;
 }
+
+
+.turnstile-wrap {
+    min-height: 65px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.turnstile-wrap .cf-turnstile {
+    width: 100%;
+}
