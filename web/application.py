@@ -71,6 +71,7 @@ from utils.security import (
     hash_password,
     verify_password,
 )
+from game.housing import get_residence
 from game.player import Player
 from game.player.progression import xp_required_for_level
 from game.player.status import update_player_status
@@ -134,6 +135,59 @@ def home():
         player=player,
         dashboard=dashboard,
         online_players=get_online_player_count(),
+    )
+
+
+@app.route("/character")
+def character():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+
+    current_level_xp = xp_required_for_level(
+        player.level
+    )
+    next_level_xp = xp_required_for_level(
+        player.level + 1
+    )
+    xp_into_level = player.xp - current_level_xp
+    xp_needed = next_level_xp - current_level_xp
+    residence = get_residence(player.residence_key)
+
+    if player.jail_until is not None:
+        status = "In jail"
+        status_until = player.jail_until
+    elif player.hospital_until is not None:
+        status = "In hospital"
+        status_until = player.hospital_until
+    elif player.travel_destination is not None:
+        status = "Travelling"
+        status_until = player.travel_until
+    else:
+        status = "Free"
+        status_until = None
+
+    return render_template(
+        "character.html",
+        player=player,
+        residence=residence,
+        status=status,
+        status_until=status_until,
+        xp_percent=percentage(
+            xp_into_level,
+            xp_needed,
+        ),
+        next_level_xp=next_level_xp,
     )
 
 
