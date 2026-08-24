@@ -1014,20 +1014,27 @@ def _work_page(active_section):
                 ) == get_item(item_key)
             ),
             "comparison": (
-                get_item(item_key).strength_bonus
+                (
+                    get_item(item_key).strength_bonus
+                    if get_item(item_key).category == "weapon"
+                    else get_item(item_key).defence_bonus
+                )
                 - (
-                    equipment.items.get("weapon").strength_bonus
-                    if equipment.items.get("weapon")
+                    (
+                        equipment.items.get(
+                            get_item(item_key).equipment_slot
+                        ).strength_bonus
+                        if get_item(item_key).category == "weapon"
+                        else equipment.items.get(
+                            get_item(item_key).equipment_slot
+                        ).defence_bonus
+                    )
+                    if equipment.items.get(
+                        get_item(item_key).equipment_slot
+                    )
                     else 0
                 )
-                if get_item(item_key).equipment_slot == "weapon"
-                else get_item(item_key).defence_bonus
-                - (
-                    equipment.items.get("armour").defence_bonus
-                    if equipment.items.get("armour")
-                    else 0
-                )
-                if get_item(item_key).equipment_slot == "armour"
+                if get_item(item_key).equipment_slot is not None
                 else 0
             ),
         }

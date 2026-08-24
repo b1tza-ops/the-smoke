@@ -57,7 +57,7 @@ ITEMS = (
         image_filename="items/kitchen-knife.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="weapon",
+        equipment_slot="secondary",
         strength_bonus=5,
     ),
     ItemDefinition(
@@ -68,7 +68,7 @@ ITEMS = (
         image_filename="items/padded-hoodie.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="armour",
+        equipment_slot="body",
         defence_bonus=5,
     ),
     ItemDefinition(
@@ -90,7 +90,7 @@ ITEMS = (
         image_filename="items/screwdriver.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="weapon",
+        equipment_slot="secondary",
         strength_bonus=3,
     ),
     ItemDefinition(
@@ -101,7 +101,7 @@ ITEMS = (
         image_filename="items/claw-hammer.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="weapon",
+        equipment_slot="primary",
         strength_bonus=7,
     ),
     ItemDefinition(
@@ -112,7 +112,7 @@ ITEMS = (
         image_filename="items/crowbar.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="weapon",
+        equipment_slot="primary",
         strength_bonus=9,
     ),
     ItemDefinition(
@@ -123,7 +123,7 @@ ITEMS = (
         image_filename="items/baseball-bat.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="weapon",
+        equipment_slot="primary",
         strength_bonus=11,
     ),
     ItemDefinition(
@@ -134,7 +134,7 @@ ITEMS = (
         image_filename="items/machete.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="weapon",
+        equipment_slot="primary",
         strength_bonus=15,
     ),
     ItemDefinition(
@@ -145,7 +145,7 @@ ITEMS = (
         image_filename="items/leather-gloves.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="armour",
+        equipment_slot="hands",
         defence_bonus=2,
     ),
     ItemDefinition(
@@ -156,7 +156,7 @@ ITEMS = (
         image_filename="items/work-boots.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="armour",
+        equipment_slot="feet",
         defence_bonus=3,
     ),
     ItemDefinition(
@@ -167,7 +167,7 @@ ITEMS = (
         image_filename="items/motorcycle-helmet.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="armour",
+        equipment_slot="head",
         defence_bonus=7,
     ),
     ItemDefinition(
@@ -178,7 +178,7 @@ ITEMS = (
         image_filename="items/heavy-coat.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="armour",
+        equipment_slot="body",
         defence_bonus=9,
     ),
     ItemDefinition(
@@ -189,7 +189,7 @@ ITEMS = (
         image_filename="items/stab-vest.webp",
         stackable=False,
         max_quantity=1,
-        equipment_slot="armour",
+        equipment_slot="body",
         defence_bonus=14,
     ),
     ItemDefinition(
