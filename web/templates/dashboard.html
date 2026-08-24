@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='shared-hud-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='camden-shop-1') }}">
 </head>
 
 <body class="dashboard-page">
@@ -98,6 +98,11 @@
                             <span class="action-card__number">06</span>
                             <div><h3>Inventory</h3><p>Review, equip and use the items you carry.</p></div>
                             <span class="action-card__status">View</span>
+                        </a>
+                        <a class="action-card action-card--link" href="{{ url_for('camden_corner_shop') }}">
+                            <span class="action-card__number">07</span>
+                            <div><h3>Camden Corner Shop</h3><p>Buy limited everyday supplies before the daily stock runs out.</p></div>
+                            <span class="action-card__status">Shop</span>
                         </a>
                     </div>
                 </section>

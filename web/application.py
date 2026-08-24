@@ -122,6 +122,7 @@ from utils.security import (
     verify_password,
 )
 from game.housing import get_residence
+from game.shop import ShopError, get_camden_shop, purchase
 from game.inventory import (
     INVENTORY_SLOT_CAPACITY,
     ITEMS,
@@ -657,6 +658,65 @@ def prologue():
         mission_result=operation_result,
     )
 
+
+
+
+@app.route("/shops/camden-corner", methods=["GET", "POST"])
+def camden_corner_shop():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    message = None
+    error = None
+
+    if request.method == "POST":
+        try:
+            quantity = int(request.form.get("quantity", "0"))
+            result = purchase(
+                session["user_id"],
+                request.form.get("item_key", ""),
+                quantity,
+            )
+            message = (
+                f"Bought {result['quantity']} × "
+                f"{result['item'].name} for £{result['total']:,}."
+            )
+            record_player_action(
+                "shop_purchase",
+                message,
+                {
+                    "shop": "camden_corner",
+                    "item_key": result["item"].item_key,
+                    "quantity": result["quantity"],
+                    "total": result["total"],
+                },
+            )
+            player_data = get_player_by_user_id(session["user_id"])
+            player = Player(*player_data)
+        except (ValueError, ShopError) as shop_error:
+            error = str(shop_error)
+
+    return render_template(
+        "shop.html",
+        player=player,
+        shop=get_camden_shop(),
+        message=message,
+        error=error,
+        accessible=(
+            player.current_district == "camden"
+            and player.travel_destination is None
+            and player.jail_until is None
+            and player.hospital_until is None
+        ),
+    )
 
 @app.route("/jobs", methods=["GET", "POST"])
 def jobs():
