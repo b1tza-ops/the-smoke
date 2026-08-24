@@ -6,7 +6,9 @@ from database.core.setup import create_tables
 from database.repositories.users import (
     create_user,
     get_user_by_email,
+    get_user_by_id,
     get_user_by_username,
+    is_email_verified,
 )
 from database.repositories.presence import (
     get_online_player_count,
@@ -20,6 +22,15 @@ from database.repositories.players import (
     save_player,
 )
 
+from auth.email_delivery import (
+    EmailDeliveryError,
+    send_verification_email,
+)
+from auth.services.password_reset import (
+    AccountTokenError,
+    request_email_verification,
+    verify_email_token,
+)
 from auth.validation import (
     ValidationError,
     normalize_email,
@@ -150,8 +161,28 @@ def register():
                 hash_password(password),
             )
             create_player(user_id, username)
-            session["user_id"] = user_id
-            return redirect("/")
+            session[
+                "pending_verification_user_id"
+            ] = user_id
+
+            try:
+                request_email_verification(
+                    user_id=user_id,
+                    email=email,
+                    delivery=send_verification_email,
+                )
+                session["verification_notice"] = (
+                    "Verification email sent. Check your "
+                    "inbox and spam folder."
+                )
+            except EmailDeliveryError:
+                session["verification_notice"] = (
+                    "Your account was created, but the "
+                    "verification email could not be sent. "
+                    "Use the resend button below."
+                )
+
+            return redirect("/check-email")
 
         except ValidationError as validation_error:
             error = str(validation_error)
@@ -161,6 +192,95 @@ def register():
         error=error,
         form_data=form_data,
     )
+
+
+@app.route("/check-email")
+def check_email():
+    user_id = session.get(
+        "pending_verification_user_id"
+    )
+    user = get_user_by_id(user_id) if user_id else None
+
+    if user is None:
+        return redirect("/register")
+
+    if user[5]:
+        return redirect("/login")
+
+    notice = session.pop(
+        "verification_notice",
+        None,
+    )
+    return render_template(
+        "check_email.html",
+        email=user[2],
+        notice=notice,
+        error=None,
+    )
+
+
+@app.route("/resend-verification", methods=["POST"])
+def resend_verification():
+    user_id = session.get(
+        "pending_verification_user_id"
+    )
+    user = get_user_by_id(user_id) if user_id else None
+
+    if user is None:
+        return redirect("/register")
+
+    if user[5]:
+        return redirect("/login")
+
+    try:
+        request_email_verification(
+            user_id=user[0],
+            email=user[2],
+            delivery=send_verification_email,
+        )
+        notice = (
+            "A new verification email has been sent."
+        )
+        error = None
+    except EmailDeliveryError:
+        notice = None
+        error = (
+            "The email could not be sent. "
+            "Please try again shortly."
+        )
+
+    return render_template(
+        "check_email.html",
+        email=user[2],
+        notice=notice,
+        error=error,
+    )
+
+
+@app.route("/verify-email")
+def verify_email():
+    raw_token = request.args.get("token", "")
+
+    try:
+        verify_email_token(raw_token)
+        session.pop(
+            "pending_verification_user_id",
+            None,
+        )
+        return render_template(
+            "verification_result.html",
+            success=True,
+            message=(
+                "Your email is verified. "
+                "You can now sign in."
+            ),
+        )
+    except AccountTokenError as token_error:
+        return render_template(
+            "verification_result.html",
+            success=False,
+            message=str(token_error),
+        ), 400
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -178,6 +298,15 @@ def login():
 
         elif not verify_password(password, user[3]):
             error = "Incorrect password."
+
+        elif not is_email_verified(user[0]):
+            session[
+                "pending_verification_user_id"
+            ] = user[0]
+            session["verification_notice"] = (
+                "Verify your email before signing in."
+            )
+            return redirect("/check-email")
 
         else:
             session["user_id"] = user[0]
