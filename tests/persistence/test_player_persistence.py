@@ -426,7 +426,7 @@ class PlayerPersistenceTests(unittest.TestCase):
                     "brixton_performance",
                     reloaded.unlocked_gyms,
                 )
-                self.assertEqual(reloaded.money, 250)
+                self.assertEqual(reloaded.money, 500)
 
     def test_inventory_quantities_persist(self):
         with tempfile.TemporaryDirectory() as temp_dir:

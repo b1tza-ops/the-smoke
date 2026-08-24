@@ -39,8 +39,8 @@ class DistrictGymTests(unittest.TestCase):
         values.update(overrides)
         return SimpleNamespace(**values)
 
-    def test_three_starter_gyms_cover_early_districts(self):
-        self.assertEqual(len(GYMS), 3)
+    def test_eight_progressive_gyms_cover_early_districts(self):
+        self.assertEqual(len(GYMS), 8)
         self.assertEqual(
             {gym.district for gym in GYMS},
             {"camden", "brixton", "soho"},
@@ -59,7 +59,7 @@ class DistrictGymTests(unittest.TestCase):
         )
 
         self.assertEqual(camden_gain, 20)
-        self.assertEqual(brixton_gain, 26)
+        self.assertEqual(brixton_gain, 32)
 
     def test_player_can_spend_one_hundred_energy(self):
         player = self.make_player()
@@ -102,8 +102,8 @@ class DistrictGymTests(unittest.TestCase):
             "brixton_performance",
         )
 
-        self.assertEqual(result.membership_cost, 750)
-        self.assertEqual(player.money, 250)
+        self.assertEqual(result.membership_cost, 500)
+        self.assertEqual(player.money, 500)
         self.assertIn(
             "brixton_performance",
             player.unlocked_gyms,
@@ -139,7 +139,7 @@ class DistrictGymTests(unittest.TestCase):
         low_cash = self.make_player(
             level=2,
             current_district="brixton",
-            money=749,
+            money=499,
         )
         with self.assertRaises(
             GymMembershipFundsError
@@ -176,13 +176,13 @@ class DistrictGymTests(unittest.TestCase):
 
         trained = train(
             player,
-            "dexterity",
+            "strength",
             energy=20,
         )
 
         self.assertTrue(trained)
         self.assertEqual(player.energy, 80)
-        self.assertEqual(player.dexterity, 14.8)
+        self.assertEqual(player.strength, 16.4)
 
 
 if __name__ == "__main__":

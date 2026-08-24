@@ -50,6 +50,10 @@ class GymAlreadyUnlockedError(GymError):
     """Raised when membership is purchased twice."""
 
 
+class GymStatUnavailableError(GymError):
+    """Raised when a gym does not train a selected stat."""
+
+
 @dataclass(frozen=True)
 class GymUnlockResult:
     gym_key: str
@@ -281,6 +285,7 @@ def train(
         player,
         gym_key,
     )
+    _require_trainable_stat(gym, stat)
 
     if player.energy < energy:
         print("Not enough energy.")
@@ -332,6 +337,7 @@ def calculate_training_gain(gym_key, stat, energy):
 
     _validate_training_energy(energy)
     gym = _require_gym(gym_key)
+    _require_trainable_stat(gym, stat)
     base_gain = (
         energy
         // TRAINING_ENERGY_COST
@@ -342,6 +348,13 @@ def calculate_training_gain(gym_key, stat, energy):
         base_gain * gym.multiplier_for(stat),
         2,
     )
+
+
+def _require_trainable_stat(gym, stat):
+    if gym.multiplier_for(stat) <= 0:
+        raise GymStatUnavailableError(
+            f"{gym.name} does not train {stat.title()}."
+        )
 
 
 def _resolve_training_gym(player, gym_key):
