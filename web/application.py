@@ -56,6 +56,7 @@ from database.repositories.admin import (
     get_admin_player_details,
     get_admin_player_overview,
     is_user_suspended,
+    set_player_restriction,
     set_user_suspended,
 )
 from database.repositories.users import (
@@ -416,6 +417,10 @@ def admin_user_details(user_id):
             limit=100,
         ),
         item_catalog=ITEMS,
+        admin_notice=session.pop(
+            "admin_player_notice",
+            None,
+        ),
     )
 
 
@@ -445,6 +450,76 @@ def admin_user_suspension(user_id):
         )
 
     return redirect("/admin")
+
+
+@app.route(
+    "/admin/users/<int:user_id>/status",
+    methods=["POST"],
+)
+@admin_required
+def admin_user_status(user_id):
+    restriction = request.form.get(
+        "restriction",
+        "",
+    )
+    duration = request.form.get(
+        "duration_minutes",
+    )
+    reason = request.form.get(
+        "reason",
+        "",
+    ).strip()[:200]
+
+    try:
+        result = set_player_restriction(
+            user_id,
+            restriction,
+            duration,
+        )
+
+        if restriction == "free":
+            summary = (
+                "Administrator released the player "
+                "from Jail/Hospital."
+            )
+            action_type = "admin_status_release"
+        else:
+            label = restriction.title()
+            summary = (
+                f"Administrator sent the player to "
+                f"{label} for "
+                f"{result['duration_minutes']} minutes."
+            )
+            if reason:
+                summary += f" Reason: {reason}"
+            action_type = (
+                f"admin_send_to_{restriction}"
+            )
+
+        record_activity(
+            user_id,
+            action_type,
+            summary,
+            {
+                "restriction": restriction,
+                "duration_minutes": result[
+                    "duration_minutes"
+                ],
+                "until": result["until"],
+                "reason": reason,
+            },
+        )
+        session["admin_player_notice"] = {
+            "type": "success",
+            "message": summary,
+        }
+    except ValueError as status_error:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": str(status_error),
+        }
+
+    return redirect(f"/admin/users/{user_id}")
 
 
 @app.route("/admin/logout")
