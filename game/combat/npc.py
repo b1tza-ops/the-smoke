@@ -6,13 +6,15 @@ from game.player.status import send_to_hospital
 
 
 COMBAT_ENERGY_COST = 10
-DEFEAT_HOSPITAL_SECONDS = 15 * 60
 
 
 @dataclass(frozen=True)
 class Opponent:
     key: str
+    district: str
+    difficulty: str
     name: str
+    initials: str
     description: str
     health: int
     strength: int
@@ -22,10 +24,13 @@ class Opponent:
     cash_min: int
     cash_max: int
     xp_reward: int
+    cooldown_seconds: int
+    hospital_seconds: int
 
 
 @dataclass(frozen=True)
 class CombatResult:
+    opponent_key: str
     victory: bool
     player_health: int
     opponent_health: int
@@ -35,31 +40,90 @@ class CombatResult:
     hospital_until: str | None
 
 
-CAMDEN_OPPONENT = Opponent(
-    key="canal_yard_enforcer",
-    name="Canal Yard Enforcer",
-    description=(
-        "A local collector guarding a stolen-goods lockup "
-        "beside Regent's Canal."
+OPPONENTS = (
+    Opponent(
+        key="market_runner",
+        district="camden",
+        difficulty="Starter",
+        name="Market Runner",
+        initials="MR",
+        description=(
+            "A reckless runner moving stolen phones through "
+            "Camden Market. A suitable first target."
+        ),
+        health=42,
+        strength=7,
+        defence=6,
+        speed=8,
+        dexterity=7,
+        cash_min=30,
+        cash_max=55,
+        xp_reward=15,
+        cooldown_seconds=5 * 60,
+        hospital_seconds=8 * 60,
     ),
-    health=70,
-    strength=13,
-    defence=11,
-    speed=10,
-    dexterity=10,
-    cash_min=70,
-    cash_max=125,
-    xp_reward=35,
+    Opponent(
+        key="canal_yard_enforcer",
+        district="camden",
+        difficulty="Standard",
+        name="Canal Yard Enforcer",
+        initials="CY",
+        description=(
+            "A local collector guarding a stolen-goods lockup "
+            "beside Regent's Canal."
+        ),
+        health=70,
+        strength=13,
+        defence=11,
+        speed=10,
+        dexterity=10,
+        cash_min=70,
+        cash_max=125,
+        xp_reward=35,
+        cooldown_seconds=10 * 60,
+        hospital_seconds=15 * 60,
+    ),
+    Opponent(
+        key="soho_door_enforcer",
+        district="soho",
+        difficulty="Hard",
+        name="Soho Door Enforcer",
+        initials="SD",
+        description=(
+            "A veteran doorman protecting an illegal cash room. "
+            "Proper weapons and a complete armour set are advised."
+        ),
+        health=135,
+        strength=25,
+        defence=22,
+        speed=18,
+        dexterity=17,
+        cash_min=250,
+        cash_max=400,
+        xp_reward=80,
+        cooldown_seconds=20 * 60,
+        hospital_seconds=30 * 60,
+    ),
 )
+OPPONENTS_BY_KEY = {opponent.key: opponent for opponent in OPPONENTS}
+CAMDEN_OPPONENT = OPPONENTS_BY_KEY["canal_yard_enforcer"]
 
 
 class CombatError(Exception):
     """Raised when a player cannot start an encounter."""
 
 
-def get_combat_block(player):
-    if player.current_district != "camden":
-        return "This opponent operates in Camden."
+def get_district_opponents(district):
+    return tuple(
+        opponent
+        for opponent in OPPONENTS
+        if opponent.district == district
+    )
+
+
+def get_combat_block(player, opponent=None):
+    if opponent is not None and player.current_district != opponent.district:
+        return f"{opponent.name} operates in {opponent.district.title()}."
     if player.hospital_until is not None:
         return "You cannot fight while in Hospital."
     if player.jail_until is not None:
@@ -75,18 +139,16 @@ def get_combat_block(player):
     return None
 
 
-def fight_camden_opponent(player, equipment, rng=None, now=None):
-    block = get_combat_block(player)
+def fight_opponent(player, equipment, opponent, rng=None, now=None):
+    block = get_combat_block(player, opponent)
     if block is not None:
         raise CombatError(block)
 
     rng = rng or random.SystemRandom()
-    opponent = CAMDEN_OPPONENT
     player.energy -= COMBAT_ENERGY_COST
     player_health = player.health
     opponent_health = opponent.health
     log = []
-
     player_strength = player.strength + equipment.strength_bonus
     player_defence = player.defence + equipment.defence_bonus
 
@@ -98,28 +160,20 @@ def fight_camden_opponent(player, equipment, rng=None, now=None):
         turns = ("player", "opponent") if player_first else (
             "opponent", "player"
         )
-
         for attacker in turns:
             if player_health <= 0 or opponent_health <= 0:
                 break
-
             if attacker == "player":
                 accuracy = max(
                     25,
-                    min(
-                        92,
-                        65 + (player.dexterity - opponent.speed) * 2,
-                    ),
+                    min(92, 65 + (player.dexterity - opponent.speed) * 2),
                 )
                 if rng.randint(1, 100) > accuracy:
-                    log.append(
-                        f"Round {round_number}: You miss."
-                    )
+                    log.append(f"Round {round_number}: You miss.")
                     continue
                 damage = max(
                     1,
-                    player_strength
-                    + rng.randint(0, 6)
+                    player_strength + rng.randint(0, 6)
                     - opponent.defence // 2,
                 )
                 opponent_health = max(0, opponent_health - damage)
@@ -129,20 +183,16 @@ def fight_camden_opponent(player, equipment, rng=None, now=None):
             else:
                 accuracy = max(
                     25,
-                    min(
-                        90,
-                        62 + (opponent.dexterity - player.speed) * 2,
-                    ),
+                    min(90, 62 + (opponent.dexterity - player.speed) * 2),
                 )
                 if rng.randint(1, 100) > accuracy:
                     log.append(
-                        f"Round {round_number}: The enforcer misses."
+                        f"Round {round_number}: {opponent.name} misses."
                     )
                     continue
                 damage = max(
                     1,
-                    opponent.strength
-                    + rng.randint(0, 5)
+                    opponent.strength + rng.randint(0, 5)
                     - player_defence // 2,
                 )
                 player_health = max(0, player_health - damage)
@@ -157,17 +207,14 @@ def fight_camden_opponent(player, equipment, rng=None, now=None):
         )
         if victory:
             opponent_health = 0
-            log.append("The enforcer backs down.")
+            log.append(f"{opponent.name} backs down.")
         else:
             player_health = 0
             log.append("You can no longer continue.")
 
     player.health = player_health
     if victory:
-        cash_reward = rng.randint(
-            opponent.cash_min,
-            opponent.cash_max,
-        )
+        cash_reward = rng.randint(opponent.cash_min, opponent.cash_max)
         player.money += cash_reward
         award_xp(player, opponent.xp_reward)
         hospital_until = None
@@ -177,11 +224,12 @@ def fight_camden_opponent(player, equipment, rng=None, now=None):
         xp_reward = 0
         hospital_until = send_to_hospital(
             player,
-            DEFEAT_HOSPITAL_SECONDS,
+            opponent.hospital_seconds,
             now=now,
         )
 
     return CombatResult(
+        opponent_key=opponent.key,
         victory=victory,
         player_health=player.health,
         opponent_health=opponent_health,
@@ -189,4 +237,14 @@ def fight_camden_opponent(player, equipment, rng=None, now=None):
         xp_reward=xp_reward,
         rounds=tuple(log),
         hospital_until=hospital_until,
+    )
+
+
+def fight_camden_opponent(player, equipment, rng=None, now=None):
+    return fight_opponent(
+        player,
+        equipment,
+        CAMDEN_OPPONENT,
+        rng=rng,
+        now=now,
     )

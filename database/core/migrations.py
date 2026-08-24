@@ -887,6 +887,27 @@ def migrate_019_full_equipment_slots(cursor):
     cursor.execute("DROP TABLE player_equipment_legacy")
 
 
+def migrate_020_npc_combat_records(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_npc_combat (
+            player_id INTEGER NOT NULL,
+            opponent_key TEXT NOT NULL,
+            wins INTEGER NOT NULL DEFAULT 0
+                CHECK (wins >= 0),
+            attempts INTEGER NOT NULL DEFAULT 0
+                CHECK (attempts >= 0),
+            last_fought_at TEXT,
+
+            PRIMARY KEY (player_id, opponent_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -982,6 +1003,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=19,
         name="full_equipment_slots",
         apply=migrate_019_full_equipment_slots,
+    ),
+    Migration(
+        version=20,
+        name="npc_combat_records",
+        apply=migrate_020_npc_combat_records,
     ),
 )
 
