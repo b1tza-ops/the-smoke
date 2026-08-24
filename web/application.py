@@ -563,10 +563,15 @@ def inventory():
 @app.route("/jobs-inventory", methods=["GET", "POST"])
 def jobs_inventory():
     """Keep old bookmarks and cached forms working."""
-    active_section = request.form.get(
-        "section",
-        request.args.get("section", "jobs"),
-    )
+    active_section = request.form.get("section")
+    if active_section is None:
+        active_section = request.args.get("section")
+    if active_section is None:
+        active_section = (
+            "inventory"
+            if request.form.get("action") == "use_item"
+            else "jobs"
+        )
     if active_section not in {"jobs", "inventory"}:
         active_section = "jobs"
 
