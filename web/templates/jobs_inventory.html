@@ -2,9 +2,10 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Jobs & Inventory · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='jobs-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='shared-hud-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
+{% include "_player_hud.html" %}
 <main class="dashboard-main game-page work-page">
 <section class="work-hero"><div><p class="eyebrow">Legal work</p><h1>Jobs &amp; gear</h1><p>Build a career, earn reliable wages and use the items you carry.</p></div><div class="work-resources"><span>Cash <strong>£{{ "{:,}".format(player.money) }}</strong></span><span>Energy <strong>{{ player.energy }}/{{ player.max_energy }}</strong></span></div></section>
 {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
