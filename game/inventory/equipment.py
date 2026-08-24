@@ -4,7 +4,16 @@ from database.core.connection import get_connection
 from game.inventory.items import get_item
 
 
-EQUIPMENT_SLOTS = ("weapon", "armour")
+EQUIPMENT_SLOTS = (
+    "primary",
+    "secondary",
+    "head",
+    "body",
+    "hands",
+    "legs",
+    "feet",
+)
+LEGACY_SLOTS = ("weapon", "armour")
 
 
 class EquipmentError(Exception):
@@ -30,6 +39,14 @@ class EquipmentSummary:
     defence_bonus: int
 
 
+def _resolved_slot(stored_slot, item):
+    if stored_slot in EQUIPMENT_SLOTS:
+        return stored_slot
+    if stored_slot in LEGACY_SLOTS:
+        return item.equipment_slot
+    return None
+
+
 def get_equipment(player_id):
     connection = get_connection()
     try:
@@ -38,17 +55,22 @@ def get_equipment(player_id):
             SELECT slot, item_key
             FROM player_equipment
             WHERE player_id = ?
+            ORDER BY CASE WHEN slot IN ('weapon', 'armour') THEN 1 ELSE 0 END
             """,
             (player_id,),
         ).fetchall()
     finally:
         connection.close()
 
-    return {
-        slot: get_item(item_key)
-        for slot, item_key in rows
-        if get_item(item_key) is not None
-    }
+    equipped = {}
+    for stored_slot, item_key in rows:
+        item = get_item(item_key)
+        if item is None:
+            continue
+        slot = _resolved_slot(stored_slot, item)
+        if slot in EQUIPMENT_SLOTS and slot not in equipped:
+            equipped[slot] = item
+    return equipped
 
 
 def get_equipment_summary(player_id):
@@ -89,6 +111,28 @@ def equip_item(player_id, item_key):
                 f"You do not own {item.name}."
             )
 
+        legacy_rows = connection.execute(
+            """
+            SELECT slot, item_key
+            FROM player_equipment
+            WHERE player_id = ? AND slot IN ('weapon', 'armour')
+            """,
+            (player_id,),
+        ).fetchall()
+        for legacy_slot, legacy_key in legacy_rows:
+            legacy_item = get_item(legacy_key)
+            if (
+                legacy_item is not None
+                and legacy_item.equipment_slot == item.equipment_slot
+            ):
+                connection.execute(
+                    """
+                    DELETE FROM player_equipment
+                    WHERE player_id = ? AND slot = ?
+                    """,
+                    (player_id, legacy_slot),
+                )
+
         connection.execute(
             """
             INSERT INTO player_equipment (
@@ -127,7 +171,28 @@ def unequip_item(player_id, slot):
             """,
             (player_id, slot),
         )
-        if cursor.rowcount == 0:
+        removed = cursor.rowcount
+        if removed == 0:
+            legacy_rows = connection.execute(
+                """
+                SELECT slot, item_key
+                FROM player_equipment
+                WHERE player_id = ? AND slot IN ('weapon', 'armour')
+                """,
+                (player_id,),
+            ).fetchall()
+            for legacy_slot, item_key in legacy_rows:
+                item = get_item(item_key)
+                if item is not None and item.equipment_slot == slot:
+                    connection.execute(
+                        """
+                        DELETE FROM player_equipment
+                        WHERE player_id = ? AND slot = ?
+                        """,
+                        (player_id, legacy_slot),
+                    )
+                    removed += 1
+        if removed == 0:
             raise EmptyEquipmentSlotError(
                 f"Your {slot} slot is already empty."
             )

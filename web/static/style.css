@@ -1140,3 +1140,7 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .admin-inventory-actions button{border:0;border-radius:8px;background:var(--accent);color:#111607;cursor:pointer;padding:.68rem;font-weight:900}
 .admin-inventory-actions .admin-action--danger{border:1px solid rgba(255,107,117,.4);background:rgba(255,107,117,.12);color:#ff8d95}
 @media(max-width:560px){.admin-inventory-control form{grid-template-columns:1fr}.admin-inventory-actions{grid-column:auto}}
+
+
+/* Full equipment loadout */
+.loadout-slots,.character-loadout__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.loadout-slot{min-width:0}.loadout-slot small,.character-loadout__grid small{text-transform:uppercase;letter-spacing:.08em}.loadout-slot--primary,.loadout-slot--body{grid-column:span 2}@media(min-width:760px){.loadout-slots,.character-loadout__grid{grid-template-columns:repeat(4,minmax(0,1fr))}.loadout-slot--primary,.loadout-slot--body{grid-column:span 1}}

@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>{{ player.name }} · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='raster-equipment-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='full-loadout-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
@@ -15,7 +15,7 @@
 </div>
 <section class="character-loadout">
 <div class="section-heading"><div><p class="eyebrow">Active loadout</p><h2>Equipped gear</h2></div><a class="character-link character-link--inline" href="{{ url_for('inventory') }}">Manage items →</a></div>
-<div class="character-loadout__grid">{% for slot in ("weapon","armour") %}{% set item=equipment.items.get(slot) %}<article class="{{ 'is-empty' if not item }}">{% if item %}<img src="{{ url_for('static', filename=item.image_filename if '/' in item.image_filename else 'icons/' + item.image_filename) }}" alt=""><div><small>{{ slot }}</small><strong>{{ item.name }}</strong><span>{% if slot == "weapon" %}+{{ item.strength_bonus }} Strength{% else %}+{{ item.defence_bonus }} Defence{% endif %}</span></div>{% else %}<div><small>{{ slot }}</small><strong>Empty slot</strong><span>No bonus</span></div>{% endif %}</article>{% endfor %}</div>
+<div class="character-loadout__grid">{% for slot, label in (("primary","Primary weapon"),("secondary","Secondary weapon"),("head","Head"),("body","Body"),("hands","Gloves"),("legs","Pants"),("feet","Feet")) %}{% set item=equipment.items.get(slot) %}<article class="{{ 'is-empty' if not item }}">{% if item %}<img src="{{ url_for('static', filename=item.image_filename if '/' in item.image_filename else 'icons/' + item.image_filename) }}" alt=""><div><small>{{ label }}</small><strong>{{ item.name }}</strong><span>{% if item.strength_bonus %}+{{ item.strength_bonus }} Strength{% elif item.defence_bonus %}+{{ item.defence_bonus }} Defence{% else %}No bonus{% endif %}</span></div>{% else %}<div><small>{{ label }}</small><strong>Empty slot</strong><span>No bonus</span></div>{% endif %}</article>{% endfor %}</div>
 </section>
 <section class="character-resources">{% for label,value,max_value in (("Health",player.health,100),("Energy",player.energy,player.max_energy),("Nerve",player.nerve,player.max_nerve)) %}<div><span>{{ label }}</span><strong>{{ value }}/{{ max_value }}</strong><div class="progress-track progress-track--thin"><span class="progress-fill" style="--progress:{{ (value / max_value * 100)|round if max_value else 0 }}%"></span></div></div>{% endfor %}</section>
 <section class="character-growth">

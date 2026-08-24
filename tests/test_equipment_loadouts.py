@@ -1,20 +1,29 @@
 from types import SimpleNamespace
 
 from game.gym import get_training_block
-from game.inventory import get_item
+from game.inventory import EQUIPMENT_SLOTS, get_item
 
 
-def test_equipment_items_define_slots_and_bonuses():
+def test_equipment_items_define_specific_slots_and_bonuses():
     knife = get_item("kitchen_knife")
+    machete = get_item("machete")
     jacket = get_item("padded_jacket")
+    gloves = get_item("leather_gloves")
+    boots = get_item("work_boots")
+    helmet = get_item("motorcycle_helmet")
 
-    assert knife.equipment_slot == "weapon"
+    assert EQUIPMENT_SLOTS == (
+        "primary", "secondary", "head", "body",
+        "hands", "legs", "feet",
+    )
+    assert knife.equipment_slot == "secondary"
     assert knife.strength_bonus == 5
-    assert knife.defence_bonus == 0
-
-    assert jacket.equipment_slot == "armour"
+    assert machete.equipment_slot == "primary"
+    assert jacket.equipment_slot == "body"
     assert jacket.defence_bonus == 5
-    assert jacket.strength_bonus == 0
+    assert gloves.equipment_slot == "hands"
+    assert boots.equipment_slot == "feet"
+    assert helmet.equipment_slot == "head"
 
 
 def test_consumables_are_not_equippable():
