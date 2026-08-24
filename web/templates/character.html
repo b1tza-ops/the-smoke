@@ -16,7 +16,7 @@
 <section class="character-growth">
 <div><p class="eyebrow">Build the city</p><h2>Invite your crew</h2><p>Share your personal link. Successful registrations: <strong>{{ growth.referral_count }}</strong></p></div>
 <div class="invite-code"><span>Your invite code</span><strong>{{ growth.invite_code }}</strong><a href="{{ url_for('register', invite=growth.invite_code, _external=True) }}">Open invite link</a></div>
-<a class="feedback-button" href="{{ url_for('feedback', **{'from': request.path}) }}">Report a bug or suggest something <span>→</span></a>
+<a class="feedback-button" href="{{ url_for('feedback') }}?from={{ request.path|urlencode }}">Report a bug or suggest something <span>→</span></a>
 </section>
 <section class="character-activity"><div class="section-heading"><div><p class="eyebrow">Recent history</p><h2>Your activity</h2></div></div><div class="activity-list">{% for activity in recent_activity %}<article><span class="activity-type">{{ activity[3]|replace("_"," ")|title }}</span><div><p>{{ activity[4] }}</p></div><time>{{ activity[6] }}</time></article>{% else %}<p>Your new actions will appear here.</p>{% endfor %}</div></section>
 </main></div></body></html>
