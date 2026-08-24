@@ -928,7 +928,7 @@ def _work_page(active_section):
     career = get_career(player.career_key)
     role = get_job_role(player.job_role_key)
     shift_state = get_shift_state(player)
-    equipment = get_equipment_summary(player.id)
+    equipment = get_equipment_summary(getattr(player, "id", 0))
     owned_items = [
         {
             "item": get_item(item_key),
@@ -1206,7 +1206,7 @@ def character():
             limit=12,
         ),
         growth=get_growth_profile(session["user_id"]),
-        equipment=get_equipment_summary(player.id),
+        equipment=get_equipment_summary(getattr(player, "id", 0)),
     )
 
 
