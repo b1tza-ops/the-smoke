@@ -23,6 +23,7 @@ from game.crime import (
     CRIMES_BY_KEY,
     commit_crime,
 )
+from game.combat.rating import matchmaking_label
 from game.combat import (
     COMBAT_ENERGY_COST,
     OPPONENTS_BY_KEY,
@@ -119,6 +120,8 @@ from database.repositories.pvp import (
     get_pvp_targets,
     get_recent_pvp_attacks,
     get_pvp_report,
+    get_pvp_profile,
+    get_pvp_leaderboard,
     get_target_user_id,
     get_unread_pvp_notifications,
     mark_pvp_notifications_read,
@@ -1721,6 +1724,7 @@ def pvp():
     update_travel(player)
     update_player_status(player)
     result = None
+    rating_update = None
     defender = None
     error = None
     selected_approach = request.form.get("approach", "balanced")
@@ -1752,7 +1756,7 @@ def pvp():
             )
             save_player(player)
             save_player(defender)
-            attack_id = record_pvp_attack(
+            rating_update = record_pvp_attack(
                 player.id,
                 defender.id,
                 selected_approach,
@@ -1791,6 +1795,20 @@ def pvp():
         target["estimate"] = estimate_target(player, target_view)
         target["limits"] = get_attack_limits(player.id, target["id"])
 
+    pvp_profile = get_pvp_profile(player.id)
+    for target in targets:
+        target["matchmaking"] = matchmaking_label(
+            pvp_profile["rating"], target["rating"]
+        )
+    targets.sort(
+        key=lambda target: (
+            target["restricted"]
+            or target["beginner_protection_seconds"] > 0,
+            abs(target["rating"] - pvp_profile["rating"]),
+            target["name"].casefold(),
+        )
+    )
+
     notifications = get_unread_pvp_notifications(player.id)
     if notifications:
         mark_pvp_notifications_read(player.id)
@@ -1808,6 +1826,31 @@ def pvp():
         error=error,
         history=get_recent_pvp_attacks(player.id),
         notifications=notifications,
+        pvp_profile=pvp_profile,
+        rating_update=rating_update,
+    )
+
+
+@app.route("/pvp/leaderboard")
+def pvp_leaderboard():
+    if "user_id" not in session:
+        return redirect("/login")
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+    player = Player(*player_data)
+    scope = request.args.get("scope", "district")
+    district = (
+        player.current_district
+        if scope == "district"
+        else None
+    )
+    return render_template(
+        "pvp_leaderboard.html",
+        player=player,
+        scope=scope,
+        leaderboard=get_pvp_leaderboard(district=district),
+        profile=get_pvp_profile(player.id),
     )
 
 

@@ -3,12 +3,30 @@ from datetime import datetime, timedelta, timezone
 import json
 
 from database.core.connection import get_connection
+from game.combat.rating import (
+    DEFAULT_PVP_RATING,
+    calculate_rating_change,
+)
 from game.player.regeneration import format_timestamp, parse_timestamp
 
 
 TARGET_PROTECTION_SECONDS = 10 * 60
 REPEAT_REWARD_SECONDS = 60 * 60
 DAILY_REWARDED_ATTACKS = 3
+
+
+@dataclass(frozen=True)
+class RecordedAttack:
+    attack_id: int
+    attacker_before: int
+    attacker_after: int
+    defender_before: int
+    defender_after: int
+    rated: bool
+
+    @property
+    def attacker_delta(self):
+        return self.attacker_after - self.attacker_before
 
 
 @dataclass(frozen=True)
@@ -44,9 +62,12 @@ def get_pvp_targets(attacker_id, district, now=None):
                 players.speed, players.dexterity,
                 players.jail_until, players.hospital_until,
                 players.travel_destination, players.travel_until,
-                players.shift_until, users.created_at
+                players.shift_until, users.created_at,
+                COALESCE(rating.rating, 1000)
             FROM players
             JOIN users ON users.id = players.user_id
+            LEFT JOIN player_pvp_ratings AS rating
+                ON rating.player_id = players.id
             WHERE players.id != ?
               AND (
                   CASE
@@ -83,6 +104,7 @@ def get_pvp_targets(attacker_id, district, now=None):
             "beginner_protection_seconds": _beginner_seconds(
                 row[15], now
             ),
+            "rating": row[16],
             "restricted": (
                 _timestamp_active(row[10])
                 or _timestamp_active(row[11])
@@ -198,6 +220,45 @@ def record_pvp_attack(
             ),
         )
         attack_id = cursor.lastrowid
+        attacker_rating = _rating_row(connection, attacker_id)
+        defender_rating = _rating_row(connection, defender_id)
+        rated = reward_multiplier >= 1
+        attacker_after = attacker_rating[0]
+        defender_after = defender_rating[0]
+        if rated:
+            if result.victory:
+                change = calculate_rating_change(
+                    attacker_rating[0], defender_rating[0]
+                )
+                attacker_after = change.winner_after
+                defender_after = change.loser_after
+                _write_rating(
+                    connection, attacker_id, attacker_after,
+                    win=True, previous=attacker_rating,
+                    now=now,
+                )
+                _write_rating(
+                    connection, defender_id, defender_after,
+                    win=False, previous=defender_rating,
+                    now=now,
+                )
+            else:
+                change = calculate_rating_change(
+                    defender_rating[0], attacker_rating[0]
+                )
+                defender_after = change.winner_after
+                attacker_after = change.loser_after
+                _write_rating(
+                    connection, defender_id, defender_after,
+                    win=True, previous=defender_rating,
+                    now=now,
+                )
+                _write_rating(
+                    connection, attacker_id, attacker_after,
+                    win=False, previous=attacker_rating,
+                    now=now,
+                )
+
         connection.execute(
             """
             DELETE FROM pvp_attack_reservations
@@ -220,7 +281,14 @@ def record_pvp_attack(
             ),
         )
         connection.commit()
-        return attack_id
+        return RecordedAttack(
+            attack_id=attack_id,
+            attacker_before=attacker_rating[0],
+            attacker_after=attacker_after,
+            defender_before=defender_rating[0],
+            defender_after=defender_after,
+            rated=rated,
+        )
     finally:
         connection.close()
 
@@ -466,3 +534,115 @@ def _beginner_seconds(created_at, now):
         return 0
     expiry = parse_timestamp(created_at) + timedelta(hours=72)
     return max(0, int((expiry - now).total_seconds()))
+
+
+def get_pvp_profile(player_id):
+    connection = get_connection()
+    try:
+        rating = _rating_row(connection, player_id)
+    finally:
+        connection.close()
+    return {
+        "rating": rating[0],
+        "wins": rating[1],
+        "losses": rating[2],
+        "streak": rating[3],
+        "best_rating": rating[4],
+    }
+
+
+def get_pvp_leaderboard(district=None, limit=50):
+    connection = get_connection()
+    try:
+        parameters = []
+        where = ""
+        if district is not None:
+            where = "WHERE players.current_district = ?"
+            parameters.append(district)
+        parameters.append(limit)
+        rows = connection.execute(
+            f"""
+            SELECT
+                players.id, players.name, players.level,
+                players.current_district,
+                COALESCE(rating.rating, {DEFAULT_PVP_RATING}),
+                COALESCE(rating.wins, 0),
+                COALESCE(rating.losses, 0),
+                COALESCE(rating.streak, 0)
+            FROM players
+            LEFT JOIN player_pvp_ratings AS rating
+                ON rating.player_id = players.id
+            {where}
+            ORDER BY
+                COALESCE(rating.rating, {DEFAULT_PVP_RATING}) DESC,
+                COALESCE(rating.wins, 0) DESC,
+                players.name COLLATE NOCASE ASC
+            LIMIT ?
+            """,
+            parameters,
+        ).fetchall()
+    finally:
+        connection.close()
+    return [
+        {
+            "rank": index,
+            "id": row[0],
+            "name": row[1],
+            "level": row[2],
+            "district": row[3],
+            "rating": row[4],
+            "wins": row[5],
+            "losses": row[6],
+            "streak": row[7],
+        }
+        for index, row in enumerate(rows, start=1)
+    ]
+
+
+def _rating_row(connection, player_id):
+    row = connection.execute(
+        """
+        SELECT rating, wins, losses, streak, best_rating
+        FROM player_pvp_ratings WHERE player_id = ?
+        """,
+        (player_id,),
+    ).fetchone()
+    if row is not None:
+        return row
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO player_pvp_ratings (
+            player_id, rating, best_rating
+        )
+        VALUES (?, ?, ?)
+        """,
+        (player_id, DEFAULT_PVP_RATING, DEFAULT_PVP_RATING),
+    )
+    return (DEFAULT_PVP_RATING, 0, 0, 0, DEFAULT_PVP_RATING)
+
+
+def _write_rating(connection, player_id, rating, win, previous, now):
+    wins = previous[1] + (1 if win else 0)
+    losses = previous[2] + (0 if win else 1)
+    streak = previous[3] + 1 if win else 0
+    best = max(previous[4], rating)
+    connection.execute(
+        """
+        INSERT INTO player_pvp_ratings (
+            player_id, rating, wins, losses,
+            streak, best_rating, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(player_id) DO UPDATE SET
+            rating = excluded.rating,
+            wins = excluded.wins,
+            losses = excluded.losses,
+            streak = excluded.streak,
+            best_rating = excluded.best_rating,
+            updated_at = excluded.updated_at
+        """,
+        (
+            player_id, rating, wins, losses,
+            streak, best, now.isoformat(),
+        ),
+    )

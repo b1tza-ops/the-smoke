@@ -7,6 +7,8 @@
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('fight') }}">NPC fights</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page pvp-page">
+<nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
+<section class="pvp-rating-strip"><div><span>Your rating</span><strong>{{ pvp_profile.rating }}</strong></div><div><span>Record</span><strong>{{ pvp_profile.wins }}–{{ pvp_profile.losses }}</strong></div><div><span>Win streak</span><strong>{{ pvp_profile.streak }}</strong></div><div><span>Personal best</span><strong>{{ pvp_profile.best_rating }}</strong></div></section>
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} rivalries</p><h1>Player fights</h1><p>Choose a target and a tactical approach. Only cash carried on the street can be mugged.</p></div><div class="combat-cost"><span>Each attack</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% for notice in notifications %}<a class="game-notice pvp-notification" href="{{ url_for('pvp_report', attack_id=notice.attack_id) }}"><strong>Incoming attack</strong> · {{ notice.message }} View report →</a>{% endfor %}
@@ -18,7 +20,7 @@
 {% for event in result.rounds %}{"round":{{ event.round_number }},"actor":"{{ event.actor }}","event":"{{ event.event }}","damage":{{ event.damage }},"attacker_health":{{ event.attacker_health }},"defender_health":{{ event.defender_health }}}{% if not loop.last %},{% endif %}{% endfor %}
 ]</script>
 <div class="pvp-controls"><button type="button" data-speed>2× speed</button><button type="button" data-skip>Skip animation</button></div>
-<div class="combat-result__rewards"><span>Result <strong>{{ 'Victory' if result.victory else 'Defeat' }}</strong></span><span>Mugged <strong>£{{ result.cash_stolen }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span></div>
+<div class="combat-result__rewards"><span>Result <strong>{{ 'Victory' if result.victory else 'Defeat' }}</strong></span><span>Mugged <strong>£{{ result.cash_stolen }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span><span>Rating <strong>{% if rating_update and rating_update.rated %}{{ '%+d'|format(rating_update.attacker_delta) }} · {{ rating_update.attacker_after }}{% else %}Unrated repeat{% endif %}</strong></span></div>
 </section>
 <a class="character-link" href="{{ url_for('pvp') }}">Return to target board →</a>
 {% else %}
@@ -26,7 +28,7 @@
 <div class="pvp-targets">
 {% for target in targets %}
 <article class="pvp-target">
-<div class="pvp-target__identity"><span class="combat-avatar">{{ target.name[:2]|upper }}</span><div><small>Level {{ target.level }} · {{ target.estimate }}</small><h2>{{ target.name }}</h2><p>{{ target.health }}/100 health · carries visible street cash</p></div></div>
+<div class="pvp-target__identity"><span class="combat-avatar">{{ target.name[:2]|upper }}</span><div><small>{{ target.matchmaking }} · Level {{ target.level }}</small><h2>{{ target.name }}</h2><p>{{ target.health }}/100 health · {{ target.rating }} rating · {{ target.estimate }}</p></div></div>
 {% if target.beginner_protection_seconds %}<p class="combat-block">New player protection · {{ (target.beginner_protection_seconds // 3600) + 1 }}h</p>{% elif target.restricted %}<p class="combat-block">Currently unavailable</p>{% elif target.limits.protected_seconds %}<p class="combat-block">Protected for {{ target.limits.protected_seconds }} seconds</p>{% endif %}
 <form method="post" action="{{ url_for('pvp') }}#pvp-arena">
 <input type="hidden" name="target_id" value="{{ target.id }}">
