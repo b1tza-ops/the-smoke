@@ -944,12 +944,28 @@ def crimes():
     attempted_crime_key = None
     error = None
     work_shift = get_shift_state(player)
+    crime_block_reason = None
 
-    if request.method == "POST" and work_shift is not None:
-        error = (
+    if player.jail_until is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while in jail."
+        )
+    elif player.hospital_until is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while in hospital."
+        )
+    elif work_shift is not None:
+        crime_block_reason = (
             "You cannot attempt crimes while working a shift. "
             "Finish or collect your shift first."
         )
+    elif player.travel_destination is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while travelling."
+        )
+
+    if request.method == "POST" and crime_block_reason:
+        error = crime_block_reason
 
     elif request.method == "POST":
         crime_key = request.form.get("crime_key", "")
@@ -988,6 +1004,7 @@ def crimes():
         attempted_crime_key=attempted_crime_key,
         error=error,
         work_shift=work_shift,
+        crime_block_reason=crime_block_reason,
     )
 
 
