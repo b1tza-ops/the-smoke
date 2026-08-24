@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up The Smoke SQLite database
+After=local-fs.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/the-smoke.env
+WorkingDirectory=/opt/the-smoke
+ExecStart=/opt/the-smoke/.venv/bin/python /opt/the-smoke/scripts/backup_database.py
+Nice=10

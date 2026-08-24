@@ -18,3 +18,8 @@ venv/
 
 # Editor settings
 .vscode/
+
+# Runtime logs and backups
+logs/
+backups/
+*.log
