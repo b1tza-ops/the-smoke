@@ -213,6 +213,17 @@ ITEMS = (
     ItemDefinition("reinforced_jeans", "Reinforced Jeans", "armour", "Denim lined with protective fibres.", "items/heavy-coat.webp", False, 1, equipment_slot="legs", defence_bonus=8),
     ItemDefinition("riot_helmet", "Riot Helmet", "armour", "A reinforced helmet with full face protection.", "items/motorcycle-helmet.webp", False, 1, equipment_slot="head", defence_bonus=12),
     ItemDefinition(
+        key="fish_and_chips",
+        name="Fish and Chips",
+        category="boost",
+        description="A hot takeaway that restores up to 25 happiness.",
+        image_filename="items/protein-bar.webp",
+        stackable=True,
+        max_quantity=10,
+        effect_key="happiness",
+        effect_amount=25,
+    ),
+    ItemDefinition(
         key="lockpick",
         name="Lockpick",
         category="utility",

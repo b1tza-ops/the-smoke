@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26),
         )
 
         with closing(
@@ -117,6 +117,9 @@ class MigrationTests(unittest.TestCase):
                     "shift_until",
                     "current_gym_key",
                     "last_seen",
+                    "happiness",
+                    "max_happiness",
+                    "last_happiness_update",
                 }.issubset(columns)
             )
 
@@ -247,6 +250,7 @@ class MigrationTests(unittest.TestCase):
                     (23, "pvp_ratings"),
                     (24, "pvp_daily_contracts"),
                 (25, "item_catalogue_batch_one"),
+                    (26, "player_happiness"),
                 ],
             )
 
@@ -286,7 +290,7 @@ class MigrationTests(unittest.TestCase):
                 """
             ).fetchall()
 
-            self.assertEqual(len(item_rows), 36)
+            self.assertEqual(len(item_rows), 37)
 
             starter_inventory = conn.execute(
                 """
@@ -376,7 +380,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26),
         )
         self.assertEqual(second_run, ())
 
@@ -411,7 +415,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 25)
+            self.assertEqual(migration_count, 26)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -430,7 +434,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=26,
+            version=27,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -480,7 +484,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
             )
             self.assertEqual(money, 777)
 
@@ -515,7 +519,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -532,6 +536,9 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("shift_until", columns)
             self.assertIn("current_gym_key", columns)
             self.assertIn("last_seen", columns)
+            self.assertIn("happiness", columns)
+            self.assertIn("max_happiness", columns)
+            self.assertIn("last_happiness_update", columns)
 
             user_columns = {
                 row[1]

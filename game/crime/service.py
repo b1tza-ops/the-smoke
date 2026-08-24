@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass
 
+from game.player.happiness import crime_success_penalty
 from game.player.progression import award_xp
 from game.world.travel import get_active_travel
 
@@ -223,8 +224,12 @@ def commit_crime(player, crime, rng=None, now=None):
     )
 
     success_roll = rng.randint(1, 100)
+    effective_chance = max(
+        1,
+        crime.success_chance - crime_success_penalty(player),
+    )
 
-    if success_roll <= crime.success_chance:
+    if success_roll <= effective_chance:
         reward = rng.randint(
             crime.min_reward,
             crime.max_reward,

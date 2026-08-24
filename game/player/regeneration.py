@@ -4,8 +4,11 @@ from datetime import datetime, timedelta, timezone
 ENERGY_POINTS_PER_TICK = 5
 ENERGY_TICK_SECONDS = 10 * 60
 
-NERVE_POINTS_PER_TICK = 1 
+NERVE_POINTS_PER_TICK = 1
 NERVE_TICK_SECONDS = 5 * 60
+
+HAPPINESS_POINTS_PER_TICK = 5
+HAPPINESS_TICK_SECONDS = 15 * 60
 
 
 def parse_timestamp(timestamp):

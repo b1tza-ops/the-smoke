@@ -8,6 +8,9 @@ WANTED_DECAY_POINTS = 1
 WANTED_DECAY_SECONDS = 10 * 60
 MAX_WANTED_LEVEL = 100
 
+JAIL_HAPPINESS_LOSS = 5
+HOSPITAL_HAPPINESS_LOSS = 10
+
 
 @dataclass(frozen=True)
 class StatusUpdate:
@@ -138,6 +141,12 @@ def send_to_jail(player, duration_seconds, now=None):
         now=now,
     )
 
+    if hasattr(player, "happiness"):
+        player.happiness = max(
+            0,
+            player.happiness - JAIL_HAPPINESS_LOSS,
+        )
+
     return player.jail_until
 
 
@@ -151,6 +160,12 @@ def send_to_hospital(player, duration_seconds, now=None):
         duration_seconds=duration_seconds,
         now=now,
     )
+
+    if hasattr(player, "happiness"):
+        player.happiness = max(
+            0,
+            player.happiness - HOSPITAL_HAPPINESS_LOSS,
+        )
 
     return player.hospital_until
 

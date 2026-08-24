@@ -4,6 +4,8 @@ from database.core.connection import get_connection
 from game.player.regeneration import (
     ENERGY_POINTS_PER_TICK,
     ENERGY_TICK_SECONDS,
+    HAPPINESS_POINTS_PER_TICK,
+    HAPPINESS_TICK_SECONDS,
     NERVE_POINTS_PER_TICK,
     NERVE_TICK_SECONDS,
     regenerate_resource,
@@ -103,7 +105,10 @@ def get_player_by_user_id(user_id):
             shifts_completed,
             shift_started_at,
             shift_until,
-            current_gym_key
+            current_gym_key,
+            happiness,
+            max_happiness,
+            last_happiness_update
         FROM players
         WHERE user_id = ?
         """,
@@ -137,6 +142,15 @@ def get_player_by_user_id(user_id):
         now=now
     )
 
+    happiness, happiness_update = regenerate_resource(
+        current_value=player_data[33],
+        maximum_value=player_data[34],
+        last_update=player_data[35],
+        points_per_tick=HAPPINESS_POINTS_PER_TICK,
+        tick_seconds=HAPPINESS_TICK_SECONDS,
+        now=now
+    )
+
     cursor.execute(
         """
         UPDATE players
@@ -144,7 +158,9 @@ def get_player_by_user_id(user_id):
             energy = ?,
             nerve = ?,
             last_energy_update = ?,
-            last_nerve_update = ?
+            last_nerve_update = ?,
+            happiness = ?,
+            last_happiness_update = ?
         WHERE id = ?
         """,
         (
@@ -152,6 +168,8 @@ def get_player_by_user_id(user_id):
             nerve,
             energy_update,
             nerve_update,
+            happiness,
+            happiness_update,
             player_data[0]
         )
     )
@@ -214,6 +232,8 @@ def get_player_by_user_id(user_id):
     player_data[11] = nerve
     player_data[14] = energy_update
     player_data[15] = nerve_update
+    player_data[33] = happiness
+    player_data[35] = happiness_update
 
     player_data.extend([
         crime_progress,
@@ -263,7 +283,10 @@ def save_player(player):
             shifts_completed = ?,
             shift_started_at = ?,
             shift_until = ?,
-            current_gym_key = ?
+            current_gym_key = ?,
+            happiness = ?,
+            max_happiness = ?,
+            last_happiness_update = ?
         WHERE id = ?
         """,
         (
@@ -298,6 +321,9 @@ def save_player(player):
             player.shift_started_at,
             player.shift_until,
             player.current_gym_key,
+            player.happiness,
+            player.max_happiness,
+            player.last_happiness_update,
             player.id
         )
     )

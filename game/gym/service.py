@@ -7,6 +7,7 @@ from game.gym.definitions import (
     get_district_gyms,
     get_gym,
 )
+from game.player.happiness import training_multiplier
 from game.player.status import get_active_restriction
 from game.world.travel import get_active_travel
 
@@ -305,7 +306,9 @@ def train(
         * TRAINING_STAT_GAIN
     )
     stat_gain = round(
-        base_gain * gym.multiplier_for(stat),
+        base_gain
+        * gym.multiplier_for(stat)
+        * training_multiplier(player),
         2,
     )
 
@@ -337,7 +340,7 @@ def train(
     return True
 
 
-def calculate_training_gain(gym_key, stat, energy):
+def calculate_training_gain(gym_key, stat, energy, player=None):
     if stat not in VALID_BATTLE_STATS:
         raise ValueError(
             f"Unknown battle stat: {stat}"
@@ -353,7 +356,9 @@ def calculate_training_gain(gym_key, stat, energy):
     )
 
     return round(
-        base_gain * gym.multiplier_for(stat),
+        base_gain
+        * gym.multiplier_for(stat)
+        * training_multiplier(player),
         2,
     )
 

@@ -39,6 +39,7 @@ DISTRICT_SHOPS = {
             ShopItem("duct_tape", "Duct Tape", "Useful for improvised plans.", 90, 5, 16),
             ShopItem("hard_hat", "Construction Hard Hat", "Basic head protection.", 380, 2, 7),
             ShopItem("trainers", "Street Trainers", "Light protective footwear.", 220, 3, 9),
+            ShopItem("fish_and_chips", "Fish and Chips", "Restores up to 25 happiness.", 55, 10, 25),
         ),
     },
     "brixton": {
@@ -83,6 +84,7 @@ DISTRICT_SHOPS = {
             ShopItem("survival_knife", "Survival Knife", "A stronger secondary blade.", 880, 1, 5),
             ShopItem("reinforced_jeans", "Reinforced Jeans", "Protective fibres under street denim.", 1100, 1, 4),
             ShopItem("riot_helmet", "Riot Helmet", "Reinforced full-face protection.", 1650, 1, 3),
+            ShopItem("fish_and_chips", "Fish and Chips", "Restores up to 25 happiness.", 65, 8, 20),
         ),
     },
 }

@@ -1073,6 +1073,48 @@ def migrate_025_item_catalogue_batch_one(cursor):
     )
 
 
+def migrate_026_player_happiness(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "happiness": (
+                "INTEGER NOT NULL DEFAULT 100 "
+                "CHECK (happiness >= 0)"
+            ),
+            "max_happiness": (
+                "INTEGER NOT NULL DEFAULT 100 "
+                "CHECK (max_happiness > 0)"
+            ),
+            "last_happiness_update": "TEXT",
+        },
+    )
+
+    cursor.execute(
+        """
+        UPDATE players
+        SET last_happiness_update = CURRENT_TIMESTAMP
+        WHERE last_happiness_update IS NULL
+        """
+    )
+
+    from game.inventory.items import ITEMS_BY_KEY
+
+    item = ITEMS_BY_KEY["fish_and_chips"]
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key, name, category, description, stackable,
+            max_quantity, effect_key, effect_amount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            item.key, item.name, item.category, item.description,
+            int(item.stackable), item.max_quantity,
+            item.effect_key, item.effect_amount,
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1198,6 +1240,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=25,
         name="item_catalogue_batch_one",
         apply=migrate_025_item_catalogue_batch_one,
+    ),
+    Migration(
+        version=26,
+        name="player_happiness",
+        apply=migrate_026_player_happiness,
     ),
 )
 

@@ -1489,6 +1489,7 @@ def gym():
                     gym_key,
                     stat,
                     energy,
+                    player=player,
                 )
                 trained = train(
                     player,

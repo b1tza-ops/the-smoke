@@ -62,6 +62,32 @@ class PlayerPersistenceTests(unittest.TestCase):
                 self.assertEqual(reloaded_player.speed, 10)
                 self.assertEqual(reloaded_player.dexterity, 10)
 
+    def test_happiness_starts_full_and_persists_after_a_hospital_stay(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "data" / "game.db"
+
+            with patch("database.core.connection.DB_PATH", database_path):
+                create_tables()
+
+                user_id = create_user(
+                    username="happy_player",
+                    email="happy@example.com",
+                    password_hash="test_hash"
+                )
+                create_player(user_id, "Happy Character")
+
+                player = Player(*get_player_by_user_id(user_id))
+
+                self.assertEqual(player.happiness, 100)
+                self.assertEqual(player.max_happiness, 100)
+
+                send_to_hospital(player, 600)
+                save_player(player)
+
+                reloaded = Player(*get_player_by_user_id(user_id))
+
+                self.assertEqual(reloaded.happiness, 90)
+
     def test_crime_progress_and_district_reputation_persist(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
