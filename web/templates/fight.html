@@ -13,7 +13,7 @@
 {% if result %}
 <section id="fight-result" class="combat-result {{ 'is-victory' if result.victory else 'is-defeat' }}">
 <p class="eyebrow">{{ 'Victory' if result.victory else 'Defeat' }}</p><h2>{{ fought_opponent.name }}</h2>
-<div class="combat-result__rewards"><span>Health <strong>{{ result.player_health }}/100</strong></span><span>Cash <strong>+£{{ result.cash_reward }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span></div>
+<div class="combat-result__rewards"><span>Health <strong>{{ result.player_health }}/{{ player.max_health }}</strong></span><span>Cash <strong>+£{{ result.cash_reward }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span></div>
 </section>
 <section class="combat-log"><div class="section-heading"><div><p class="eyebrow">Fight report</p><h2>Round-by-round</h2></div></div><ol>{% for entry in result.rounds %}<li>{{ entry }}</li>{% endfor %}</ol></section>
 <a class="character-link" href="{{ url_for('fight') }}">Return to encounter board →</a>

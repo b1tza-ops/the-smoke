@@ -10,6 +10,7 @@ class Player:
         level,
         money,
         health,
+        max_health,
         energy,
         strength,
         defence,
@@ -65,6 +66,7 @@ class Player:
         }
         self.inventory = inventory or {}
         self.health = health
+        self.max_health = max_health
         self.energy = energy
         self.strength = strength
         self.defence = defence
@@ -131,7 +133,7 @@ class Player:
             self.current_gym_key.replace("_", " ").title(),
         )
         print("Inventory:", f"{len(self.inventory)}/20 slots")
-        print("Health: ", self.health)
+        print(f"Health: {self.health}/{self.max_health}")
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")
         print(f"Wanted: {self.wanted_level}/100")

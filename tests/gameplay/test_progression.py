@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from game.player.progression import (
     award_xp,
     level_for_xp,
+    max_health_for_level,
     xp_required_for_level,
 )
 
@@ -64,6 +65,26 @@ class ProgressionTests(unittest.TestCase):
         self.assertEqual(player.defence, 10)
         self.assertEqual(player.speed, 10)
         self.assertEqual(player.dexterity, 10)
+
+
+    def test_max_health_scales_by_fifty_per_level(self):
+        self.assertEqual(max_health_for_level(1), 100)
+        self.assertEqual(max_health_for_level(2), 150)
+        self.assertEqual(max_health_for_level(19), 1000)
+
+    def test_level_up_increases_current_and_max_health(self):
+        player = SimpleNamespace(
+            xp=99,
+            level=1,
+            health=60,
+            max_health=100,
+        )
+
+        levels_gained = award_xp(player, 1)
+
+        self.assertEqual(levels_gained, 1)
+        self.assertEqual(player.max_health, 150)
+        self.assertEqual(player.health, 110)
 
     def test_negative_values_are_rejected(self):
         player = SimpleNamespace(xp=0, level=1)

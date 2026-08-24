@@ -77,6 +77,7 @@ def get_player_by_user_id(user_id):
             level,
             money,
             health,
+            max_health,
             energy,
             strength,
             defence,
@@ -120,18 +121,18 @@ def get_player_by_user_id(user_id):
     now = datetime.now(timezone.utc)
 
     energy, energy_update = regenerate_resource(
-        current_value=player_data[6],
-        maximum_value=player_data[12],
-        last_update=player_data[14],
+        current_value=player_data[7],
+        maximum_value=player_data[13],
+        last_update=player_data[15],
         points_per_tick=ENERGY_POINTS_PER_TICK,
         tick_seconds=ENERGY_TICK_SECONDS,
         now=now
     )
 
     nerve, nerve_update = regenerate_resource(
-        current_value=player_data[11],
-        maximum_value=player_data[13],
-        last_update=player_data[15],
+        current_value=player_data[12],
+        maximum_value=player_data[14],
+        last_update=player_data[16],
         points_per_tick=NERVE_POINTS_PER_TICK,
         tick_seconds=NERVE_TICK_SECONDS,
         now=now
@@ -210,10 +211,10 @@ def get_player_by_user_id(user_id):
 
     conn.close()
 
-    player_data[6] = energy
-    player_data[11] = nerve
-    player_data[14] = energy_update
-    player_data[15] = nerve_update
+    player_data[7] = energy
+    player_data[12] = nerve
+    player_data[15] = energy_update
+    player_data[16] = nerve_update
 
     player_data.extend([
         crime_progress,
@@ -238,6 +239,7 @@ def save_player(player):
             money = ?,
             bank_balance = ?,
             health = ?,
+            max_health = ?,
             energy = ?,
             strength = ?,
             defence = ?,
@@ -272,6 +274,7 @@ def save_player(player):
             player.money,
             player.bank_balance,
             player.health,
+            player.max_health,
             player.energy,
             player.strength,
             player.defence,

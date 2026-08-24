@@ -1073,6 +1073,27 @@ def migrate_025_item_catalogue_batch_one(cursor):
     )
 
 
+def migrate_026_level_scaled_health(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "max_health": "INTEGER NOT NULL DEFAULT 100",
+        },
+    )
+    cursor.execute(
+        """
+        UPDATE players
+        SET
+            health = CAST(
+                ROUND(
+                    health * (100 + (level - 1) * 50) / 100.0
+                ) AS INTEGER
+            ),
+            max_health = 100 + (level - 1) * 50
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1198,6 +1219,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=25,
         name="item_catalogue_batch_one",
         apply=migrate_025_item_catalogue_batch_one,
+    ),
+    Migration(
+        version=26,
+        name="level_scaled_health",
+        apply=migrate_026_level_scaled_health,
     ),
 )
 
