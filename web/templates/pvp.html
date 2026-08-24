@@ -9,6 +9,11 @@
 <main class="dashboard-main game-page pvp-page">
 <nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_contracts') }}">Contracts</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
 <section class="pvp-rating-strip"><div><span>Your rating</span><strong>{{ pvp_profile.rating }}</strong></div><div><span>Record</span><strong>{{ pvp_profile.wins }}–{{ pvp_profile.losses }}</strong></div><div><span>Win streak</span><strong>{{ pvp_profile.streak }}</strong></div><div><span>Personal best</span><strong>{{ pvp_profile.best_rating }}</strong></div></section>
+<section class="pvp-streak-card {{ 'is-active' if streak_progress.streak >= 3 }}">
+<div class="pvp-streak-card__heading"><div><p class="eyebrow">Rated win streak</p><h2>{{ streak_progress.current_title }}</h2></div><strong>{{ streak_progress.streak }} wins</strong></div>
+{% if streak_progress.next %}<div class="pvp-streak-card__track"><i style="--progress:{{ streak_progress.progress_percent }}%"></i></div><p><strong>{{ streak_progress.wins_remaining }}</strong> more {{ 'win' if streak_progress.wins_remaining == 1 else 'wins' }} to unlock <strong>{{ streak_progress.next.title }}</strong>.</p>{% else %}<p>You have reached the highest streak milestone. Keep the run alive.</p>{% endif %}
+<div class="pvp-streak-badges">{% for milestone in streak_progress.achieved %}<span>◆ {{ milestone.title }}</span>{% endfor %}</div>
+</section>
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} rivalries</p><h1>Player fights</h1><p>Choose a target and a tactical approach. Only cash carried on the street can be mugged.</p></div><div class="combat-cost"><span>Each attack</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% for notice in notifications %}<a class="game-notice pvp-notification" href="{{ url_for('pvp_report', attack_id=notice.attack_id) }}"><strong>Incoming attack</strong> · {{ notice.message }} View report →</a>{% endfor %}
