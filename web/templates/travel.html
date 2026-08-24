@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>London Travel · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='travel-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('home') }}">Dashboard</a>
+    </header>
+
+    <main class="dashboard-main game-page travel-page">
+        <section class="travel-hero">
+            <div><p class="eyebrow">London network</p><h1>Travel</h1><p>Move through the city to reach different gyms, crimes and opportunities.</p></div>
+            <div class="travel-cash"><span>Carried cash</span><strong>£{{ "{:,}".format(player.money) }}</strong></div>
+        </section>
+
+        {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+        {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+
+        {% if active_travel %}
+            <section class="journey-card">
+                <p class="eyebrow">Journey in progress</p>
+                <div class="journey-route">
+                    <div><span>From</span><strong>{{ current.name }}</strong></div>
+                    <span class="journey-line" aria-hidden="true">→</span>
+                    <div><span>Destination</span><strong>{{ active_destination.name }}</strong></div>
+                </div>
+                <div class="journey-countdown" data-seconds="{{ active_travel.remaining_seconds }}">
+                    <span>Arriving in</span><strong id="travel-countdown">--:--</strong>
+                </div>
+                <p>{{ active_destination.description }}</p>
+            </section>
+        {% else %}
+            <section class="current-district">
+                <span class="status-dot" aria-hidden="true"></span>
+                <div><span>Current district</span><strong>{{ current.name }}</strong></div>
+            </section>
+
+            <section class="district-grid">
+                {% for option in destinations %}
+                    {% set district = option.district %}
+                    <article class="district-card" id="district-{{ district.key }}">
+                        <header><div><p class="eyebrow">Level {{ district.minimum_level }}+</p><h2>{{ district.name }}</h2></div><span class="district-fare">£{{ option.cost }}</span></header>
+                        <p>{{ district.description }}</p>
+                        <dl><div><dt>Journey</dt><dd>{{ option.duration_minutes }} min</dd></div><div><dt>Fare</dt><dd>£{{ option.cost }}</dd></div></dl>
+                        <form method="post" action="{{ url_for('travel') }}#district-{{ district.key }}">
+                            <input type="hidden" name="destination_key" value="{{ district.key }}">
+                            <button class="travel-button" type="submit" {% if option.locked or not option.affordable %}disabled{% endif %}>
+                                {% if option.locked %}<span>Requires level {{ district.minimum_level }}</span>
+                                {% elif not option.affordable %}<span>Not enough cash</span>
+                                {% else %}<span>Travel to {{ district.name }}</span><span>→</span>{% endif %}
+                            </button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </section>
+        {% endif %}
+    </main>
+</div>
+{% if active_travel %}
+<script>
+(() => {
+    const box = document.querySelector(".journey-countdown");
+    const output = document.getElementById("travel-countdown");
+    let remaining = Number(box.dataset.seconds);
+    const render = () => {
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        output.textContent = String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+        if (remaining <= 0) { window.location.reload(); return; }
+        remaining -= 1;
+    };
+    render();
+    window.setInterval(render, 1000);
+})();
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,6 +1,16 @@
 import os
 import secrets
-from game.world.travel import update_travel
+from game.world.districts import (
+    DISTRICTS,
+    get_district,
+    get_travel_route,
+)
+from game.world.travel import (
+    TravelError,
+    get_active_travel,
+    start_travel,
+    update_travel,
+)
 from game.crime import (
     CRIMES,
     CRIMES_BY_KEY,
@@ -61,6 +71,7 @@ from utils.security import (
     hash_password,
     verify_password,
 )
+from game.housing import get_residence
 from game.player import Player
 from game.player.progression import xp_required_for_level
 from game.player.status import update_player_status
@@ -124,6 +135,148 @@ def home():
         player=player,
         dashboard=dashboard,
         online_players=get_online_player_count(),
+    )
+
+
+@app.route("/character")
+def character():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+
+    current_level_xp = xp_required_for_level(
+        player.level
+    )
+    next_level_xp = xp_required_for_level(
+        player.level + 1
+    )
+    xp_into_level = player.xp - current_level_xp
+    xp_needed = next_level_xp - current_level_xp
+    residence = get_residence(player.residence_key)
+
+    if player.jail_until is not None:
+        status = "In jail"
+        status_until = player.jail_until
+    elif player.hospital_until is not None:
+        status = "In hospital"
+        status_until = player.hospital_until
+    elif player.travel_destination is not None:
+        status = "Travelling"
+        status_until = player.travel_until
+    else:
+        status = "Free"
+        status_until = None
+
+    return render_template(
+        "character.html",
+        player=player,
+        residence=residence,
+        status=status,
+        status_until=status_until,
+        xp_percent=percentage(
+            xp_into_level,
+            xp_needed,
+        ),
+        next_level_xp=next_level_xp,
+    )
+
+
+@app.route("/travel", methods=["GET", "POST"])
+def travel():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(
+        session["user_id"]
+    )
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    arrived = update_travel(player)
+    update_player_status(player)
+    message = (
+        f"You have arrived in "
+        f"{get_district(player.current_district).name}."
+        if arrived
+        else None
+    )
+    error = None
+
+    if request.method == "POST":
+        destination_key = request.form.get(
+            "destination_key",
+            "",
+        )
+        try:
+            journey = start_travel(
+                player,
+                destination_key,
+            )
+            destination = get_district(
+                journey.destination_key
+            )
+            message = (
+                f"Journey started for {destination.name}. "
+                f"£{journey.cost:,} fare paid."
+            )
+        except TravelError as travel_error:
+            error = str(travel_error)
+
+    save_player(player)
+    active_travel = get_active_travel(player)
+    current = get_district(player.current_district)
+    destinations = []
+
+    if active_travel is None:
+        for district in DISTRICTS:
+            if district.key == current.key:
+                continue
+
+            route = get_travel_route(
+                current.key,
+                district.key,
+            )
+            destinations.append({
+                "district": district,
+                "cost": route.cost,
+                "duration_minutes": (
+                    route.duration_seconds + 59
+                ) // 60,
+                "locked": (
+                    player.level
+                    < district.minimum_level
+                ),
+                "affordable": (
+                    player.money >= route.cost
+                ),
+            })
+
+    active_destination = (
+        get_district(active_travel.destination_key)
+        if active_travel is not None
+        else None
+    )
+
+    return render_template(
+        "travel.html",
+        player=player,
+        current=current,
+        destinations=destinations,
+        active_travel=active_travel,
+        active_destination=active_destination,
+        message=message,
+        error=error,
     )
 
 

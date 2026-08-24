@@ -108,11 +108,11 @@
                     </div>
 
                     <div class="action-grid">
-                        <article class="action-card action-card--active">
+                        <a class="action-card action-card--link" href="{{ url_for('character') }}">
                             <span class="action-card__number">01</span>
-                            <div><h3>Character</h3><p>Review your progress and battle stats.</p></div>
-                            <span class="action-card__status">Active</span>
-                        </article>
+                            <div><h3>Character</h3><p>Review your progress, status and battle stats.</p></div>
+                            <span class="action-card__status">View</span>
+                        </a>
                         <a class="action-card action-card--link" href="{{ url_for('gym') }}">
                             <span class="action-card__number">02</span>
                             <div><h3>Gym</h3><p>Train strength, defence, speed and dexterity.</p></div>
@@ -123,8 +123,13 @@
                             <div><h3>Crimes</h3><p>Risk your nerve for cash, XP and reputation.</p></div>
                             <span class="action-card__status">Play</span>
                         </a>
-                        <article class="action-card action-card--locked">
+                        <a class="action-card action-card--link" href="{{ url_for('travel') }}">
                             <span class="action-card__number">04</span>
+                            <div><h3>London travel</h3><p>Move between districts and discover new opportunities.</p></div>
+                            <span class="action-card__status">Play</span>
+                        </a>
+                        <article class="action-card action-card--locked">
+                            <span class="action-card__number">05</span>
                             <div><h3>Jobs &amp; inventory</h3><p>Build a career and manage your gear.</p></div>
                             <span class="action-card__status">Soon</span>
                         </article>
