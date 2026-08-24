@@ -767,8 +767,9 @@ def jail():
     if "user_id" not in session:
         return redirect("/login")
 
-    message = None
-    error = None
+    notice = session.pop("jail_notice", {})
+    message = notice.get("message")
+    error = notice.get("error")
     interaction_result = None
 
     if request.method == "POST":
@@ -844,6 +845,12 @@ def jail():
                 )
         except (JailInteractionError, ValueError) as jail_error:
             error = str(jail_error)
+
+        session["jail_notice"] = {
+            "message": message,
+            "error": error,
+        }
+        return redirect("/jail")
 
     player_data = get_player_by_user_id(
         session["user_id"]
