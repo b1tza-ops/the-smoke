@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>{{ shop.name }} · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='camden-shop-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('inventory') }}">Inventory</a>
+    </header>
+    {% include "_player_hud.html" %}
+    <main class="dashboard-main shop-page">
+        <section class="shop-hero">
+            <div><p class="eyebrow">Camden · Local retailer</p><h1>{{ shop.name }}</h1><p>Everyday supplies, limited stock. What is gone stays gone until the next delivery.</p></div>
+            <div class="shop-restock"><small>Next delivery</small><strong data-restock="{{ shop.restock_at }}">Calculating…</strong></div>
+        </section>
+        {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+        {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+        {% if not accessible %}<div class="game-notice game-notice--error">You must be free and physically present in Camden to shop.</div>{% endif %}
+        <section class="shop-grid" aria-label="Available stock">
+        {% for item in shop["items"] %}
+            <article class="shop-card {{ 'shop-card--sold' if item.stock == 0 }}">
+                <div class="shop-card__top"><div><p class="eyebrow">{{ item.stock }} remaining</p><h2>{{ item.name }}</h2></div><strong class="shop-price">£{{ item.price }}</strong></div>
+                <p>{{ item.description }}</p>
+                <form method="post" class="shop-buy" data-price="{{ item.price }}">
+                    <input type="hidden" name="item_key" value="{{ item.key }}">
+                    <div class="shop-quantity">
+                        <button type="button" data-step="-1" aria-label="Decrease quantity">−</button>
+                        <input name="quantity" type="number" min="1" max="{{ item.stock }}" value="1" inputmode="numeric" aria-label="{{ item.name }} quantity">
+                        <button type="button" data-step="1" aria-label="Increase quantity">+</button>
+                    </div>
+                    <button class="shop-buy__submit" type="submit" {{ 'disabled' if item.stock == 0 or not accessible }}>
+                        <span>{{ "Sold out" if item.stock == 0 else "Buy" }}</span>
+                        {% if item.stock > 0 %}<strong>£<span data-total>{{ item.price }}</span></strong>{% endif %}
+                    </button>
+                </form>
+            </article>
+        {% endfor %}
+        </section>
+    </main>
+</div>
+<script>
+document.querySelectorAll(".shop-buy").forEach(form => {
+    const input=form.querySelector("input[name=quantity]"), total=form.querySelector("[data-total]");
+    const update=()=>{input.value=Math.max(1,Math.min(Number(input.max)||1,Number(input.value)||1));if(total)total.textContent=(Number(input.value)*Number(form.dataset.price)).toLocaleString();};
+    form.querySelectorAll("[data-step]").forEach(button=>button.addEventListener("click",()=>{input.value=Number(input.value)+Number(button.dataset.step);update();}));
+    input.addEventListener("input",update);
+});
+const timer=document.querySelector("[data-restock]");
+if(timer){const update=()=>{const seconds=Math.max(0,Math.floor((new Date(timer.dataset.restock)-Date.now())/1000));const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),s=seconds%60;timer.textContent=seconds?String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):"Restocking…";};update();setInterval(update,1000);}
+</script>
+</body>
+</html>
