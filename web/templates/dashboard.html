@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='hud-1') }}">
 </head>
 
 <body class="dashboard-page">
@@ -28,6 +28,16 @@
                 <a class="logout-link" href="{{ url_for('logout') }}">Log out</a>
             </div>
         </header>
+
+        <nav class="game-nav" aria-label="Game sections">
+            <a href="{{ url_for('character') }}"><span>◉</span><strong>Character</strong></a>
+            <a href="{{ url_for('gym') }}"><span>✦</span><strong>Gym</strong></a>
+            <a href="{{ url_for('crimes') }}"><span>◆</span><strong>Crimes</strong></a>
+            <a href="{{ url_for('travel') }}"><span>➤</span><strong>Travel</strong></a>
+            <a href="{{ url_for('jobs_inventory') }}"><span>▣</span><strong>Work</strong></a>
+            <a class="game-nav__mission" href="{{ url_for('prologue') }}"><span>!</span><strong>Mission</strong><small>£{{ "{:,}".format(prologue.debt_remaining) }} owed</small></a>
+            <a href="{{ url_for('feedback') }}"><span>✎</span><strong>Feedback</strong></a>
+        </nav>
 
         <main class="dashboard-main">
             <section class="player-hero" aria-labelledby="player-name">
