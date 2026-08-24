@@ -141,6 +141,12 @@ class WebGameplayTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         commit_crime.assert_called_once()
         save_player.assert_called_once_with(player)
+        self.assertEqual(
+            render_template.call_args.kwargs[
+                "attempted_crime_key"
+            ],
+            "camden_shoplift",
+        )
 
 
 if __name__ == "__main__":
