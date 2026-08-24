@@ -11,10 +11,12 @@ from database.repositories.hospital import (
 from database.repositories.jail import (
     attempt_jail_break,
     bail_out_inmate,
+    calculate_bail_cost,
     get_jail_inmates,
 )
 from database.repositories.players import create_player
 from database.repositories.users import create_user
+from game.crime import CRIMES_BY_KEY
 
 
 class CustodyLocationTests(unittest.TestCase):
@@ -70,6 +72,33 @@ class CustodyLocationTests(unittest.TestCase):
         connection.commit()
         connection.close()
         return inmate_id
+
+    def test_sentence_severity_and_bail_scale_together(self):
+        self.assertEqual(
+            CRIMES_BY_KEY[
+                "camden_shoplift"
+            ].jail_seconds,
+            10 * 60,
+        )
+        self.assertEqual(
+            CRIMES_BY_KEY[
+                "soho_nightclub"
+            ].jail_seconds,
+            3 * 24 * 60 * 60,
+        )
+
+        short_bail = calculate_bail_cost(
+            level=1,
+            remaining_seconds=10 * 60,
+        )
+        severe_bail = calculate_bail_cost(
+            level=1,
+            remaining_seconds=3 * 24 * 60 * 60,
+        )
+
+        self.assertEqual(short_bail, 250)
+        self.assertEqual(severe_bail, 43300)
+        self.assertGreater(severe_bail, short_bail)
 
     def test_player_can_pay_another_players_bail(self):
         inmate_id = self.admit_inmate()

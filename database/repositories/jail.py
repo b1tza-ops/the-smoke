@@ -5,7 +5,7 @@ from database.core.connection import get_connection
 
 BREAKOUT_NERVE_COST = 5
 BREAKOUT_WANTED_PENALTY = 3
-FAILED_BREAKOUT_JAIL_SECONDS = 60
+FAILED_BREAKOUT_JAIL_SECONDS = 6 * 60 * 60
 
 
 class JailInteractionError(ValueError):
@@ -14,7 +14,7 @@ class JailInteractionError(ValueError):
 
 def calculate_bail_cost(level, remaining_seconds):
     minutes = max(1, (remaining_seconds + 59) // 60)
-    return max(50, level * 75 + minutes * 10)
+    return max(250, level * 100 + minutes * 10)
 
 
 def calculate_breakout_chance(helper, target_level):
