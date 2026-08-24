@@ -122,6 +122,11 @@ from utils.security import (
     verify_password,
 )
 from game.housing import get_residence
+from game.economy.bank import (
+    BankError,
+    deposit_cash,
+    withdraw_cash,
+)
 from game.shop import ShopError, get_district_shop, purchase
 from game.inventory import (
     INVENTORY_SLOT_CAPACITY,
@@ -659,6 +664,72 @@ def prologue():
     )
 
 
+
+
+@app.route("/bank", methods=["GET", "POST"])
+def bank():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    message = None
+    error = None
+    block_reason = None
+
+    if player.jail_until is not None:
+        block_reason = "Banking is unavailable while you are in jail."
+    elif player.hospital_until is not None:
+        block_reason = "Banking is unavailable while you are in hospital."
+    elif player.travel_destination is not None:
+        block_reason = "Banking is unavailable while you are travelling."
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        try:
+            if block_reason:
+                raise BankError(block_reason)
+
+            amount = int(request.form.get("amount", "0"))
+            if action == "deposit":
+                transaction = deposit_cash(player, amount)
+                verb = "Deposited"
+            elif action == "withdraw":
+                transaction = withdraw_cash(player, amount)
+                verb = "Withdrew"
+            else:
+                raise BankError("Choose deposit or withdrawal.")
+
+            message = f"{verb} £{transaction.amount:,}."
+            record_player_action(
+                f"bank_{transaction.transaction_type}",
+                message,
+                {
+                    "amount": transaction.amount,
+                    "cash_balance": transaction.cash_balance,
+                    "bank_balance": transaction.bank_balance,
+                },
+            )
+        except (ValueError, BankError) as bank_error:
+            error = (
+                "Enter a positive whole-pound amount."
+                if isinstance(bank_error, ValueError)
+                else str(bank_error)
+            )
+
+    return render_template(
+        "bank.html",
+        player=player,
+        message=message,
+        error=error,
+        block_reason=block_reason,
+    )
 
 
 @app.route("/shop", methods=["GET", "POST"])

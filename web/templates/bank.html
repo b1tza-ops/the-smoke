@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Bank · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='web-bank-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('home') }}">Dashboard</a>
+    </header>
+    {% include "_player_hud.html" %}
+    <main class="dashboard-main game-page bank-page">
+        <section class="bank-hero">
+            <div>
+                <p class="eyebrow">London personal banking</p>
+                <h1>The Bank</h1>
+                <p>Move money out of your pocket and keep it protected.</p>
+            </div>
+            <span class="bank-security">Protected funds</span>
+        </section>
+
+        {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+        {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+        {% if block_reason and not error %}<div class="game-notice game-notice--error">{{ block_reason }}</div>{% endif %}
+
+        <section class="bank-balances" aria-label="Your balances">
+            <article>
+                <span>Carried cash</span>
+                <strong>£{{ "{:,}".format(player.money) }}</strong>
+                <small>Available for shops and other actions</small>
+            </article>
+            <article class="bank-balances__protected">
+                <span>Bank balance</span>
+                <strong>£{{ "{:,}".format(player.bank_balance) }}</strong>
+                <small>Protected from street losses</small>
+            </article>
+        </section>
+
+        <section class="bank-transfers" aria-labelledby="transfer-heading">
+            <div class="section-heading">
+                <div><p class="eyebrow">Cash transfer</p><h2 id="transfer-heading">Move funds</h2></div>
+            </div>
+            <label class="bank-amount">
+                <span>Amount</span>
+                <span class="bank-amount__field"><b>£</b><input type="number" min="1" step="1" inputmode="numeric" placeholder="0" data-bank-amount></span>
+            </label>
+            <div class="bank-quick" aria-label="Quick amounts">
+                <button type="button" data-bank-quick="100">£100</button>
+                <button type="button" data-bank-quick="500">£500</button>
+                <button type="button" data-bank-quick="1000">£1,000</button>
+                <button type="button" data-bank-quick="all">All cash</button>
+            </div>
+            <div class="bank-actions">
+                <form method="post">
+                    <input type="hidden" name="action" value="deposit">
+                    <input type="hidden" name="amount" data-bank-deposit>
+                    <button class="bank-action bank-action--deposit" type="submit" {% if block_reason or player.money <= 0 %}disabled{% endif %}><span>Deposit</span><small>Cash → Bank</small></button>
+                </form>
+                <form method="post">
+                    <input type="hidden" name="action" value="withdraw">
+                    <input type="hidden" name="amount" data-bank-withdraw>
+                    <button class="bank-action bank-action--withdraw" type="submit" {% if block_reason or player.bank_balance <= 0 %}disabled{% endif %}><span>Withdraw</span><small>Bank → Cash</small></button>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+<script>
+(() => {
+    const amount=document.querySelector("[data-bank-amount]");
+    const hidden=[...document.querySelectorAll("[data-bank-deposit],[data-bank-withdraw]")];
+    const sync=()=>hidden.forEach(input=>input.value=amount.value);
+    amount.addEventListener("input",sync);
+    document.querySelectorAll("[data-bank-quick]").forEach(button=>button.addEventListener("click",()=>{
+        amount.value=button.dataset.bankQuick==="all"?"{{ player.money }}":button.dataset.bankQuick;
+        sync();
+        amount.focus();
+    }));
+    document.querySelectorAll(".bank-actions form").forEach(form=>form.addEventListener("submit",event=>{
+        sync();
+        if(!Number.isInteger(Number(amount.value))||Number(amount.value)<=0){event.preventDefault();amount.focus();}
+    }));
+})();
+</script>
+</body>
+</html>
