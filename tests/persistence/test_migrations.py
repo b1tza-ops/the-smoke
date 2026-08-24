@@ -286,7 +286,7 @@ class MigrationTests(unittest.TestCase):
                 """
             ).fetchall()
 
-            self.assertEqual(len(item_rows), 16)
+            self.assertEqual(len(item_rows), 36)
 
             starter_inventory = conn.execute(
                 """
