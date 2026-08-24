@@ -230,6 +230,10 @@ class MigrationTests(unittest.TestCase):
                         14,
                         "camden_prologue",
                     ),
+                    (
+                        15,
+                        "operations_v1",
+                    ),
                 ],
             )
 
