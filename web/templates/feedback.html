@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Feedback · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='growth-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+<header class="topbar">
+    <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+    <a class="logout-link" href="{{ url_for('character') }}">Character</a>
+</header>
+<main class="dashboard-main feedback-page">
+    <section class="feedback-card">
+        <p class="eyebrow">Early Alpha</p>
+        <h1>Help shape London</h1>
+        <p>Found something broken, confusing or worth adding? Your message goes directly to the private operations dashboard.</p>
+
+        {% if error %}<div class="alert" role="alert"><span class="alert__icon">!</span><span>{{ error }}</span></div>{% endif %}
+        {% if notice %}<div class="notice" role="status">{{ notice }}</div>{% endif %}
+
+        <form class="feedback-form" method="post">
+            <input type="hidden" name="page_path" value="{{ page_path }}">
+            <div class="field">
+                <label for="category">What kind of feedback?</label>
+                <select id="category" name="category">
+                    {% for value, label in (("bug", "Something is broken"), ("confusing", "Something is confusing"), ("idea", "I have an idea"), ("other", "Something else")) %}
+                    <option value="{{ value }}" {{ "selected" if category == value }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="message">Tell us what happened</label>
+                <textarea id="message" name="message" minlength="10" maxlength="2000" rows="8" placeholder="What were you doing, what happened, and what did you expect?" required>{{ message }}</textarea>
+                <small>10–2,000 characters</small>
+            </div>
+            <button class="primary-button" type="submit"><span>Send feedback</span><span>→</span></button>
+        </form>
+    </section>
+</main>
+</div>
+</body>
+</html>

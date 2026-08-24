@@ -563,6 +563,90 @@ def migrate_012_admin_activity_and_suspension(cursor):
     )
 
 
+def migrate_013_alpha_growth_loop(cursor):
+    existing_user_columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(users)"
+        )
+    }
+
+    if "is_founding_player" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN is_founding_player INTEGER NOT NULL
+                DEFAULT 1
+                CHECK (is_founding_player IN (0, 1))
+            """
+        )
+
+    if "invite_code" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN invite_code TEXT
+            """
+        )
+
+    if "referred_by_user_id" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN referred_by_user_id INTEGER
+            """
+        )
+
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS
+            idx_users_invite_code
+        ON users (invite_code)
+        WHERE invite_code IS NOT NULL
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_users_referred_by
+        ON users (referred_by_user_id)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            category TEXT NOT NULL
+                CHECK (category IN ('bug', 'idea', 'confusing', 'other')),
+            message TEXT NOT NULL
+                CHECK (
+                    LENGTH(TRIM(message)) >= 10
+                    AND LENGTH(message) <= 2000
+                ),
+            page_path TEXT,
+            status TEXT NOT NULL DEFAULT 'new'
+                CHECK (status IN ('new', 'reviewed', 'closed')),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_player_feedback_status_created
+        ON player_feedback (status, created_at DESC)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -623,6 +707,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=12,
         name="admin_activity_and_suspension",
         apply=migrate_012_admin_activity_and_suspension,
+    ),
+    Migration(
+        version=13,
+        name="alpha_growth_loop",
+        apply=migrate_013_alpha_growth_loop,
     ),
 )
 

@@ -86,6 +86,14 @@
                         minlength="8" maxlength="128" required>
                 </div>
 
+                <div class="field">
+                    <label for="invite_code">Invite code <span class="field-optional">Optional</span></label>
+                    <input id="invite_code" type="text" name="invite_code"
+                        value="{{ form_data.invite_code }}"
+                        autocomplete="off" placeholder="Founding player invite"
+                        maxlength="16">
+                </div>
+
                 <div class="turnstile-wrap">
                     <div class="cf-turnstile"
                         data-sitekey="{{ turnstile_site_key }}"

@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13),
         )
 
         with closing(
@@ -222,6 +222,10 @@ class MigrationTests(unittest.TestCase):
                         12,
                         "admin_activity_and_suspension",
                     ),
+                    (
+                        13,
+                        "alpha_growth_loop",
+                    ),
                 ],
             )
 
@@ -298,6 +302,9 @@ class MigrationTests(unittest.TestCase):
 
             self.assertIn("email_verified", user_columns)
             self.assertIn("email_verified_at", user_columns)
+            self.assertIn("is_founding_player", user_columns)
+            self.assertIn("invite_code", user_columns)
+            self.assertIn("referred_by_user_id", user_columns)
             self.assertEqual(
                 token_table,
                 ("account_tokens",),
@@ -309,7 +316,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13),
         )
         self.assertEqual(second_run, ())
 
@@ -344,7 +351,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 12)
+            self.assertEqual(migration_count, 13)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -363,7 +370,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=13,
+            version=14,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -413,7 +420,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             )
             self.assertEqual(money, 777)
 
@@ -448,7 +455,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -474,6 +481,9 @@ class MigrationTests(unittest.TestCase):
             }
             self.assertIn("email_verified", user_columns)
             self.assertIn("email_verified_at", user_columns)
+            self.assertIn("is_founding_player", user_columns)
+            self.assertIn("invite_code", user_columns)
+            self.assertIn("referred_by_user_id", user_columns)
 
     def test_bank_schema_is_created_by_migration_three(self):
         with patch(
