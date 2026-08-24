@@ -208,9 +208,9 @@ ITEMS = (
     ItemDefinition("hard_hat", "Construction Hard Hat", "armour", "Basic protection against head impacts.", "items/motorcycle-helmet.webp", False, 1, equipment_slot="head", defence_bonus=5),
     ItemDefinition("combat_gloves", "Combat Gloves", "armour", "Padded gloves with reinforced knuckles.", "items/combat-gloves.webp", False, 1, equipment_slot="hands", defence_bonus=5),
     ItemDefinition("cargo_trousers", "Padded Cargo Trousers", "armour", "Hard-wearing trousers with light padding.", "items/cargo-trousers.webp", False, 1, equipment_slot="legs", defence_bonus=5),
-    ItemDefinition("trainers", "Street Trainers", "armour", "Light footwear that offers minimal protection.", "items/work-boots.webp", False, 1, equipment_slot="feet", defence_bonus=2),
+    ItemDefinition("trainers", "Street Trainers", "armour", "Light footwear that offers minimal protection.", "items/street-trainers.webp", False, 1, equipment_slot="feet", defence_bonus=2),
     ItemDefinition("tactical_boots", "Tactical Boots", "armour", "Heavy boots designed for dangerous work.", "items/tactical-boots.webp", False, 1, equipment_slot="feet", defence_bonus=7),
-    ItemDefinition("reinforced_jeans", "Reinforced Jeans", "armour", "Denim lined with protective fibres.", "items/heavy-coat.webp", False, 1, equipment_slot="legs", defence_bonus=8),
+    ItemDefinition("reinforced_jeans", "Reinforced Jeans", "armour", "Denim lined with protective fibres.", "items/reinforced-jeans.webp", False, 1, equipment_slot="legs", defence_bonus=8),
     ItemDefinition("riot_helmet", "Riot Helmet", "armour", "A reinforced helmet with full face protection.", "items/riot-helmet.webp", False, 1, equipment_slot="head", defence_bonus=12),
     ItemDefinition(
         key="fish_and_chips",
