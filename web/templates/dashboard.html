@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='home-overview-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='npc-combat-1') }}">
 </head>
 
 <body class="dashboard-page">
@@ -114,6 +114,7 @@
                         <div class="overview-panel__links">
                             <a href="{{ url_for('inventory') }}">View items</a>
                             <a href="{{ url_for('jobs') }}">View career</a>
+                            <a href="{{ url_for('fight') }}">Street fight</a>
                         </div>
                     </details>
                 </div>

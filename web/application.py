@@ -22,6 +22,13 @@ from game.crime import (
     CRIMES_BY_KEY,
     commit_crime,
 )
+from game.combat import (
+    CAMDEN_OPPONENT,
+    COMBAT_ENERGY_COST,
+    CombatError,
+    fight_camden_opponent,
+    get_combat_block,
+)
 from game.gym import (
     GymError,
     VALID_BATTLE_STATS,
@@ -1602,6 +1609,54 @@ def crimes():
         crime_block_reason=crime_block_reason,
     )
 
+
+
+@app.route("/fight", methods=["GET", "POST"])
+def fight():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    equipment = get_equipment_summary(player.id)
+    result = None
+    error = None
+
+    if request.method == "POST":
+        try:
+            result = fight_camden_opponent(player, equipment)
+            record_player_action(
+                "npc_combat",
+                (
+                    f"{'Defeated' if result.victory else 'Lost to'} "
+                    f"{CAMDEN_OPPONENT.name}."
+                ),
+                {
+                    "opponent": CAMDEN_OPPONENT.key,
+                    "victory": result.victory,
+                    "cash_reward": result.cash_reward,
+                    "xp_reward": result.xp_reward,
+                },
+            )
+        except CombatError as combat_error:
+            error = str(combat_error)
+
+    save_player(player)
+    return render_template(
+        "fight.html",
+        player=player,
+        opponent=CAMDEN_OPPONENT,
+        equipment=equipment,
+        energy_cost=COMBAT_ENERGY_COST,
+        block_reason=get_combat_block(player) if result is None else None,
+        result=result,
+        error=error,
+    )
 
 
 @app.route("/feedback", methods=["GET", "POST"])
