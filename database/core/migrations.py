@@ -726,6 +726,43 @@ def migrate_015_operations_v1(cursor):
     )
 
 
+
+
+def migrate_016_camden_corner_shop(cursor):
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS shop_cycles (
+            shop_key TEXT PRIMARY KEY,
+            restock_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS shop_stock (
+            shop_key TEXT NOT NULL,
+            item_key TEXT NOT NULL,
+            quantity INTEGER NOT NULL CHECK (quantity >= 0),
+            PRIMARY KEY (shop_key, item_key),
+            FOREIGN KEY (item_key) REFERENCES items(item_key) ON DELETE RESTRICT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS shop_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            shop_key TEXT NOT NULL,
+            item_key TEXT NOT NULL,
+            quantity INTEGER NOT NULL CHECK (quantity > 0),
+            unit_price INTEGER NOT NULL CHECK (unit_price > 0),
+            total_price INTEGER NOT NULL CHECK (total_price > 0),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (item_key) REFERENCES items(item_key) ON DELETE RESTRICT
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_shop_transactions_player
+        ON shop_transactions (player_id, created_at DESC)
+    """)
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -801,6 +838,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=15,
         name="operations_v1",
         apply=migrate_015_operations_v1,
+    ),
+    Migration(
+        version=16,
+        name="camden_corner_shop",
+        apply=migrate_016_camden_corner_shop,
     ),
 )
 
