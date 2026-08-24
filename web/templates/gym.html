@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Gym · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gym-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gym-4') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 <main class="dashboard-main game-page gym-page">
@@ -29,5 +29,29 @@
 {% endif %}</section>
 {% else %}<div class="game-notice game-notice--error">No gym is available in this district.</div>{% endfor %}
 </main><footer class="app-footer"><span>The Smoke</span><a class="logout-link" href="{{ url_for('home') }}">Back to dashboard</a></footer></div>
-<script>document.querySelectorAll(".gym-stepper").forEach(s=>{const i=s.querySelector("input");s.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const n=Number(i.value)+Number(b.dataset.step);i.value=Math.min(Number(i.max),Math.max(Number(i.min),n))}))});</script>
+<script>
+document.querySelectorAll(".gym-stepper").forEach(stepper => {
+    const input = stepper.querySelector("input");
+    stepper.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => {
+            const next = Number(input.value) + Number(button.dataset.step);
+            input.value = Math.min(Number(input.max), Math.max(Number(input.min), next));
+        });
+    });
+});
+document.querySelectorAll(".gym-train-form").forEach(form => {
+    form.addEventListener("submit", () => {
+        const card = form.closest(".gym-stat-card");
+        if (card) sessionStorage.setItem("the-smoke-gym-card", card.id);
+    });
+});
+const retainedCard = sessionStorage.getItem("the-smoke-gym-card");
+if (retainedCard) {
+    sessionStorage.removeItem("the-smoke-gym-card");
+    requestAnimationFrame(() => {
+        const card = document.getElementById(retainedCard);
+        if (card) card.scrollIntoView({block: "center"});
+    });
+}
+</script>
 </body></html>

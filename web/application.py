@@ -3,6 +3,7 @@ import logging
 import os
 import secrets
 import sqlite3
+from datetime import timedelta
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 from game.world.districts import (
@@ -140,6 +141,8 @@ app.config.update(
         os.environ.get("THE_SMOKE_COOKIE_SECURE", "1")
         == "1"
     ),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+    SESSION_REFRESH_EACH_REQUEST=True,
 )
 
 create_tables()
@@ -940,8 +943,31 @@ def crimes():
     result = None
     attempted_crime_key = None
     error = None
+    work_shift = get_shift_state(player)
+    crime_block_reason = None
 
-    if request.method == "POST":
+    if player.jail_until is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while in jail."
+        )
+    elif player.hospital_until is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while in hospital."
+        )
+    elif work_shift is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while working a shift. "
+            "Finish or collect your shift first."
+        )
+    elif player.travel_destination is not None:
+        crime_block_reason = (
+            "You cannot attempt crimes while travelling."
+        )
+
+    if request.method == "POST" and crime_block_reason:
+        error = crime_block_reason
+
+    elif request.method == "POST":
         crime_key = request.form.get("crime_key", "")
         attempted_crime_key = crime_key
         crime = CRIMES_BY_KEY.get(crime_key)
@@ -977,6 +1003,8 @@ def crimes():
         result=result,
         attempted_crime_key=attempted_crime_key,
         error=error,
+        work_shift=work_shift,
+        crime_block_reason=crime_block_reason,
     )
 
 
@@ -1358,6 +1386,7 @@ def login():
 
         else:
             session["user_id"] = user[0]
+            session.permanent = True
             record_player_action(
                 "login",
                 "Player signed in.",

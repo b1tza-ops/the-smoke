@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Crimes · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='crimes-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='crimes-3') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -24,6 +24,7 @@
             <div class="resource-pill"><span>Nerve</span><strong>{{ player.nerve }}/{{ player.max_nerve }}</strong></div>
         </section>
 
+        {% if crime_block_reason %}<div class="game-notice game-notice--error" role="status">{{ crime_block_reason }}</div>{% endif %}
         {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 
         <section class="crime-list">
@@ -45,7 +46,7 @@
 
                     <form method="post" action="{{ url_for('crimes') }}#crime-{{ crime.key }}">
                         <input type="hidden" name="crime_key" value="{{ crime.key }}">
-                        <button class="crime-button" type="submit" {% if player.nerve < crime.nerve_cost %}disabled{% endif %}>
+                        <button class="crime-button" type="submit" {% if crime_block_reason or player.nerve < crime.nerve_cost %}disabled{% endif %}>
                             <span>Attempt crime</span><span>→</span>
                         </button>
                     </form>
