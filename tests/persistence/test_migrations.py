@@ -246,6 +246,7 @@ class MigrationTests(unittest.TestCase):
                     (22, "pvp_reliability"),
                     (23, "pvp_ratings"),
                     (24, "pvp_daily_contracts"),
+                (25, "item_catalogue_batch_one"),
                 ],
             )
 
@@ -410,7 +411,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 24)
+            self.assertEqual(migration_count, 25)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -429,7 +430,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=25,
+            version=26,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -479,7 +480,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
             )
             self.assertEqual(money, 777)
 
@@ -514,7 +515,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
