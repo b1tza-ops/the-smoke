@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d">
 <title>{{ 'Jobs' if active_section == 'jobs' else 'Inventory' }} · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='game-icons-hotfix-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='global-items-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
@@ -32,7 +32,7 @@
 {% else %}
 <section id="inventory-panel" class="work-panel is-active" aria-labelledby="inventory-heading">
 <div class="inventory-heading"><div><p class="eyebrow">Carried items</p><h2 id="inventory-heading">Your inventory</h2></div><span>{{ player.inventory|length }} of {{ inventory_capacity }} slots</span></div>
-{% if owned_items %}<div class="inventory-grid">{% for owned in owned_items %}{% set item=owned.item %}<article class="item-card"><header><span class="item-category">{{ item.category }}</span><strong>×{{ owned.quantity }}</strong></header><h3>{{ item.name }}</h3><p>{{ item.description }}</p>{% if item.effect_key %}<form method="post" action="{{ url_for('inventory') }}#inventory-panel"><input type="hidden" name="action" value="use_item"><input type="hidden" name="item_key" value="{{ item.key }}"><button class="item-button" type="submit">Use item</button></form>{% else %}<span class="item-passive">Equipment</span>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty-inventory"><h2>Your inventory is empty</h2><p>Items earned or purchased during play will appear here.</p><a class="item-button" href="{{ url_for('jobs') }}">Go to jobs</a></div>{% endif %}
+{% if owned_items %}<div class="inventory-grid">{% for owned in owned_items %}{% set item=owned.item %}<article class="item-card"><img class="item-card__image" src="{{ url_for('static', filename='icons/' + item.image_filename) }}" alt=""><div class="item-card__body"><header><span class="item-category">{{ item.category }}</span><strong>×{{ owned.quantity }}</strong></header><h3>{{ item.name }}</h3><p>{{ item.description }}</p></div>{% if item.effect_key %}<form method="post" action="{{ url_for('inventory') }}#inventory-panel"><input type="hidden" name="action" value="use_item"><input type="hidden" name="item_key" value="{{ item.key }}"><button class="item-button" type="submit">Use item</button></form>{% else %}<span class="item-passive">Equipment</span>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty-inventory"><h2>Your inventory is empty</h2><p>Items earned or purchased during play will appear here.</p><a class="item-button" href="{{ url_for('jobs') }}">Go to jobs</a></div>{% endif %}
 </section>
 {% endif %}
 </main></div>
