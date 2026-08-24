@@ -159,8 +159,13 @@ def gym():
 
             elif action == "train":
                 stat = request.form.get("stat", "")
-                energy = int(
-                    request.form.get("energy", "0")
+                raw_trains = request.form.get("trains")
+                energy = (
+                    int(raw_trains) * 10
+                    if raw_trains is not None
+                    else int(
+                        request.form.get("energy", "0")
+                    )
                 )
                 select_gym(player, gym_key)
                 gain = calculate_training_gain(
