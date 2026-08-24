@@ -72,7 +72,7 @@ class PvpCombatTests(unittest.TestCase):
             "aggressive", reward_multiplier=0.0, rng=rng,
         )
         self.assertEqual(result.cash_stolen, 0)
-        self.assertEqual(result.xp_reward, 5)
+        self.assertEqual(result.xp_reward, 0)
 
     def test_work_hospital_travel_and_jail_block_attacks(self):
         target = player(2)

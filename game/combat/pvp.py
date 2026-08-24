@@ -211,9 +211,13 @@ def fight_player(
         )
         defender.money -= cash_stolen
         attacker.money += cash_stolen
-        xp_reward = max(
-            5,
-            int((20 + defender.level * 4) * reward_multiplier),
+        xp_reward = (
+            0
+            if reward_multiplier <= 0
+            else max(
+                5,
+                int((20 + defender.level * 4) * reward_multiplier),
+            )
         )
         award_xp(attacker, xp_reward)
         defender.health = 0

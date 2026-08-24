@@ -39,7 +39,7 @@ def get_pvp_targets(attacker_id, district):
                 id, user_id, name, level, health, money,
                 strength, defence, speed, dexterity,
                 jail_until, hospital_until, travel_destination,
-                shift_until
+                travel_until, shift_until
             FROM players
             WHERE id != ? AND current_district = ?
             ORDER BY level ASC, name COLLATE NOCASE ASC
@@ -62,7 +62,15 @@ def get_pvp_targets(attacker_id, district):
             "defence": row[7],
             "speed": row[8],
             "dexterity": row[9],
-            "restricted": any(row[10:14]),
+            "restricted": (
+                _timestamp_active(row[10])
+                or _timestamp_active(row[11])
+                or (
+                    row[12] is not None
+                    and _timestamp_active(row[13])
+                )
+                or _timestamp_active(row[14])
+            ),
         }
         for row in rows
     ]
@@ -204,6 +212,12 @@ def get_recent_pvp_attacks(player_id, limit=12):
         }
         for row in rows
     ]
+
+
+def _timestamp_active(value):
+    if value is None:
+        return False
+    return parse_timestamp(value) > datetime.now(timezone.utc)
 
 
 def _remaining(row, seconds, now):
