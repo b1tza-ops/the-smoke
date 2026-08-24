@@ -65,6 +65,9 @@ def create_tables():
             max_happiness INTEGER NOT NULL DEFAULT 100
                 CHECK (max_happiness > 0),
             last_happiness_update TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            max_health INTEGER NOT NULL DEFAULT 100
+                CHECK (max_health > 0),
+            last_health_update TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id)
                 REFERENCES users(id)
                 ON DELETE CASCADE

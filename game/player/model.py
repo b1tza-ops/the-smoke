@@ -40,6 +40,8 @@ class Player:
         happiness,
         max_happiness,
         last_happiness_update,
+        max_health,
+        last_health_update,
         crime_progress=None,
         district_reputation=None,
         unlocked_gyms=None,
@@ -86,6 +88,8 @@ class Player:
         self.happiness = happiness
         self.max_happiness = max_happiness
         self.last_happiness_update = last_happiness_update
+        self.max_health = max_health
+        self.last_health_update = last_health_update
         self.crime_progress = crime_progress or {}
         self.district_reputation = district_reputation or {}
 
@@ -137,7 +141,7 @@ class Player:
             self.current_gym_key.replace("_", " ").title(),
         )
         print("Inventory:", f"{len(self.inventory)}/20 slots")
-        print("Health: ", self.health)
+        print(f"Health: {self.health}/{self.max_health}")
         print(f"Energy: {self.energy}/{self.max_energy}")
         print(f"Nerve: {self.nerve}/{self.max_nerve}")
         print(f"Happiness: {self.happiness}/{self.max_happiness}")

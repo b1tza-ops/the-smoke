@@ -679,7 +679,7 @@ def home():
     xp_for_next_level = next_level_xp - current_level_xp
 
     dashboard = {
-        "health_percent": percentage(player.health, 100),
+        "health_percent": percentage(player.health, player.max_health),
         "energy_percent": percentage(player.energy, player.max_energy),
         "nerve_percent": percentage(player.nerve, player.max_nerve),
         "xp_percent": percentage(xp_into_level, xp_for_next_level),

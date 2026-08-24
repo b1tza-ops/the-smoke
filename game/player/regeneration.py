@@ -10,6 +10,9 @@ NERVE_TICK_SECONDS = 5 * 60
 HAPPINESS_POINTS_PER_TICK = 5
 HAPPINESS_TICK_SECONDS = 15 * 60
 
+HEALTH_POINTS_PER_TICK = 5
+HEALTH_TICK_SECONDS = 15 * 60
+
 
 def parse_timestamp(timestamp):
     parsed = datetime.fromisoformat(timestamp)
