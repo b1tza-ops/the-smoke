@@ -473,6 +473,24 @@ def migrate_009_authentication_hardening(cursor):
     )
 
 
+
+def migrate_010_player_presence(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "last_seen": "TEXT",
+        },
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_players_last_seen
+        ON players (last_seen)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -518,6 +536,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=9,
         name="authentication_hardening",
         apply=migrate_009_authentication_hardening,
+    ),
+    Migration(
+        version=10,
+        name="player_presence",
+        apply=migrate_010_player_presence,
     ),
 )
 

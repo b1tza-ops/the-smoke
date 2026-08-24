@@ -4,6 +4,11 @@ from game.world.travel import update_travel
 from flask import Flask, render_template, request, redirect, session
 from database.core.setup import create_tables
 from database.repositories.users import get_user_by_username
+from database.repositories.presence import (
+    get_online_player_count,
+    mark_player_offline,
+    mark_player_online,
+)
 
 from database.repositories.players import (
     get_player_by_user_id,
@@ -25,6 +30,12 @@ app.config.update(
 )
 
 create_tables()
+
+
+@app.before_request
+def record_authenticated_activity():
+    if "user_id" in session:
+        mark_player_online(session["user_id"])
 
 
 def percentage(value, maximum):
@@ -67,6 +78,7 @@ def home():
         "dashboard.html",
         player=player,
         dashboard=dashboard,
+        online_players=get_online_player_count(),
     )
 
 
@@ -98,6 +110,9 @@ def login():
 
 @app.route("/logout")
 def logout():
+    if "user_id" in session:
+        mark_player_offline(session["user_id"])
+
     session.clear()
     return redirect("/login")
 
