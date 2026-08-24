@@ -1162,3 +1162,5 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 @keyframes pvp-pop{0%{opacity:0;transform:translateY(8px) scale(.8)}45%{opacity:1;transform:translateY(0) scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @media(min-width:760px){.pvp-targets{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.pvp-approaches>div{grid-template-columns:repeat(2,1fr)}.pvp-page .combat-hero{display:grid}.pvp-fighters .combat-avatar{width:3.5rem;height:3.5rem}}
+
+.pvp-notification{display:block;text-decoration:none;color:var(--text);border-color:rgba(255,189,89,.45)}.pvp-history-actions{display:flex;gap:.5rem;margin-top:.45rem}.pvp-history-actions a,.pvp-history-actions button{border:1px solid var(--border);border-radius:999px;padding:.35rem .65rem;background:var(--bg);color:var(--accent);font:inherit;text-decoration:none;cursor:pointer}.pvp-history-actions form{margin:0}.combat-log li{display:block}
