@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='hud-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='shared-hud-1') }}">
 </head>
 
 <body class="dashboard-page">
@@ -29,15 +29,7 @@
             </div>
         </header>
 
-        <nav class="game-nav" aria-label="Game sections">
-            <a href="{{ url_for('character') }}"><span>◉</span><strong>Character</strong></a>
-            <a href="{{ url_for('gym') }}"><span>✦</span><strong>Gym</strong></a>
-            <a href="{{ url_for('crimes') }}"><span>◆</span><strong>Crimes</strong></a>
-            <a href="{{ url_for('travel') }}"><span>➤</span><strong>Travel</strong></a>
-            <a href="{{ url_for('jobs_inventory') }}"><span>▣</span><strong>Work</strong></a>
-            <a class="game-nav__mission" href="{{ url_for('prologue') }}"><span>!</span><strong>Mission</strong><small>£{{ "{:,}".format(prologue.debt_remaining) }} owed</small></a>
-            <a href="{{ url_for('feedback') }}"><span>✎</span><strong>Feedback</strong></a>
-        </nav>
+        {% include "_player_hud.html" %}
 
         <main class="dashboard-main">
             <section class="player-hero" aria-labelledby="player-name">
@@ -63,30 +55,6 @@
                               style="--progress: {{ dashboard.xp_percent }}%"></span>
                     </div>
                     <p>{{ dashboard.next_level_xp - player.xp }} XP until level {{ player.level + 1 }}</p>
-                </div>
-            </section>
-
-            <section class="compact-hud" aria-label="Player resources and status">
-                <div class="compact-hud__resources">
-                    {% for label, icon, value, maximum, percent, tone in (
-                        ("Health", "+", player.health, 100, dashboard.health_percent, "health"),
-                        ("Energy", "ϟ", player.energy, player.max_energy, dashboard.energy_percent, "energy"),
-                        ("Nerve", "◆", player.nerve, player.max_nerve, dashboard.nerve_percent, "nerve"),
-                        ("XP", "★", player.xp, dashboard.next_level_xp, dashboard.xp_percent, "xp")
-                    ) %}
-                    <div class="hud-meter hud-meter--{{ tone }}">
-                        <div><span aria-hidden="true">{{ icon }}</span><strong>{{ value }}/{{ maximum }}</strong></div>
-                        <small>{{ label }}</small>
-                        <div class="hud-meter__track"><i style="--progress:{{ percent }}%"></i></div>
-                    </div>
-                    {% endfor %}
-                </div>
-                <div class="compact-hud__status">
-                    <div><span class="hud-status-icon hud-status-icon--cash">£</span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></div>
-                    <div><span class="hud-status-icon hud-status-icon--bank">▣</span><small>Bank</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong></div>
-                    <div><span class="hud-status-icon hud-status-icon--wanted">!</span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></div>
-                    <div><span class="hud-status-icon hud-status-icon--level">★</span><small>Level</small><strong>{{ player.level }}</strong></div>
-                    <a href="{{ url_for('prologue') }}"><span class="hud-status-icon hud-status-icon--debt">↘</span><small>Debt</small><strong>£{{ "{:,}".format(prologue.debt_remaining) }}</strong></a>
                 </div>
             </section>
 
