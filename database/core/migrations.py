@@ -1115,6 +1115,53 @@ def migrate_026_player_happiness(cursor):
     )
 
 
+def migrate_027_player_health_regeneration(cursor):
+    add_missing_player_columns(
+        cursor,
+        {
+            "max_health": (
+                "INTEGER NOT NULL DEFAULT 100 "
+                "CHECK (max_health > 0)"
+            ),
+            "last_health_update": "TEXT",
+        },
+    )
+
+    cursor.execute(
+        """
+        UPDATE players
+        SET last_health_update = CURRENT_TIMESTAMP
+        WHERE last_health_update IS NULL
+        """
+    )
+
+
+def migrate_028_level_scaled_max_health(cursor):
+    from game.player.progression import (
+        BASE_MAX_HEALTH,
+        MAX_HEALTH_PER_LEVEL,
+    )
+
+    cursor.execute(
+        """
+        UPDATE players
+        SET
+            health = CASE
+                WHEN health >= max_health
+                THEN ? + (level - 1) * ?
+                ELSE health
+            END,
+            max_health = ? + (level - 1) * ?
+        """,
+        (
+            BASE_MAX_HEALTH,
+            MAX_HEALTH_PER_LEVEL,
+            BASE_MAX_HEALTH,
+            MAX_HEALTH_PER_LEVEL,
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1245,6 +1292,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=26,
         name="player_happiness",
         apply=migrate_026_player_happiness,
+    ),
+    Migration(
+        version=27,
+        name="player_health_regeneration",
+        apply=migrate_027_player_health_regeneration,
+    ),
+    Migration(
+        version=28,
+        name="level_scaled_max_health",
+        apply=migrate_028_level_scaled_max_health,
     ),
 )
 

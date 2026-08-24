@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from game.player.progression import (
     award_xp,
     level_for_xp,
+    max_health_for_level,
     xp_required_for_level,
 )
 
@@ -73,6 +74,49 @@ class ProgressionTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             award_xp(player, -10)
+
+    def test_max_health_grows_with_level(self):
+        self.assertEqual(max_health_for_level(1), 100)
+        self.assertEqual(max_health_for_level(4), 130)
+        self.assertEqual(max_health_for_level(10), 190)
+
+        with self.assertRaises(ValueError):
+            max_health_for_level(0)
+
+    def test_leveling_up_raises_max_health_and_tops_up_full_health(self):
+        player = SimpleNamespace(
+            xp=50,
+            level=1,
+            health=100,
+            max_health=100,
+        )
+
+        levels_gained = award_xp(player, 600)
+
+        self.assertEqual(levels_gained, 3)
+        self.assertEqual(player.max_health, 130)
+        self.assertEqual(player.health, 130)
+
+    def test_leveling_up_raises_the_cap_but_not_injured_health(self):
+        player = SimpleNamespace(
+            xp=50,
+            level=1,
+            health=40,
+            max_health=100,
+        )
+
+        award_xp(player, 600)
+
+        self.assertEqual(player.max_health, 130)
+        self.assertEqual(player.health, 40)
+
+    def test_award_xp_ignores_max_health_when_player_lacks_it(self):
+        player = SimpleNamespace(xp=50, level=1)
+
+        levels_gained = award_xp(player, 600)
+
+        self.assertEqual(levels_gained, 3)
+        self.assertFalse(hasattr(player, "max_health"))
 
 
 if __name__ == "__main__":

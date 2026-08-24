@@ -10,6 +10,7 @@ from game.player.status import (
     send_to_jail,
 )
 
+from database.core.connection import get_connection
 from database.repositories.players import (
     create_player,
     get_player_by_user_id,
@@ -87,6 +88,59 @@ class PlayerPersistenceTests(unittest.TestCase):
                 reloaded = Player(*get_player_by_user_id(user_id))
 
                 self.assertEqual(reloaded.happiness, 90)
+
+    def test_health_regenerates_over_time_but_not_while_hospitalised(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "data" / "game.db"
+
+            with patch("database.core.connection.DB_PATH", database_path):
+                create_tables()
+
+                user_id = create_user(
+                    username="wounded_player",
+                    email="wounded@example.com",
+                    password_hash="test_hash"
+                )
+                create_player(user_id, "Wounded Character")
+
+                far_future = "2099-01-01 00:00:00"
+                long_ago = "2000-01-01 00:00:00"
+
+                conn = get_connection()
+                conn.execute(
+                    """
+                    UPDATE players
+                    SET health = 40,
+                        last_health_update = ?,
+                        hospital_until = ?
+                    WHERE user_id = ?
+                    """,
+                    (long_ago, far_future, user_id),
+                )
+                conn.commit()
+                conn.close()
+
+                still_hospitalised = Player(
+                    *get_player_by_user_id(user_id)
+                )
+                self.assertEqual(still_hospitalised.health, 40)
+
+                conn = get_connection()
+                conn.execute(
+                    """
+                    UPDATE players
+                    SET hospital_until = NULL
+                    WHERE user_id = ?
+                    """,
+                    (user_id,),
+                )
+                conn.commit()
+                conn.close()
+
+                discharged = Player(
+                    *get_player_by_user_id(user_id)
+                )
+                self.assertEqual(discharged.health, 100)
 
     def test_crime_progress_and_district_reputation_persist(self):
         with tempfile.TemporaryDirectory() as temp_dir:

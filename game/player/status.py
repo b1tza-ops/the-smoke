@@ -105,6 +105,10 @@ def update_player_status(player, now=None):
         now,
     )
 
+    if discharged_from_hospital and hasattr(player, "max_health"):
+        player.health = player.max_health
+        player.last_health_update = format_timestamp(now)
+
     return StatusUpdate(
         wanted_lost=previous_wanted - wanted_level,
         released_from_jail=released_from_jail,

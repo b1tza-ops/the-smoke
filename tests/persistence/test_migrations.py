@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28),
         )
 
         with closing(
@@ -120,6 +120,8 @@ class MigrationTests(unittest.TestCase):
                     "happiness",
                     "max_happiness",
                     "last_happiness_update",
+                    "max_health",
+                    "last_health_update",
                 }.issubset(columns)
             )
 
@@ -251,6 +253,8 @@ class MigrationTests(unittest.TestCase):
                     (24, "pvp_daily_contracts"),
                 (25, "item_catalogue_batch_one"),
                     (26, "player_happiness"),
+                    (27, "player_health_regeneration"),
+                    (28, "level_scaled_max_health"),
                 ],
             )
 
@@ -374,13 +378,50 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(equipped, ("primary", "machete"))
 
+    def test_legacy_players_get_level_scaled_max_health(self):
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            conn.execute(
+                """
+                INSERT INTO players (
+                    user_id, name, level, health, energy
+                )
+                VALUES (2, 'Full Health Veteran', 5, 100, 25)
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO players (
+                    user_id, name, level, health, energy
+                )
+                VALUES (3, 'Injured Veteran', 5, 60, 25)
+                """
+            )
+            conn.commit()
+
+        run_migrations()
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            full_health_row = conn.execute(
+                "SELECT health, max_health FROM players WHERE user_id = 2"
+            ).fetchone()
+            injured_row = conn.execute(
+                "SELECT health, max_health FROM players WHERE user_id = 3"
+            ).fetchone()
+
+        self.assertEqual(full_health_row, (140, 140))
+        self.assertEqual(injured_row, (60, 140))
+
     def test_running_migrations_twice_is_safe(self):
         first_run = run_migrations()
         second_run = run_migrations()
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28),
         )
         self.assertEqual(second_run, ())
 
@@ -415,7 +456,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 26)
+            self.assertEqual(migration_count, 28)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -434,7 +475,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=27,
+            version=29,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -484,7 +525,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28],
             )
             self.assertEqual(money, 777)
 
@@ -519,7 +560,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -539,6 +580,8 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("happiness", columns)
             self.assertIn("max_happiness", columns)
             self.assertIn("last_happiness_update", columns)
+            self.assertIn("max_health", columns)
+            self.assertIn("last_health_update", columns)
 
             user_columns = {
                 row[1]

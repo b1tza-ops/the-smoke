@@ -6,8 +6,11 @@ from game.player.regeneration import (
     ENERGY_TICK_SECONDS,
     HAPPINESS_POINTS_PER_TICK,
     HAPPINESS_TICK_SECONDS,
+    HEALTH_POINTS_PER_TICK,
+    HEALTH_TICK_SECONDS,
     NERVE_POINTS_PER_TICK,
     NERVE_TICK_SECONDS,
+    parse_timestamp,
     regenerate_resource,
 )
 
@@ -108,7 +111,9 @@ def get_player_by_user_id(user_id):
             current_gym_key,
             happiness,
             max_happiness,
-            last_happiness_update
+            last_happiness_update,
+            max_health,
+            last_health_update
         FROM players
         WHERE user_id = ?
         """,
@@ -151,6 +156,24 @@ def get_player_by_user_id(user_id):
         now=now
     )
 
+    hospital_until = player_data[20]
+    is_hospitalised = (
+        hospital_until is not None
+        and parse_timestamp(hospital_until) > now
+    )
+
+    if is_hospitalised:
+        health, health_update = player_data[5], player_data[37]
+    else:
+        health, health_update = regenerate_resource(
+            current_value=player_data[5],
+            maximum_value=player_data[36],
+            last_update=player_data[37],
+            points_per_tick=HEALTH_POINTS_PER_TICK,
+            tick_seconds=HEALTH_TICK_SECONDS,
+            now=now
+        )
+
     cursor.execute(
         """
         UPDATE players
@@ -160,7 +183,9 @@ def get_player_by_user_id(user_id):
             last_energy_update = ?,
             last_nerve_update = ?,
             happiness = ?,
-            last_happiness_update = ?
+            last_happiness_update = ?,
+            health = ?,
+            last_health_update = ?
         WHERE id = ?
         """,
         (
@@ -170,6 +195,8 @@ def get_player_by_user_id(user_id):
             nerve_update,
             happiness,
             happiness_update,
+            health,
+            health_update,
             player_data[0]
         )
     )
@@ -228,12 +255,14 @@ def get_player_by_user_id(user_id):
 
     conn.close()
 
+    player_data[5] = health
     player_data[6] = energy
     player_data[11] = nerve
     player_data[14] = energy_update
     player_data[15] = nerve_update
     player_data[33] = happiness
     player_data[35] = happiness_update
+    player_data[37] = health_update
 
     player_data.extend([
         crime_progress,
@@ -286,7 +315,9 @@ def save_player(player):
             current_gym_key = ?,
             happiness = ?,
             max_happiness = ?,
-            last_happiness_update = ?
+            last_happiness_update = ?,
+            max_health = ?,
+            last_health_update = ?
         WHERE id = ?
         """,
         (
@@ -324,6 +355,8 @@ def save_player(player):
             player.happiness,
             player.max_happiness,
             player.last_happiness_update,
+            player.max_health,
+            player.last_health_update,
             player.id
         )
     )

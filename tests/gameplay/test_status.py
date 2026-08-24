@@ -123,6 +123,42 @@ class StatusTests(unittest.TestCase):
             "2026-08-22 12:30:00",
         )
 
+    def test_discharge_from_hospital_fully_heals(self):
+        player = SimpleNamespace(
+            wanted_level=0,
+            last_wanted_update="2026-08-22 12:00:00",
+            jail_until=None,
+            hospital_until="2026-08-22 12:10:00",
+            health=40,
+            max_health=100,
+            last_health_update="2026-08-22 12:05:00",
+        )
+
+        status_update = update_player_status(player, now=self.now)
+
+        self.assertTrue(status_update.discharged_from_hospital)
+        self.assertEqual(player.health, 100)
+        self.assertEqual(
+            player.last_health_update,
+            "2026-08-22 12:25:00",
+        )
+
+    def test_still_hospitalised_players_are_not_healed(self):
+        player = SimpleNamespace(
+            wanted_level=0,
+            last_wanted_update="2026-08-22 12:00:00",
+            jail_until=None,
+            hospital_until="2026-08-22 13:00:00",
+            health=40,
+            max_health=100,
+            last_health_update="2026-08-22 12:05:00",
+        )
+
+        status_update = update_player_status(player, now=self.now)
+
+        self.assertFalse(status_update.discharged_from_hospital)
+        self.assertEqual(player.health, 40)
+
     def test_wanted_level_is_capped(self):
         player = self.make_player(wanted_level=98)
 
