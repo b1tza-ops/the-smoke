@@ -647,6 +647,47 @@ def migrate_013_alpha_growth_loop(cursor):
     )
 
 
+def migrate_014_camden_prologue(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_prologue (
+            user_id INTEGER PRIMARY KEY,
+            background TEXT
+                CHECK (
+                    background IS NULL
+                    OR background IN (
+                        'street_hustler',
+                        'former_athlete',
+                        'local_worker'
+                    )
+                ),
+            opening_choice TEXT
+                CHECK (
+                    opening_choice IS NULL
+                    OR opening_choice IN (
+                        'deliver_package',
+                        'steal_watch',
+                        'refuse_offer'
+                    )
+                ),
+            debt_remaining INTEGER NOT NULL DEFAULT 2000
+                CHECK (debt_remaining >= 0),
+            debt_due_at TEXT NOT NULL
+                DEFAULT (
+                    DATETIME(CURRENT_TIMESTAMP, '+7 days')
+                ),
+            outcome_text TEXT,
+            completed_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -712,6 +753,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=13,
         name="alpha_growth_loop",
         apply=migrate_013_alpha_growth_loop,
+    ),
+    Migration(
+        version=14,
+        name="camden_prologue",
+        apply=migrate_014_camden_prologue,
     ),
 )
 

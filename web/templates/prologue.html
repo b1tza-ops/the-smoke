@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Seven Days · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='prologue-1') }}">
+</head>
+<body class="story-page">
+<div class="story-fog" aria-hidden="true"></div>
+<main class="story-shell">
+<header class="story-brand"><span class="brand__mark">TS</span><span>The Smoke · Camden, 23:47</span></header>
+
+{% if error %}<div class="alert" role="alert"><span class="alert__icon">!</span><span>{{ error }}</span></div>{% endif %}
+
+{% if not state.background %}
+<section class="story-intro">
+<p class="eyebrow">Seven days remain</p>
+<h1>London remembers what you owe.</h1>
+<p class="story-lede">Rain on Camden High Street. £2,000 of someone else’s money hangs over your name. Your phone lights up with a message from an unknown number:</p>
+<blockquote>“I know what you owe. I can help—but first I need to know what kind of person you are.”</blockquote>
+<div class="story-debt"><span>Debt outstanding</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong><small>Due {{ state.debt_due_at }}</small></div>
+</section>
+<section class="story-choices">
+{% for key, background in backgrounds.items() %}
+<form method="post" class="story-choice">
+<input type="hidden" name="action" value="choose_background"><input type="hidden" name="background" value="{{ key }}">
+<span class="story-choice__index">0{{ loop.index }}</span><h2>{{ background.name }}</h2><p>{{ background.description }}</p><strong>{{ background.bonus }}</strong><button type="submit">Choose this history <span>→</span></button>
+</form>
+{% endfor %}
+</section>
+
+{% elif not state.completed_at %}
+<section class="story-intro">
+<p class="eyebrow">Unknown number · Message received</p>
+<h1>One night. Three ways forward.</h1>
+<p class="story-lede">“Good. Now prove it. Choose carefully—Camden has a long memory.”</p>
+<div class="story-debt"><span>Debt outstanding</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong><small>{{ backgrounds[state.background].name }}</small></div>
+</section>
+<section class="story-choices">
+{% for key, choice in choices.items() %}
+<form method="post" class="story-choice">
+<input type="hidden" name="action" value="opening_mission"><input type="hidden" name="choice" value="{{ key }}">
+<span class="story-choice__index">0{{ loop.index }}</span><h2>{{ choice.name }}</h2><p>{{ choice.description }}</p><strong>£{{ choice.paydown }} off your debt · {{ choice.xp }} XP</strong><button type="submit">Take this path <span>→</span></button>
+</form>
+{% endfor %}
+</section>
+
+{% else %}
+<section class="story-outcome">
+<p class="eyebrow">The first move is made</p><h1>{{ choices[state.opening_choice].name }}</h1>
+<blockquote>{{ state.outcome_text }}</blockquote>
+<div class="story-result-grid"><div><span>Debt remaining</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong></div><div><span>Background</span><strong>{{ backgrounds[state.background].name }}</strong></div><div><span>Deadline</span><strong>{{ state.debt_due_at }}</strong></div></div>
+<a class="story-continue" href="{{ url_for('home') }}">Enter The Smoke <span>→</span></a>
+</section>
+{% endif %}
+</main>
+</body>
+</html>
