@@ -104,7 +104,7 @@
                             <p class="eyebrow">City access</p>
                             <h2 id="actions-title">Choose your next move</h2>
                         </div>
-                        <span class="section-note">Web actions coming soon</span>
+                        <span class="section-note">Live web actions</span>
                     </div>
 
                     <div class="action-grid">
@@ -113,16 +113,16 @@
                             <div><h3>Character</h3><p>Review your progress and battle stats.</p></div>
                             <span class="action-card__status">Active</span>
                         </article>
-                        <article class="action-card">
+                        <a class="action-card action-card--link" href="{{ url_for('gym') }}">
                             <span class="action-card__number">02</span>
                             <div><h3>Gym</h3><p>Train strength, defence, speed and dexterity.</p></div>
-                            <span class="action-card__status">Terminal</span>
-                        </article>
-                        <article class="action-card">
+                            <span class="action-card__status">Play</span>
+                        </a>
+                        <a class="action-card action-card--link" href="{{ url_for('crimes') }}">
                             <span class="action-card__number">03</span>
                             <div><h3>Crimes</h3><p>Risk your nerve for cash, XP and reputation.</p></div>
-                            <span class="action-card__status">Terminal</span>
-                        </article>
+                            <span class="action-card__status">Play</span>
+                        </a>
                         <article class="action-card action-card--locked">
                             <span class="action-card__number">04</span>
                             <div><h3>Jobs &amp; inventory</h3><p>Build a career and manage your gear.</p></div>
