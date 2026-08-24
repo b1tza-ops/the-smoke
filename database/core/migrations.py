@@ -763,6 +763,29 @@ def migrate_016_camden_corner_shop(cursor):
         ON shop_transactions (player_id, created_at DESC)
     """)
 
+
+def migrate_017_player_equipment(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_equipment (
+            player_id INTEGER NOT NULL,
+            slot TEXT NOT NULL
+                CHECK (slot IN ('weapon', 'armour')),
+            item_key TEXT NOT NULL,
+            equipped_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (player_id, slot),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -843,6 +866,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=16,
         name="camden_corner_shop",
         apply=migrate_016_camden_corner_shop,
+    ),
+    Migration(
+        version=17,
+        name="player_equipment",
+        apply=migrate_017_player_equipment,
     ),
 )
 
