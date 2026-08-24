@@ -882,3 +882,8 @@ input { font: inherit; }
 @media(max-width:560px){.inmate-actions{grid-template-columns:1fr;padding-left:.3rem}.custody-action{min-height:2.55rem}}
 
 .crime-sentence{margin:.7rem 0;color:var(--muted);font-size:.66rem}.crime-sentence strong{color:var(--energy)}
+
+
+/* Admin player restriction controls */
+.admin-status-control{margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem}.admin-status-control h3{margin:0 0 .25rem}.admin-status-control>p{margin:.2rem 0 .8rem;color:var(--muted);font-size:.7rem;line-height:1.45}.admin-status-control form:first-of-type{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;margin-bottom:.65rem}.admin-status-control label{display:grid;gap:.3rem;color:var(--muted);font-size:.65rem}.admin-status-control select,.admin-status-control input{width:100%;min-width:0;border:1px solid var(--border);border-radius:8px;background:#0b0f11;color:var(--text);padding:.62rem;font:inherit}.admin-status-reason{grid-column:1/-1}.admin-status-submit{grid-column:1/-1;border:0;border-radius:8px;background:var(--energy);color:#171207;cursor:pointer;padding:.68rem;font-weight:900}.admin-status-control>.admin-action{margin-top:.35rem}
+@media(max-width:560px){.admin-status-control form:first-of-type{grid-template-columns:1fr}.admin-status-reason,.admin-status-submit{grid-column:auto}}
