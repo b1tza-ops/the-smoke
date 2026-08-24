@@ -3,6 +3,7 @@ import logging
 import os
 import secrets
 import sqlite3
+from datetime import timedelta
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 from game.world.districts import (
@@ -140,6 +141,8 @@ app.config.update(
         os.environ.get("THE_SMOKE_COOKIE_SECURE", "1")
         == "1"
     ),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+    SESSION_REFRESH_EACH_REQUEST=True,
 )
 
 create_tables()
@@ -348,6 +351,7 @@ def admin_login():
         if valid_username and valid_password:
             session.clear()
             session["admin_authenticated"] = True
+            session.permanent = True
             record_activity(
                 None,
                 "admin_login",
@@ -1358,6 +1362,7 @@ def login():
 
         else:
             session["user_id"] = user[0]
+            session.permanent = True
             record_player_action(
                 "login",
                 "Player signed in.",
