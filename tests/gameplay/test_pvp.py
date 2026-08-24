@@ -44,7 +44,7 @@ class PvpCombatTests(unittest.TestCase):
         attacker = player(1, strength=80, dexterity=80)
         defender = player(2, money=1000, strength=1, defence=1)
         rng = Mock()
-        rng.randint.side_effect = lambda low, high: high
+        rng.randint.side_effect = lambda low, high: low
 
         result = fight_player(
             attacker, defender,
@@ -65,7 +65,7 @@ class PvpCombatTests(unittest.TestCase):
         attacker = player(1, strength=80, dexterity=80)
         defender = player(2, money=1000, strength=1, defence=1)
         rng = Mock()
-        rng.randint.side_effect = lambda low, high: high
+        rng.randint.side_effect = lambda low, high: low
         result = fight_player(
             attacker, defender,
             self.empty_equipment, self.empty_equipment,
@@ -95,7 +95,7 @@ class PvpCombatTests(unittest.TestCase):
         attacker = player(1, strength=80, dexterity=80)
         defender = player(2, strength=1, defence=1)
         rng = Mock()
-        rng.randint.side_effect = lambda low, high: high
+        rng.randint.side_effect = lambda low, high: low
         result = fight_player(
             attacker, defender,
             self.empty_equipment, self.empty_equipment,

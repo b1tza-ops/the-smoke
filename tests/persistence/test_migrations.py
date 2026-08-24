@@ -242,6 +242,7 @@ class MigrationTests(unittest.TestCase):
                     (18, "expanded_item_catalogue"),
                     (19, "full_equipment_slots"),
                     (20, "npc_combat_records"),
+                    (21, "player_pvp"),
                 ],
             )
 
