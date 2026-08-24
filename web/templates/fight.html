@@ -1,28 +1,33 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090b0d"><title>Street fight · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='npc-combat-1') }}">
+<meta name="theme-color" content="#090b0d"><title>Street fights · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='district-combat-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page combat-page">
-<section class="combat-hero"><div><p class="eyebrow">Camden encounter</p><h1>{{ opponent.name }}</h1><p>{{ opponent.description }}</p></div><div class="combat-cost"><span>Fight cost</span><strong>{{ energy_cost }} energy</strong></div></section>
+<section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} underground</p><h1>Street encounters</h1><p>Choose your target carefully. Health loss persists and stronger opponents impose longer Hospital stays.</p></div><div class="combat-cost"><span>Each attempt</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if result %}
-<section class="combat-result {{ 'is-victory' if result.victory else 'is-defeat' }}">
-<p class="eyebrow">{{ 'Victory' if result.victory else 'Defeat' }}</p>
-<h2>{{ 'The lockup is yours.' if result.victory else 'You wake up in Hospital.' }}</h2>
+<section id="fight-result" class="combat-result {{ 'is-victory' if result.victory else 'is-defeat' }}">
+<p class="eyebrow">{{ 'Victory' if result.victory else 'Defeat' }}</p><h2>{{ fought_opponent.name }}</h2>
 <div class="combat-result__rewards"><span>Health <strong>{{ result.player_health }}/100</strong></span><span>Cash <strong>+£{{ result.cash_reward }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span></div>
 </section>
-<section class="combat-log"><div class="section-heading"><div><p class="eyebrow">Fight report</p><h2>Round-by-round</h2></div></div>
-<ol>{% for entry in result.rounds %}<li>{{ entry }}</li>{% endfor %}</ol></section>
+<section class="combat-log"><div class="section-heading"><div><p class="eyebrow">Fight report</p><h2>Round-by-round</h2></div></div><ol>{% for entry in result.rounds %}<li>{{ entry }}</li>{% endfor %}</ol></section>
+<a class="character-link" href="{{ url_for('fight') }}">Return to encounter board →</a>
 {% else %}
-<section class="combat-card">
-<div class="combat-card__fighter"><span class="combat-avatar">CY</span><div><small>Street opponent</small><h2>{{ opponent.name }}</h2><p>{{ opponent.health }} health · {{ opponent.strength }} strength · {{ opponent.defence }} defence</p></div></div>
-<div class="combat-card__intel"><div><span>Your weapon bonus</span><strong>+{{ equipment.strength_bonus }} STR</strong></div><div><span>Your armour bonus</span><strong>+{{ equipment.defence_bonus }} DEF</strong></div></div>
-<form method="post" action="{{ url_for('fight') }}#fight-result"><button class="work-button" type="submit" {% if block_reason %}disabled{% endif %}><span>Start fight</span><span>→</span></button></form>
-{% if block_reason %}<p class="combat-block">{{ block_reason }}</p>{% else %}<p class="combat-warning">Damage persists after the fight. Defeat means 15 minutes in Hospital.</p>{% endif %}
-</section>
+<div class="encounter-grid">
+{% for opponent in opponents %}{% set record=records[opponent.key] %}
+<article class="combat-card combat-card--{{ opponent.difficulty|lower }}">
+<div class="combat-card__fighter"><span class="combat-avatar">{{ opponent.initials }}</span><div><small>{{ opponent.difficulty }} opponent</small><h2>{{ opponent.name }}</h2><p>{{ opponent.description }}</p></div></div>
+<div class="combat-card__stats"><span>{{ opponent.health }} HP</span><span>{{ opponent.strength }} STR</span><span>{{ opponent.defence }} DEF</span></div>
+<div class="combat-card__intel"><div><span>Reward</span><strong>£{{ opponent.cash_min }}–£{{ opponent.cash_max }} · {{ opponent.xp_reward }} XP</strong></div><div><span>Your record</span><strong>{{ record.wins }} wins / {{ record.attempts }} attempts</strong></div></div>
+<form method="post" action="{{ url_for('fight') }}#fight-result"><input type="hidden" name="opponent_key" value="{{ opponent.key }}"><button class="work-button" type="submit" {% if block_reason or record.cooldown_seconds %}disabled{% endif %}><span>{% if record.cooldown_seconds %}Recovering · {{ record.cooldown_seconds }}s{% else %}Start fight{% endif %}</span><span>→</span></button></form>
+<p class="combat-warning">{{ (opponent.hospital_seconds // 60) }} minute Hospital risk · {{ (opponent.cooldown_seconds // 60) }} minute cooldown</p>
+</article>
+{% else %}<section class="combat-card"><h2>No street encounters here yet</h2><p>Travel to Camden or Soho to find an opponent.</p></section>{% endfor %}
+</div>
+{% if block_reason %}<p class="combat-block">{{ block_reason }}</p>{% endif %}
 {% endif %}
 </main></div></body></html>

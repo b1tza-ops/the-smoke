@@ -23,11 +23,14 @@ from game.crime import (
     commit_crime,
 )
 from game.combat import (
-    CAMDEN_OPPONENT,
     COMBAT_ENERGY_COST,
+    OPPONENTS_BY_KEY,
     CombatError,
-    fight_camden_opponent,
+    fight_opponent,
     get_combat_block,
+    get_district_opponents,
+    get_encounter_records,
+    record_encounter,
 )
 from game.gym import (
     GymError,
@@ -1624,20 +1627,42 @@ def fight():
     update_travel(player)
     update_player_status(player)
     equipment = get_equipment_summary(player.id)
+    opponents = get_district_opponents(player.current_district)
+    records = get_encounter_records(player.id, opponents)
     result = None
+    fought_opponent = None
     error = None
 
     if request.method == "POST":
+        opponent_key = request.form.get("opponent_key", "")
+        fought_opponent = OPPONENTS_BY_KEY.get(opponent_key)
         try:
-            result = fight_camden_opponent(player, equipment)
+            if fought_opponent is None:
+                raise CombatError("Opponent does not exist.")
+            record = records.get(fought_opponent.key)
+            if record is not None and record.cooldown_seconds > 0:
+                raise CombatError(
+                    "That opponent is recovering. "
+                    f"Try again in {record.cooldown_seconds} seconds."
+                )
+            result = fight_opponent(
+                player,
+                equipment,
+                fought_opponent,
+            )
+            record_encounter(
+                player.id,
+                fought_opponent.key,
+                result.victory,
+            )
             record_player_action(
                 "npc_combat",
                 (
                     f"{'Defeated' if result.victory else 'Lost to'} "
-                    f"{CAMDEN_OPPONENT.name}."
+                    f"{fought_opponent.name}."
                 ),
                 {
-                    "opponent": CAMDEN_OPPONENT.key,
+                    "opponent": fought_opponent.key,
                     "victory": result.victory,
                     "cash_reward": result.cash_reward,
                     "xp_reward": result.xp_reward,
@@ -1647,13 +1672,16 @@ def fight():
             error = str(combat_error)
 
     save_player(player)
+    records = get_encounter_records(player.id, opponents)
     return render_template(
         "fight.html",
         player=player,
-        opponent=CAMDEN_OPPONENT,
+        opponents=opponents,
+        fought_opponent=fought_opponent,
+        records=records,
         equipment=equipment,
         energy_cost=COMBAT_ENERGY_COST,
-        block_reason=get_combat_block(player) if result is None else None,
+        block_reason=get_combat_block(player),
         result=result,
         error=error,
     )

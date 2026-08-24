@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
         )
 
         with closing(
@@ -241,6 +241,7 @@ class MigrationTests(unittest.TestCase):
                     (17, "player_equipment"),
                     (18, "expanded_item_catalogue"),
                     (19, "full_equipment_slots"),
+                    (20, "npc_combat_records"),
                 ],
             )
 
@@ -370,7 +371,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
         )
         self.assertEqual(second_run, ())
 
@@ -405,7 +406,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 19)
+            self.assertEqual(migration_count, 20)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -424,7 +425,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=20,
+            version=21,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -474,7 +475,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
             )
             self.assertEqual(money, 777)
 
@@ -509,7 +510,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
