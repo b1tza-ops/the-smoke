@@ -741,7 +741,7 @@ def hospital():
         (
             patient
             for patient in patients
-            if patient["name"] == player.name
+            if patient["id"] == player.id
         ),
         None,
     )
