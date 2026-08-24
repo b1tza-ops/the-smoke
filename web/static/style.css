@@ -498,3 +498,21 @@ input { font: inherit; }
         transition-duration: .01ms !important;
     }
 }
+
+
+.auth-switch {
+    margin: 1.5rem 0 0;
+    color: var(--muted);
+    font-size: .85rem;
+    text-align: center;
+}
+
+.auth-switch a {
+    color: var(--accent);
+    font-weight: 800;
+    text-underline-offset: .2em;
+}
+
+.auth-switch a:hover {
+    color: #d2ff79;
+}

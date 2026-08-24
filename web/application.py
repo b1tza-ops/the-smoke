@@ -3,7 +3,11 @@ import secrets
 from game.world.travel import update_travel
 from flask import Flask, render_template, request, redirect, session
 from database.core.setup import create_tables
-from database.repositories.users import get_user_by_username
+from database.repositories.users import (
+    create_user,
+    get_user_by_email,
+    get_user_by_username,
+)
 from database.repositories.presence import (
     get_online_player_count,
     mark_player_offline,
@@ -11,11 +15,21 @@ from database.repositories.presence import (
 )
 
 from database.repositories.players import (
+    create_player,
     get_player_by_user_id,
     save_player,
 )
 
-from utils.security import verify_password
+from auth.validation import (
+    ValidationError,
+    normalize_email,
+    validate_password,
+    validate_username,
+)
+from utils.security import (
+    hash_password,
+    verify_password,
+)
 from game.player import Player
 from game.player.progression import xp_required_for_level
 from game.player.status import update_player_status
@@ -79,6 +93,73 @@ def home():
         player=player,
         dashboard=dashboard,
         online_players=get_online_player_count(),
+    )
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if "user_id" in session:
+        return redirect("/")
+
+    error = None
+    form_data = {
+        "username": "",
+        "email": "",
+    }
+
+    if request.method == "POST":
+        form_data["username"] = request.form.get(
+            "username",
+            "",
+        )
+        form_data["email"] = request.form.get(
+            "email",
+            "",
+        )
+        password = request.form.get("password", "")
+        password_confirmation = request.form.get(
+            "password_confirmation",
+            "",
+        )
+
+        try:
+            username = validate_username(
+                form_data["username"]
+            )
+            email = normalize_email(form_data["email"])
+            password = validate_password(password)
+
+            if password != password_confirmation:
+                raise ValidationError(
+                    "Passwords do not match."
+                )
+
+            if get_user_by_username(username):
+                raise ValidationError(
+                    "Username already taken."
+                )
+
+            if get_user_by_email(email):
+                raise ValidationError(
+                    "Email already registered."
+                )
+
+            user_id = create_user(
+                username,
+                email,
+                hash_password(password),
+            )
+            create_player(user_id, username)
+            session["user_id"] = user_id
+            return redirect("/")
+
+        except ValidationError as validation_error:
+            error = str(validation_error)
+
+    return render_template(
+        "register.html",
+        error=error,
+        form_data=form_data,
     )
 
 

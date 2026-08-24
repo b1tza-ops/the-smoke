@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
-    <title>Enter The Smoke</title>
+    <title>Join The Smoke</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,17 +14,17 @@
 
     <main class="auth-shell">
         <section class="auth-intro" aria-labelledby="brand-title">
-            <a class="brand" href="{{ url_for('login') }}" aria-label="The Smoke login">
+            <a class="brand" href="{{ url_for('register') }}" aria-label="The Smoke registration">
                 <span class="brand__mark">TS</span>
                 <span class="brand__name">The Smoke</span>
             </a>
 
             <div class="auth-intro__copy">
                 <p class="eyebrow">A persistent London crime RPG</p>
-                <h1 id="brand-title">Own the city.<br>Build your name.</h1>
+                <h1 id="brand-title">Start with nothing.<br>Build your name.</h1>
                 <p class="lede">
-                    Start with nothing. Train hard, take risks and build a reputation
-                    across a city that keeps moving while you are away.
+                    Create your character and begin in Camden. Your choices,
+                    progress and reputation persist between sessions.
                 </p>
             </div>
 
@@ -35,11 +35,11 @@
             </div>
         </section>
 
-        <section class="auth-card" aria-labelledby="login-title">
+        <section class="auth-card" aria-labelledby="register-title">
             <div class="auth-card__header">
-                <p class="eyebrow">Player access</p>
-                <h2 id="login-title">Welcome back</h2>
-                <p>Sign in to continue your story.</p>
+                <p class="eyebrow">New player</p>
+                <h2 id="register-title">Create your account</h2>
+                <p>Your username will also be your first character name.</p>
             </div>
 
             {% if error %}
@@ -53,28 +53,47 @@
                 <div class="field">
                     <label for="username">Username</label>
                     <input id="username" type="text" name="username"
-                        autocomplete="username" placeholder="Enter your username"
+                        value="{{ form_data.username }}"
+                        autocomplete="username" placeholder="Choose a username"
+                        minlength="3" maxlength="30" pattern="[A-Za-z0-9_]+"
                         required autofocus>
+                </div>
+
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" name="email"
+                        value="{{ form_data.email }}"
+                        autocomplete="email" placeholder="Enter your email"
+                        maxlength="254" required>
                 </div>
 
                 <div class="field">
                     <label for="password">Password</label>
                     <input id="password" type="password" name="password"
-                        autocomplete="current-password" placeholder="Enter your password"
-                        required>
+                        autocomplete="new-password"
+                        placeholder="At least 8 characters"
+                        minlength="8" maxlength="128" required>
+                </div>
+
+                <div class="field">
+                    <label for="password_confirmation">Confirm password</label>
+                    <input id="password_confirmation" type="password"
+                        name="password_confirmation"
+                        autocomplete="new-password"
+                        placeholder="Enter your password again"
+                        minlength="8" maxlength="128" required>
                 </div>
 
                 <button class="primary-button" type="submit">
-                    <span>Enter The Smoke</span>
+                    <span>Join The Smoke</span>
                     <span aria-hidden="true">→</span>
                 </button>
             </form>
 
             <p class="auth-switch">
-                New to London?
-                <a href="{{ url_for('register') }}">Create an account</a>
+                Already have an account?
+                <a href="{{ url_for('login') }}">Sign in</a>
             </p>
-            <p class="auth-card__footer">Your progress is saved securely between sessions.</p>
         </section>
     </main>
 </body>
