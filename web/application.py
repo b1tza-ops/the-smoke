@@ -69,8 +69,9 @@ from database.repositories.prologue import (
     BACKGROUNDS,
     OPENING_CHOICES,
     choose_background,
-    complete_opening_mission,
     get_or_create_prologue,
+    resolve_opening_operation,
+    start_opening_operation,
 )
 from database.repositories.presence import (
     get_online_player_count,
@@ -484,6 +485,7 @@ def home():
     )
 
 
+@app.route("/operations", methods=["GET", "POST"])
 @app.route("/prologue", methods=["GET", "POST"])
 def prologue():
     if "user_id" not in session:
@@ -491,7 +493,7 @@ def prologue():
 
     state = get_or_create_prologue(session["user_id"])
     error = None
-    mission_result = None
+    operation_result = None
 
     if request.method == "POST":
         action = request.form.get("action", "")
@@ -504,30 +506,46 @@ def prologue():
                     background,
                 )
                 record_player_action(
-                    "prologue_background",
+                    "operation_dossier",
                     (
-                        "Chose the "
-                        f"{BACKGROUNDS[background]['name']} background."
+                        "Selected the "
+                        f"{BACKGROUNDS[background]['name']} dossier."
                     ),
                 )
-            elif action == "opening_mission":
+            elif action == "start_operation":
                 choice = request.form.get("choice", "")
-                mission_result = complete_opening_mission(
+                operation = start_opening_operation(
                     session["user_id"],
                     choice,
                 )
                 record_player_action(
-                    "prologue_mission",
+                    "operation_started",
                     (
-                        "Completed opening path: "
-                        f"{OPENING_CHOICES[choice]['name']}."
+                        "Started The Camden Collection "
+                        f"using {operation['style'].lower()}."
                     ),
-                    {"choice": choice},
+                    {"approach": choice},
+                )
+            elif action == "resolve_operation":
+                operation_result = resolve_opening_operation(
+                    session["user_id"]
+                )
+                record_player_action(
+                    "operation_completed",
+                    (
+                        "Completed The Camden Collection "
+                        f"using {operation_result['style'].lower()}."
+                    ),
+                    {
+                        "approach": state[
+                            "operation_approach"
+                        ],
+                    },
                 )
             else:
-                raise ValueError("Unknown story action.")
-        except ValueError as story_error:
-            error = str(story_error)
+                raise ValueError("Unknown operation action.")
+        except ValueError as operation_error:
+            error = str(operation_error)
 
         state = get_or_create_prologue(
             session["user_id"]
@@ -539,14 +557,18 @@ def prologue():
     if player_data is None:
         return redirect("/login")
 
+    player = Player(*player_data)
+    update_player_status(player)
+    save_player(player)
+
     return render_template(
         "prologue.html",
-        player=Player(*player_data),
+        player=player,
         state=state,
         backgrounds=BACKGROUNDS,
         choices=OPENING_CHOICES,
         error=error,
-        mission_result=mission_result,
+        mission_result=operation_result,
     )
 
 

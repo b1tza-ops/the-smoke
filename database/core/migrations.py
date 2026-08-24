@@ -688,6 +688,44 @@ def migrate_014_camden_prologue(cursor):
     )
 
 
+def migrate_015_operations_v1(cursor):
+    columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(player_prologue)"
+        )
+    }
+
+    additions = {
+        "operation_stage": (
+            "TEXT NOT NULL DEFAULT 'dossier'"
+        ),
+        "operation_started_at": "TEXT",
+        "operation_ready_at": "TEXT",
+        "operation_approach": "TEXT",
+    }
+    for name, definition in additions.items():
+        if name not in columns:
+            cursor.execute(
+                f"""
+                ALTER TABLE player_prologue
+                ADD COLUMN {name} {definition}
+                """
+            )
+
+    cursor.execute(
+        """
+        UPDATE player_prologue
+        SET operation_stage = CASE
+            WHEN completed_at IS NOT NULL THEN 'completed'
+            WHEN opening_choice IS NOT NULL THEN 'active'
+            WHEN background IS NOT NULL THEN 'briefing'
+            ELSE 'dossier'
+        END
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -758,6 +796,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=14,
         name="camden_prologue",
         apply=migrate_014_camden_prologue,
+    ),
+    Migration(
+        version=15,
+        name="operations_v1",
+        apply=migrate_015_operations_v1,
     ),
 )
 
