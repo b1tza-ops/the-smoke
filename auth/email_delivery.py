@@ -74,6 +74,7 @@ def send_verification_email(email, raw_token, expires_at):
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "User-Agent": "the-smoke/1.0",
             "Idempotency-Key": (
                 "email-verification-"
                 f"{hash_token(raw_token)}"
