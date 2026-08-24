@@ -9,9 +9,11 @@ from database.repositories.activity import (
     record_activity,
 )
 from database.repositories.admin import (
+    get_admin_player_details,
     is_user_suspended,
     set_user_suspended,
 )
+from database.repositories.players import create_player
 from database.repositories.users import create_user
 
 
@@ -30,11 +32,34 @@ class AdminActivityPersistenceTests(unittest.TestCase):
                     "tester@example.com",
                     "hash",
                 )
+                create_player(user_id, "Test Character")
                 record_activity(
                     user_id,
                     "gym_train",
                     "Strength increased.",
                     {"gain": 2},
+                )
+
+                details = get_admin_player_details(user_id)
+                self.assertIsNotNone(details)
+                self.assertEqual(
+                    details["account"]["username"],
+                    "tester",
+                )
+                self.assertEqual(
+                    details["account"]["name"],
+                    "Test Character",
+                )
+                self.assertEqual(
+                    {
+                        row["item_key"]
+                        for row in details["inventory"]
+                    },
+                    {"energy_drink", "first_aid_kit"},
+                )
+                self.assertEqual(
+                    details["unlocked_gyms"],
+                    ("camden_community",),
                 )
 
                 rows = get_recent_activity(

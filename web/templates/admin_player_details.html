@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>{{ details.account.username }} · Operations · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-2') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('admin_dashboard') }}">
+            <span class="brand__mark">TS</span>
+            <span class="brand__name">Operations</span>
+        </a>
+        <a class="logout-link" href="{{ url_for('admin_logout') }}">Admin logout</a>
+    </header>
+
+    <main class="dashboard-main admin-page">
+        <a class="admin-back" href="{{ url_for('admin_dashboard') }}">← All players</a>
+
+        <section class="admin-hero admin-player-hero">
+            <div>
+                <p class="eyebrow">Player record #{{ details.account.user_id }}</p>
+                <h1>{{ details.account.username }}</h1>
+                <p>{{ details.account.email }}</p>
+            </div>
+            <div>
+                {% if details.account.suspended_at %}
+                    <span class="admin-state admin-state--blocked">Suspended</span>
+                {% elif details.account.email_verified %}
+                    <span class="admin-state">Active</span>
+                {% else %}
+                    <span class="admin-state admin-state--pending">Unverified</span>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="admin-detail-grid">
+            <article class="admin-panel">
+                <div class="section-heading"><div><p class="eyebrow">Account</p><h2>Identity & access</h2></div></div>
+                <dl class="admin-detail-list">
+                    <div><dt>Character</dt><dd>{{ details.account.name or "Not created" }}</dd></div>
+                    <div><dt>Joined</dt><dd>{{ details.account.created_at }}</dd></div>
+                    <div><dt>Email verified</dt><dd>{{ "Yes" if details.account.email_verified else "No" }}</dd></div>
+                    <div><dt>Verified at</dt><dd>{{ details.account.email_verified_at or "—" }}</dd></div>
+                    <div><dt>Last seen</dt><dd>{{ details.account.last_seen or "Never" }}</dd></div>
+                    <div><dt>Suspended at</dt><dd>{{ details.account.suspended_at or "—" }}</dd></div>
+                </dl>
+                <form method="post" action="{{ url_for('admin_user_suspension', user_id=details.account.user_id) }}">
+                    <input type="hidden" name="suspended" value="{{ 0 if details.account.suspended_at else 1 }}">
+                    <button class="admin-action {{ 'admin-action--restore' if details.account.suspended_at }}" type="submit">
+                        {{ "Reactivate account" if details.account.suspended_at else "Suspend account" }}
+                    </button>
+                </form>
+            </article>
+
+            <article class="admin-panel">
+                <div class="section-heading"><div><p class="eyebrow">Economy</p><h2>Progress & balances</h2></div></div>
+                {% if details.account.id %}
+                <div class="admin-metric-grid">
+                    <div><span>Level</span><strong>{{ details.account.level }}</strong></div>
+                    <div><span>XP</span><strong>{{ "{:,}".format(details.account.xp) }}</strong></div>
+                    <div><span>Cash</span><strong>£{{ "{:,}".format(details.account.money) }}</strong></div>
+                    <div><span>Bank</span><strong>£{{ "{:,}".format(details.account.bank_balance) }}</strong></div>
+                    <div><span>Wanted</span><strong>{{ details.account.wanted_level }}</strong></div>
+                    <div><span>Career XP</span><strong>{{ "{:,}".format(details.account.career_xp) }}</strong></div>
+                </div>
+                {% else %}<p>No character record exists for this account.</p>{% endif %}
+            </article>
+        </section>
+
+        {% if details.account.id %}
+        <section class="admin-detail-grid">
+            <article class="admin-panel">
+                <div class="section-heading"><div><p class="eyebrow">Character</p><h2>Stats & resources</h2></div></div>
+                <div class="admin-metric-grid">
+                    <div><span>Health</span><strong>{{ details.account.health }}/100</strong></div>
+                    <div><span>Energy</span><strong>{{ details.account.energy }}/{{ details.account.max_energy }}</strong></div>
+                    <div><span>Nerve</span><strong>{{ details.account.nerve }}/{{ details.account.max_nerve }}</strong></div>
+                    <div><span>Strength</span><strong>{{ "{:,}".format(details.account.strength) }}</strong></div>
+                    <div><span>Defence</span><strong>{{ "{:,}".format(details.account.defence) }}</strong></div>
+                    <div><span>Speed</span><strong>{{ "{:,}".format(details.account.speed) }}</strong></div>
+                    <div><span>Dexterity</span><strong>{{ "{:,}".format(details.account.dexterity) }}</strong></div>
+                    <div><span>Gym</span><strong>{{ details.account.current_gym_key|replace("_", " ")|title }}</strong></div>
+                </div>
+            </article>
+
+            <article class="admin-panel">
+                <div class="section-heading"><div><p class="eyebrow">World</p><h2>Location & status</h2></div></div>
+                <dl class="admin-detail-list">
+                    <div><dt>District</dt><dd>{{ details.account.current_district|title }}</dd></div>
+                    <div><dt>Residence</dt><dd>{{ details.account.residence_key|replace("_", " ")|title }}</dd></div>
+                    <div><dt>Career</dt><dd>{{ details.account.career_key|replace("_", " ")|title if details.account.career_key else "Unemployed" }}</dd></div>
+                    <div><dt>Role</dt><dd>{{ details.account.job_role_key|replace("_", " ")|title if details.account.job_role_key else "—" }}</dd></div>
+                    <div><dt>Travelling to</dt><dd>{{ details.account.travel_destination|title if details.account.travel_destination else "—" }}</dd></div>
+                    <div><dt>Travel until</dt><dd>{{ details.account.travel_until or "—" }}</dd></div>
+                    <div><dt>Jail until</dt><dd>{{ details.account.jail_until or "—" }}</dd></div>
+                    <div><dt>Hospital until</dt><dd>{{ details.account.hospital_until or "—" }}</dd></div>
+                </dl>
+            </article>
+        </section>
+
+        <section class="admin-detail-grid">
+            <article class="admin-panel">
+                <div class="section-heading"><div><p class="eyebrow">Possessions</p><h2>Inventory</h2></div></div>
+                <div class="admin-compact-list">
+                    {% for item in details.inventory %}
+                    <div><strong>{{ item.item_key|replace("_", " ")|title }}</strong><span>× {{ item.quantity }}</span></div>
+                    {% else %}<p>Inventory is empty.</p>{% endfor %}
+                </div>
+                <h3 class="admin-subheading">Unlocked gyms</h3>
+                <div class="admin-chip-list">
+                    {% for gym in details.unlocked_gyms %}<span>{{ gym|replace("_", " ")|title }}</span>{% else %}<span>None</span>{% endfor %}
+                </div>
+            </article>
+
+            <article class="admin-panel">
+                <div class="section-heading"><div><p class="eyebrow">Criminal record</p><h2>Crime progress</h2></div></div>
+                <div class="admin-compact-list">
+                    {% for crime in details.crime_progress %}
+                    <div><strong>{{ crime.crime_key|replace("_", " ")|title }}</strong><span>{{ crime.successes }}/{{ crime.attempts }} success · {{ crime.xp }} XP</span></div>
+                    {% else %}<p>No crime attempts recorded.</p>{% endfor %}
+                </div>
+                <h3 class="admin-subheading">District reputation</h3>
+                <div class="admin-compact-list">
+                    {% for district in details.district_reputation %}
+                    <div><strong>{{ district.district|title }}</strong><span>{{ district.reputation }}</span></div>
+                    {% else %}<p>No reputation earned.</p>{% endfor %}
+                </div>
+            </article>
+        </section>
+        {% endif %}
+
+        <section class="admin-panel">
+            <div class="section-heading"><div><p class="eyebrow">Audit ledger</p><h2>Player activity</h2></div></div>
+            <div class="activity-list">
+                {% for activity in activities %}
+                <article>
+                    <span class="activity-type">{{ activity[3]|replace("_", " ")|title }}</span>
+                    <div><strong>{{ activity[2] or details.account.username }}</strong><p>{{ activity[4] }}</p></div>
+                    <time>{{ activity[6] }}</time>
+                </article>
+                {% else %}<p>No activity recorded for this player.</p>{% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>
