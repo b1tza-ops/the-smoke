@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d">
 <title>{{ 'Jobs' if active_section == 'jobs' else 'Inventory' }} · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='equipment-loadouts-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='raster-equipment-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
@@ -38,7 +38,7 @@
     <div class="loadout-slots">
     {% for slot in ("weapon", "armour") %}{% set equipped=equipment.items.get(slot) %}
         <article class="loadout-slot {{ 'is-empty' if not equipped }}">
-            {% if equipped %}<img src="{{ url_for('static', filename='icons/' + equipped.image_filename) }}" alt=""><div><small>{{ slot }}</small><strong>{{ equipped.name }}</strong><span>{% if slot == "weapon" %}+{{ equipped.strength_bonus }} Strength{% else %}+{{ equipped.defence_bonus }} Defence{% endif %}</span></div><form method="post" action="{{ url_for('inventory') }}#inventory-panel"><input type="hidden" name="action" value="unequip_item"><input type="hidden" name="slot" value="{{ slot }}"><button type="submit">Unequip</button></form>
+            {% if equipped %}<img src="{{ url_for('static', filename=equipped.image_filename if '/' in equipped.image_filename else 'icons/' + equipped.image_filename) }}" alt=""><div><small>{{ slot }}</small><strong>{{ equipped.name }}</strong><span>{% if slot == "weapon" %}+{{ equipped.strength_bonus }} Strength{% else %}+{{ equipped.defence_bonus }} Defence{% endif %}</span></div><form method="post" action="{{ url_for('inventory') }}#inventory-panel"><input type="hidden" name="action" value="unequip_item"><input type="hidden" name="slot" value="{{ slot }}"><button type="submit">Unequip</button></form>
             {% else %}<div class="loadout-slot__empty"><small>{{ slot }}</small><strong>Empty slot</strong><span>Equip an item below</span></div>{% endif %}
         </article>
     {% endfor %}
@@ -58,7 +58,7 @@
 {% for owned in owned_items %}{% set item=owned.item %}
 <details id="item-{{ item.key }}" class="inventory-row" data-item-name="{{ item.name|lower }}" data-item-category="{{ item.category|lower }}">
     <summary>
-        <img class="inventory-row__image" src="{{ url_for('static', filename='icons/' + item.image_filename) }}" alt="">
+        <img class="inventory-row__image" src="{{ url_for('static', filename=item.image_filename if '/' in item.image_filename else 'icons/' + item.image_filename) }}" alt="">
         <span class="inventory-row__name"><strong>{{ item.name }}</strong><small>{{ item.category }}</small></span>
         <span class="inventory-row__quantity">×{{ owned.quantity }}</span>
         <span class="inventory-row__chevron" aria-hidden="true">⌄</span>
