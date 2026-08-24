@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ details.account.username }} · Operations · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-single-column-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-single-column-2') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -91,13 +91,13 @@
             <article class="admin-panel" id="admin-stats">
                 <div class="section-heading"><div><p class="eyebrow">Character</p><h2>Stats & resources</h2></div></div>
                 <div class="admin-metric-grid">
-                    <div><span>Health</span><strong>{{ details.account.health }}/100</strong></div>
-                    <div><span>Energy</span><strong>{{ details.account.energy }}/{{ details.account.max_energy }}</strong></div>
-                    <div><span>Nerve</span><strong>{{ details.account.nerve }}/{{ details.account.max_nerve }}</strong></div>
-                    <div><span>Strength</span><strong>{{ "{:,}".format(details.account.strength) }}</strong></div>
-                    <div><span>Defence</span><strong>{{ "{:,}".format(details.account.defence) }}</strong></div>
-                    <div><span>Speed</span><strong>{{ "{:,}".format(details.account.speed) }}</strong></div>
-                    <div><span>Dexterity</span><strong>{{ "{:,}".format(details.account.dexterity) }}</strong></div>
+                    <div class="admin-metric admin-metric--resource" title="Health"><span class="admin-metric-icon" aria-hidden="true">♥</span><span class="sr-only">Health</span><strong>{{ details.account.health }}/100</strong></div>
+                    <div class="admin-metric admin-metric--resource" title="Energy"><span class="admin-metric-icon" aria-hidden="true">⚡</span><span class="sr-only">Energy</span><strong>{{ details.account.energy }}/{{ details.account.max_energy }}</strong></div>
+                    <div class="admin-metric admin-metric--resource" title="Nerve"><span class="admin-metric-icon" aria-hidden="true">◆</span><span class="sr-only">Nerve</span><strong>{{ details.account.nerve }}/{{ details.account.max_nerve }}</strong></div>
+                    <div class="admin-metric" title="Strength"><span class="admin-metric-icon" aria-hidden="true">✦</span><span class="sr-only">Strength</span><strong>{{ "{:,}".format(details.account.strength) }}</strong></div>
+                    <div class="admin-metric" title="Defence"><span class="admin-metric-icon" aria-hidden="true">◈</span><span class="sr-only">Defence</span><strong>{{ "{:,}".format(details.account.defence) }}</strong></div>
+                    <div class="admin-metric" title="Speed"><span class="admin-metric-icon" aria-hidden="true">➜</span><span class="sr-only">Speed</span><strong>{{ "{:,}".format(details.account.speed) }}</strong></div>
+                    <div class="admin-metric" title="Dexterity"><span class="admin-metric-icon" aria-hidden="true">⌁</span><span class="sr-only">Dexterity</span><strong>{{ "{:,}".format(details.account.dexterity) }}</strong></div>
                     <div><span>Gym</span><strong>{{ details.account.current_gym_key|replace("_", " ")|title }}</strong></div>
                 </div>
             </article>
