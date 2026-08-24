@@ -1136,6 +1136,32 @@ def migrate_027_player_health_regeneration(cursor):
     )
 
 
+def migrate_028_level_scaled_max_health(cursor):
+    from game.player.progression import (
+        BASE_MAX_HEALTH,
+        MAX_HEALTH_PER_LEVEL,
+    )
+
+    cursor.execute(
+        """
+        UPDATE players
+        SET
+            health = CASE
+                WHEN health >= max_health
+                THEN ? + (level - 1) * ?
+                ELSE health
+            END,
+            max_health = ? + (level - 1) * ?
+        """,
+        (
+            BASE_MAX_HEALTH,
+            MAX_HEALTH_PER_LEVEL,
+            BASE_MAX_HEALTH,
+            MAX_HEALTH_PER_LEVEL,
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1271,6 +1297,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=27,
         name="player_health_regeneration",
         apply=migrate_027_player_health_regeneration,
+    ),
+    Migration(
+        version=28,
+        name="level_scaled_max_health",
+        apply=migrate_028_level_scaled_max_health,
     ),
 )
 

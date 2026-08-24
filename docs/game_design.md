@@ -67,6 +67,12 @@ strengthens) gym training gains and crime success odds when it is below
 maximum, giving players a reason to stay out of trouble or top up with
 consumables rather than a permanent bonus for doing nothing.
 
+Health regenerates over time like energy and nerve, is frozen while
+hospitalised, and is fully restored on discharge. `max_health` grows
+with level (100 at level 1, +10 per level) so higher-level players can
+absorb more punishment; a level-up that finds the player already at
+full health also tops up the current value to match the new cap.
+
 Temporary state is also separated:
 
 - jail_until
