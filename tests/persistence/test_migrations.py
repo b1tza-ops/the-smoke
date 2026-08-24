@@ -218,6 +218,10 @@ class MigrationTests(unittest.TestCase):
                         11,
                         "email_verification_rollout",
                     ),
+                    (
+                        12,
+                        "admin_activity_and_suspension",
+                    ),
                 ],
             )
 
