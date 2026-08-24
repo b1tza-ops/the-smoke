@@ -160,3 +160,108 @@ def get_admin_player_details(user_id):
         }
     finally:
         connection.close()
+
+
+
+VALID_RESTRICTIONS = {"jail", "hospital"}
+MAX_RESTRICTION_MINUTES = 3 * 24 * 60
+
+
+def set_player_restriction(
+    user_id,
+    restriction,
+    duration_minutes=None,
+):
+    if restriction == "free":
+        return clear_player_restrictions(user_id)
+    if restriction not in VALID_RESTRICTIONS:
+        raise ValueError("Choose jail, hospital or release.")
+    try:
+        duration_minutes = int(duration_minutes)
+    except (TypeError, ValueError):
+        raise ValueError("Enter a valid duration.") from None
+    if not 1 <= duration_minutes <= MAX_RESTRICTION_MINUTES:
+        raise ValueError(
+            "Duration must be between 1 minute and 3 days."
+        )
+
+    target_column = (
+        "jail_until"
+        if restriction == "jail"
+        else "hospital_until"
+    )
+    opposing_column = (
+        "hospital_until"
+        if restriction == "jail"
+        else "jail_until"
+    )
+    duration = f"+{duration_minutes} minutes"
+
+    connection = get_connection()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        cursor = connection.execute(
+            f"""
+            UPDATE players
+            SET
+                {target_column} = DATETIME(
+                    CURRENT_TIMESTAMP,
+                    ?
+                ),
+                {opposing_column} = NULL,
+                travel_destination = NULL,
+                travel_until = NULL
+            WHERE user_id = ?
+            """,
+            (duration, user_id),
+        )
+        if cursor.rowcount != 1:
+            raise ValueError(
+                "This account has no character."
+            )
+
+        until = connection.execute(
+            f"""
+            SELECT {target_column}
+            FROM players
+            WHERE user_id = ?
+            """,
+            (user_id,),
+        ).fetchone()[0]
+        connection.commit()
+        return {
+            "restriction": restriction,
+            "duration_minutes": duration_minutes,
+            "until": until,
+        }
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def clear_player_restrictions(user_id):
+    connection = get_connection()
+    try:
+        cursor = connection.execute(
+            """
+            UPDATE players
+            SET jail_until = NULL,
+                hospital_until = NULL
+            WHERE user_id = ?
+            """,
+            (user_id,),
+        )
+        connection.commit()
+        if cursor.rowcount != 1:
+            raise ValueError(
+                "This account has no character."
+            )
+        return {
+            "restriction": "free",
+            "duration_minutes": 0,
+            "until": None,
+        }
+    finally:
+        connection.close()

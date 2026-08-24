@@ -19,6 +19,9 @@
 
     <main class="dashboard-main admin-page">
         <a class="admin-back" href="{{ url_for('admin_dashboard') }}">← All players</a>
+        {% if admin_notice %}
+        <div class="game-notice {{ 'game-notice--success' if admin_notice.type == 'success' else 'game-notice--error' }}" role="{{ 'status' if admin_notice.type == 'success' else 'alert' }}">{{ admin_notice.message }}</div>
+        {% endif %}
 
         <section class="admin-hero admin-player-hero">
             <div>
@@ -99,6 +102,31 @@
                     <div><dt>Jail until</dt><dd>{{ details.account.jail_until or "—" }}</dd></div>
                     <div><dt>Hospital until</dt><dd>{{ details.account.hospital_until or "—" }}</dd></div>
                 </dl>
+                <div class="admin-status-control">
+                    <h3>Set player status</h3>
+                    <p>Overrides travel and any existing Jail or Hospital status. Maximum duration is three days.</p>
+                    <form method="post" action="{{ url_for('admin_user_status', user_id=details.account.user_id) }}">
+                        <label>Destination
+                            <select name="restriction" required>
+                                <option value="jail">Jail</option>
+                                <option value="hospital">Hospital</option>
+                            </select>
+                        </label>
+                        <label>Duration in minutes
+                            <input name="duration_minutes" type="number" min="1" max="4320" value="60" required>
+                        </label>
+                        <label class="admin-status-reason">Reason
+                            <input name="reason" maxlength="200" placeholder="Administrative action">
+                        </label>
+                        <button class="admin-status-submit" type="submit">Apply status</button>
+                    </form>
+                    {% if details.account.jail_until or details.account.hospital_until %}
+                    <form method="post" action="{{ url_for('admin_user_status', user_id=details.account.user_id) }}">
+                        <input type="hidden" name="restriction" value="free">
+                        <button class="admin-action admin-action--restore" type="submit">Release / discharge now</button>
+                    </form>
+                    {% endif %}
+                </div>
             </article>
         </section>
 
