@@ -62,3 +62,31 @@ def get_user_by_email(email):
     conn.close()
 
     return user
+
+
+def get_user_by_id(user_id):
+    conn = get_connection()
+
+    try:
+        return conn.execute(
+            """
+            SELECT
+                id,
+                username,
+                email,
+                password_hash,
+                created_at,
+                email_verified,
+                email_verified_at
+            FROM users
+            WHERE id = ?
+            """,
+            (user_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def is_email_verified(user_id):
+    user = get_user_by_id(user_id)
+    return bool(user and user[5])
