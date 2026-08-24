@@ -17,7 +17,7 @@
 
 {% if active_section == 'jobs' %}
 <section id="jobs-panel" class="work-panel is-active" aria-labelledby="jobs-heading">
-<div class="inventory-heading"><div><p class="eyebrow">Career desk</p><h2 id="jobs-heading">Your employment</h2></div><a class="item-button" href="{{ url_for('inventory') }}">View items</a></div>
+<div class="inventory-heading"><div><p class="eyebrow">Career desk</p><h2 id="jobs-heading">Your employment</h2></div></div>
 {% if career and role %}
 <article class="career-card"><header><div><p class="eyebrow">{{ career.name }}</p><h2>{{ role.name }}</h2></div><span class="career-pay">£{{ role.salary }}/shift</span></header>
 <div class="career-metrics"><div><span>Career XP</span><strong>{{ player.career_xp }}</strong></div><div><span>Shifts</span><strong>{{ player.shifts_completed }}</strong></div><div><span>Energy cost</span><strong>{{ role.energy_cost }}</strong></div></div>
