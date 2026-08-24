@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ shop.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='game-icons-hotfix-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='compact-shop-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -22,33 +22,39 @@
         {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
         {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
         {% if not accessible %}<div class="game-notice game-notice--error">You must be free and physically present in Camden to shop.</div>{% endif %}
-        <section class="shop-grid" aria-label="Available stock">
+        <section class="shop-counter" aria-label="Available stock">
+            <div class="shop-counter__heading">
+                <strong>Items for sale</strong>
+                <span>Fixed local prices</span>
+            </div>
         {% for item in shop["items"] %}
-            <article class="shop-card {{ 'shop-card--sold' if item.stock == 0 }}">
-                <div class="shop-card__top"><div><p class="eyebrow">{{ item.stock }} remaining</p><h2>{{ item.name }}</h2></div><strong class="shop-price">£{{ item.price }}</strong></div>
-                <p>{{ item.description }}</p>
+            {% set category = {"energy_drink": "Boost", "first_aid_kit": "Medical", "lockpick": "Utility"}[item.key] %}
+            {% set image = {"energy_drink": "shop-energy-drink.svg", "first_aid_kit": "shop-first-aid.svg", "lockpick": "shop-lockpick.svg"}[item.key] %}
+            <article class="shop-row {{ 'shop-row--sold' if item.stock == 0 }}">
+                <img class="shop-row__image" src="{{ url_for('static', filename='icons/' + image) }}" alt="">
+                <div class="shop-row__details">
+                    <h2>{{ item.name }}</h2>
+                    <strong>£{{ item.price }}</strong>
+                    <p>{{ category }} · {{ item.stock }} in stock</p>
+                </div>
                 <form method="post" class="shop-buy" data-price="{{ item.price }}">
                     <input type="hidden" name="item_key" value="{{ item.key }}">
-                    <div class="shop-quantity">
-                        <button type="button" data-step="-1" aria-label="Decrease quantity">−</button>
+                    <label><span class="sr-only">{{ item.name }} quantity</span>
                         <input name="quantity" type="number" min="1" max="{{ item.stock }}" value="1" inputmode="numeric" aria-label="{{ item.name }} quantity">
-                        <button type="button" data-step="1" aria-label="Increase quantity">+</button>
-                    </div>
+                    </label>
                     <button class="shop-buy__submit" type="submit" {{ 'disabled' if item.stock == 0 or not accessible }}>
                         <span>{{ "Sold out" if item.stock == 0 else "Buy" }}</span>
-                        {% if item.stock > 0 %}<strong>£<span data-total>{{ item.price }}</span></strong>{% endif %}
+                        {% if item.stock > 0 %}<small>£<span data-total>{{ item.price }}</span></small>{% endif %}
                     </button>
                 </form>
             </article>
         {% endfor %}
-        </section>
-    </main>
+        </section>    </main>
 </div>
 <script>
 document.querySelectorAll(".shop-buy").forEach(form => {
     const input=form.querySelector("input[name=quantity]"), total=form.querySelector("[data-total]");
     const update=()=>{input.value=Math.max(1,Math.min(Number(input.max)||1,Number(input.value)||1));if(total)total.textContent=(Number(input.value)*Number(form.dataset.price)).toLocaleString();};
-    form.querySelectorAll("[data-step]").forEach(button=>button.addEventListener("click",()=>{input.value=Number(input.value)+Number(button.dataset.step);update();}));
     input.addEventListener("input",update);
 });
 const timer=document.querySelector("[data-restock]");
