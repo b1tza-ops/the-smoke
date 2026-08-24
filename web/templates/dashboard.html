@@ -109,7 +109,7 @@
                             <div><dt>Inventory</dt><dd>{{ player.inventory|length }} item types</dd></div>
                             <div><dt>Career</dt><dd>{{ player.career_key|replace("_", " ")|title if player.career_key else "Unemployed" }}</dd></div>
                             <div><dt>Role</dt><dd>{{ player.job_role_key|replace("_", " ")|title if player.job_role_key else "—" }}</dd></div>
-                            <div><dt>Gym</dt><dd>{{ player.selected_gym_key|replace("_", " ")|title if player.selected_gym_key else "None selected" }}</dd></div>
+                            <div><dt>Gym</dt><dd>{{ player.current_gym_key|replace("_", " ")|title if player.current_gym_key else "None selected" }}</dd></div>
                         </dl>
                         <div class="overview-panel__links">
                             <a href="{{ url_for('inventory') }}">View items</a>
