@@ -31,6 +31,7 @@ from auth.services.password_reset import (
     request_email_verification,
     verify_email_token,
 )
+from auth.turnstile import validate_turnstile
 from auth.validation import (
     ValidationError,
     normalize_email,
@@ -134,6 +135,19 @@ def register():
         )
 
         try:
+            if not validate_turnstile(
+                request.form.get(
+                    "cf-turnstile-response",
+                    "",
+                ),
+                remote_ip=request.remote_addr,
+                expected_action="register",
+            ):
+                raise ValidationError(
+                    "Complete the human verification "
+                    "and try again."
+                )
+
             username = validate_username(
                 form_data["username"]
             )
@@ -191,6 +205,10 @@ def register():
         "register.html",
         error=error,
         form_data=form_data,
+        turnstile_site_key=os.environ.get(
+            "TURNSTILE_SITE_KEY",
+            "",
+        ),
     )
 
 
