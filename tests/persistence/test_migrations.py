@@ -79,7 +79,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
         )
 
         with closing(
@@ -116,6 +116,7 @@ class MigrationTests(unittest.TestCase):
                     "shift_started_at",
                     "shift_until",
                     "current_gym_key",
+                    "last_seen",
                 }.issubset(columns)
             )
 
@@ -212,6 +213,7 @@ class MigrationTests(unittest.TestCase):
                     (7, "district_gyms"),
                     (8, "starter_inventory"),
                     (9, "authentication_hardening"),
+                    (10, "player_presence"),
                 ],
             )
 
@@ -299,7 +301,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
         )
         self.assertEqual(second_run, ())
 
@@ -334,7 +336,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 9)
+            self.assertEqual(migration_count, 10)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -403,7 +405,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             )
             self.assertEqual(money, 777)
 
@@ -438,7 +440,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)
@@ -454,6 +456,7 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("shift_started_at", columns)
             self.assertIn("shift_until", columns)
             self.assertIn("current_gym_key", columns)
+            self.assertIn("last_seen", columns)
 
             user_columns = {
                 row[1]
