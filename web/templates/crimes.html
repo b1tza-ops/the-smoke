@@ -44,6 +44,19 @@
                         <div><dt>XP</dt><dd>{{ crime.xp_reward }}</dd></div>
                         <div><dt>Wanted</dt><dd>+{{ crime.wanted_gain }}</dd></div>
                     </dl>
+                    <p class="crime-sentence">
+                        If arrested: up to
+                        <strong>
+                        {% if crime.jail_seconds >= 86400 %}
+                            {{ crime.jail_seconds // 86400 }} day{{ '' if crime.jail_seconds // 86400 == 1 else 's' }}
+                        {% elif crime.jail_seconds >= 3600 %}
+                            {{ crime.jail_seconds // 3600 }} hour{{ '' if crime.jail_seconds // 3600 == 1 else 's' }}
+                        {% else %}
+                            {{ crime.jail_seconds // 60 }} minutes
+                        {% endif %}
+                        </strong>
+                        in jail
+                    </p>
 
                     <form method="post" action="{{ url_for('crimes') }}#crime-{{ crime.key }}">
                         <input type="hidden" name="crime_key" value="{{ crime.key }}">
