@@ -24,6 +24,7 @@ from game.crime import (
     commit_crime,
 )
 from game.combat.rating import matchmaking_label
+from game.combat.streaks import get_streak_progress
 from game.combat import (
     COMBAT_ENERGY_COST,
     OPPONENTS_BY_KEY,
@@ -1839,6 +1840,7 @@ def pvp():
         history=get_recent_pvp_attacks(player.id),
         notifications=notifications,
         pvp_profile=pvp_profile,
+        streak_progress=get_streak_progress(pvp_profile["streak"]),
         rating_update=rating_update,
     )
 
