@@ -1178,7 +1178,7 @@ def login():
                 "Contact support if you believe this is an error."
             )
 
-                elif not is_email_verified(user[0]):
+        elif not is_email_verified(user[0]):
             session[
                 "pending_verification_user_id"
             ] = user[0]
