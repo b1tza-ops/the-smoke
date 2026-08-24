@@ -8,6 +8,7 @@ def get_hospital_patients(limit=50):
         rows = connection.execute(
             """
             SELECT
+                id,
                 name,
                 level,
                 health,
@@ -31,11 +32,12 @@ def get_hospital_patients(limit=50):
         ).fetchall()
         return [
             {
-                "name": row[0],
-                "level": row[1],
-                "health": row[2],
-                "hospital_until": row[3],
-                "remaining_seconds": row[4],
+                "id": row[0],
+                "name": row[1],
+                "level": row[2],
+                "health": row[3],
+                "hospital_until": row[4],
+                "remaining_seconds": row[5],
                 "reason": "Recovering from injuries",
             }
             for row in rows
