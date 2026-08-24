@@ -6,6 +6,7 @@ import sqlite3
 from datetime import timedelta
 from functools import wraps
 from logging.handlers import RotatingFileHandler
+from types import SimpleNamespace
 from game.world.districts import (
     DISTRICTS,
     get_district,
@@ -31,6 +32,12 @@ from game.combat import (
     get_district_opponents,
     get_encounter_records,
     record_encounter,
+    APPROACHES,
+    PVP_ENERGY_COST,
+    PvpError,
+    estimate_target,
+    fight_player,
+    get_pvp_block,
 )
 from game.gym import (
     GymError,
@@ -105,6 +112,13 @@ from database.repositories.players import (
     create_player,
     get_player_by_user_id,
     save_player,
+)
+from database.repositories.pvp import (
+    get_attack_limits,
+    get_pvp_targets,
+    get_recent_pvp_attacks,
+    get_target_user_id,
+    record_pvp_attack,
 )
 
 from auth.email_delivery import (
@@ -1684,6 +1698,108 @@ def fight():
         block_reason=get_combat_block(player),
         result=result,
         error=error,
+    )
+
+
+
+@app.route("/pvp", methods=["GET", "POST"])
+def pvp():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    result = None
+    defender = None
+    error = None
+    selected_approach = request.form.get("approach", "balanced")
+    if selected_approach == "balanced":
+        selected_approach = "defensive"
+
+    if request.method == "POST":
+        try:
+            target_id = int(request.form.get("target_id", "0"))
+            target_user_id = get_target_user_id(target_id)
+            if target_user_id is None:
+                raise PvpError("That player does not exist.")
+            defender_data = get_player_by_user_id(target_user_id)
+            if defender_data is None:
+                raise PvpError("That player does not exist.")
+            defender = Player(*defender_data)
+            update_travel(defender)
+            update_player_status(defender)
+
+            limits = get_attack_limits(player.id, defender.id)
+            if limits.protected_seconds > 0:
+                raise PvpError(
+                    "That player is under attack protection for "
+                    f"{limits.protected_seconds} seconds."
+                )
+
+            result = fight_player(
+                player,
+                defender,
+                get_equipment_summary(player.id),
+                get_equipment_summary(defender.id),
+                selected_approach,
+                reward_multiplier=limits.reward_multiplier,
+            )
+            save_player(player)
+            save_player(defender)
+            record_pvp_attack(
+                player.id,
+                defender.id,
+                selected_approach,
+                result,
+                limits.reward_multiplier,
+            )
+            record_player_action(
+                "pvp_combat",
+                (
+                    f"{'Defeated' if result.victory else 'Lost to'} "
+                    f"{defender.name}."
+                ),
+                {
+                    "defender_id": defender.id,
+                    "victory": result.victory,
+                    "cash_stolen": result.cash_stolen,
+                    "xp_reward": result.xp_reward,
+                    "approach": selected_approach,
+                },
+            )
+        except (PvpError, ValueError) as pvp_error:
+            error = str(pvp_error)
+
+    save_player(player)
+    targets = get_pvp_targets(player.id, player.current_district)
+    for target in targets:
+        target_view = SimpleNamespace(
+            id=target["id"],
+            strength=target["strength"],
+            defence=target["defence"],
+            speed=target["speed"],
+            dexterity=target["dexterity"],
+        )
+        target["estimate"] = estimate_target(player, target_view)
+        target["limits"] = get_attack_limits(player.id, target["id"])
+
+    return render_template(
+        "pvp.html",
+        player=player,
+        targets=targets,
+        approaches=APPROACHES,
+        selected_approach=selected_approach,
+        energy_cost=PVP_ENERGY_COST,
+        block_reason=get_pvp_block(player),
+        result=result,
+        defender=defender,
+        error=error,
+        history=get_recent_pvp_attacks(player.id),
     )
 
 

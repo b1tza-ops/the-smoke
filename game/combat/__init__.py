@@ -1,5 +1,3 @@
-"""Turn-based NPC combat encounters."""
-
 from game.combat.npc import (
     CAMDEN_OPPONENT,
     COMBAT_ENERGY_COST,
@@ -7,6 +5,7 @@ from game.combat.npc import (
     OPPONENTS_BY_KEY,
     CombatError,
     CombatResult,
+    Opponent,
     fight_camden_opponent,
     fight_opponent,
     get_combat_block,
@@ -17,19 +16,38 @@ from game.combat.records import (
     get_encounter_records,
     record_encounter,
 )
+from game.combat.pvp import (
+    APPROACHES,
+    PVP_ENERGY_COST,
+    CombatRound,
+    PvpError,
+    PvpResult,
+    estimate_target,
+    fight_player,
+    get_pvp_block,
+)
 
 __all__ = [
+    "APPROACHES",
     "CAMDEN_OPPONENT",
     "COMBAT_ENERGY_COST",
-    "OPPONENTS",
-    "OPPONENTS_BY_KEY",
     "CombatError",
     "CombatResult",
+    "CombatRound",
     "EncounterRecord",
+    "OPPONENTS",
+    "OPPONENTS_BY_KEY",
+    "Opponent",
+    "PVP_ENERGY_COST",
+    "PvpError",
+    "PvpResult",
+    "estimate_target",
     "fight_camden_opponent",
     "fight_opponent",
+    "fight_player",
     "get_combat_block",
     "get_district_opponents",
     "get_encounter_records",
+    "get_pvp_block",
     "record_encounter",
 ]

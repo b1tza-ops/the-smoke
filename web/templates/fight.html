@@ -7,6 +7,7 @@
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page combat-page">
+<nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('fight') }}">Street NPCs</a><a href="{{ url_for('pvp') }}">Player fights</a></nav>
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} underground</p><h1>Street encounters</h1><p>Choose your target carefully. Health loss persists and stronger opponents impose longer Hospital stays.</p></div><div class="combat-cost"><span>Each attempt</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if result %}
