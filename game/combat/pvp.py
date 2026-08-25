@@ -38,6 +38,13 @@ class PvpResult:
     xp_reward: int
     rounds: tuple[CombatRound, ...]
     hospital_until: str | None
+    # Rounds carry raw health values, so playback needs each fighter's
+    # scale to draw a bar. Maximum health grows with level, so neither
+    # of these can be assumed to be 100.
+    attacker_start_health: int = 0
+    attacker_max_health: int = 100
+    defender_start_health: int = 0
+    defender_max_health: int = 100
 
 
 def get_pvp_block(attacker, defender=None):
@@ -108,6 +115,14 @@ def fight_player(
     attacker.energy -= PVP_ENERGY_COST
     attacker_health = attacker.health
     defender_health = defender.health
+    attacker_start_health = attacker_health
+    defender_start_health = defender_health
+    attacker_max_health = max(
+        1, getattr(attacker, "max_health", 0) or attacker_health
+    )
+    defender_max_health = max(
+        1, getattr(defender, "max_health", 0) or defender_health
+    )
     rounds = []
 
     attacker_strength = (
@@ -242,6 +257,10 @@ def fight_player(
         xp_reward=xp_reward,
         rounds=tuple(rounds),
         hospital_until=hospital_until,
+        attacker_start_health=attacker_start_health,
+        attacker_max_health=attacker_max_health,
+        defender_start_health=defender_start_health,
+        defender_max_health=defender_max_health,
     )
 
 
