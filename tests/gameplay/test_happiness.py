@@ -118,13 +118,31 @@ class HappinessGymIntegrationTests(unittest.TestCase):
         self.assertTrue(trained)
         self.assertEqual(player.strength, 11.0)
 
-    def test_full_happiness_matches_unboosted_gain(self):
+    def test_training_spends_happiness_and_tapers_within_a_batch(self):
+        """Happiness is spent per train, so a batch tapers as it runs.
+
+        10 energy at Camden is two trains: the first scores at 100
+        happiness, the second at 95, so the pair yields 1.98 rather
+        than a flat 2.0.
+        """
         player = self.make_player()
 
         trained = train(player, "strength", energy=10)
 
         self.assertTrue(trained)
-        self.assertEqual(player.strength, 12.0)
+        self.assertEqual(trained.trains, 2)
+        self.assertEqual(trained.happiness_spent, 10)
+        self.assertEqual(player.happiness, 90)
+        self.assertEqual(player.strength, 11.98)
+
+    def test_happiness_floors_at_zero_without_blocking_training(self):
+        player = self.make_player(happiness=5)
+
+        trained = train(player, "strength", energy=10)
+
+        self.assertTrue(trained)
+        self.assertEqual(trained.happiness_spent, 5)
+        self.assertEqual(player.happiness, 0)
 
     def test_calculate_training_gain_accepts_optional_player(self):
         happy_player = self.make_player()
@@ -134,7 +152,7 @@ class HappinessGymIntegrationTests(unittest.TestCase):
             calculate_training_gain(
                 "camden_community", "strength", 10, player=happy_player,
             ),
-            2.0,
+            1.98,
         )
         self.assertEqual(
             calculate_training_gain(
@@ -142,6 +160,30 @@ class HappinessGymIntegrationTests(unittest.TestCase):
             ),
             1.0,
         )
+
+    def test_preview_matches_what_training_actually_awards(self):
+        """The page's figure must equal the gain, at any happiness.
+
+        These used to be separate calculations and disagreed whenever
+        happiness was below maximum.
+        """
+        for happiness in (0, 25, 60, 95, 100):
+            with self.subTest(happiness=happiness):
+                preview = calculate_training_gain(
+                    "camden_community",
+                    "strength",
+                    20,
+                    player=self.make_player(happiness=happiness),
+                )
+                player = self.make_player(happiness=happiness)
+                before = player.strength
+
+                train(player, "strength", energy=20)
+
+                self.assertEqual(
+                    round(player.strength - before, 2),
+                    preview,
+                )
 
 
 class HappinessCrimeIntegrationTests(unittest.TestCase):

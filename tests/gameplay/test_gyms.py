@@ -74,10 +74,15 @@ class DistrictGymTests(unittest.TestCase):
         self.assertEqual(player.energy, 0)
         self.assertEqual(player.strength, 30)
 
-    def test_training_energy_must_be_positive_multiple_of_ten(self):
+    def test_training_energy_must_be_a_multiple_of_the_gyms_cost(self):
+        """Valid energy now depends on the gym, not a global 10.
+
+        Camden is lightweight, so 15 is three legal trains there while
+        10 buys nothing at a heavyweight gym.
+        """
         player = self.make_player()
 
-        for invalid_energy in (0, -10, 15, True, 10.5):
+        for invalid_energy in (0, -10, 12, True, 10.5):
             with self.subTest(energy=invalid_energy):
                 with self.assertRaises(ValueError):
                     train(
@@ -85,6 +90,31 @@ class DistrictGymTests(unittest.TestCase):
                         "strength",
                         energy=invalid_energy,
                     )
+
+        elite = self.make_player(
+            level=4,
+            money=20_000,
+            current_district="soho",
+            unlocked_gyms={"soho_london_elite"},
+            current_gym_key="soho_london_elite",
+        )
+
+        with self.assertRaises(ValueError):
+            train(
+                elite,
+                "strength",
+                energy=10,
+                gym_key="soho_london_elite",
+            )
+
+    def test_lightweight_gym_accepts_its_own_smaller_multiples(self):
+        player = self.make_player()
+
+        trained = train(player, "strength", energy=15)
+
+        self.assertTrue(trained)
+        self.assertEqual(trained.trains, 3)
+        self.assertEqual(player.energy, 85)
 
     def test_brixton_membership_cost_and_access_persist_in_player(self):
         player = self.make_player(

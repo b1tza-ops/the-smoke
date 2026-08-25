@@ -43,9 +43,12 @@ from game.combat import (
 )
 from game.gym import (
     GymError,
+    HAPPINESS_PER_TRAIN,
+    UnknownGymError,
     VALID_BATTLE_STATS,
     calculate_training_gain,
     get_district_gyms,
+    get_gym,
     get_training_block,
     get_unlocked_gyms,
     select_gym,
@@ -207,6 +210,7 @@ from game.jobs import (
 )
 from game.player import Player
 from game.player.progression import xp_required_for_level
+from game.player.regeneration import player_regeneration_forecast
 from game.player.status import update_player_status
 
 
@@ -226,11 +230,33 @@ app.config.update(
 
 create_tables()
 
+
+def hud_duration(seconds):
+    """A countdown the HUD can show without a unit legend.
+
+    Mirrored by the tooltip script so the server-rendered value and the
+    one it ticks down to look the same.
+    """
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, remaining_seconds = divmod(remainder, 60)
+
+    if hours:
+        return f"{hours}h {minutes:02d}m"
+
+    if minutes:
+        return f"{minutes}m {remaining_seconds:02d}s"
+
+    return f"{remaining_seconds}s"
+
+
 app.jinja_env.globals.update(
     hud_level_xp=xp_required_for_level,
     hud_next_level_xp=lambda level: xp_required_for_level(
         level + 1
     ),
+    hud_forecast=player_regeneration_forecast,
+    hud_duration=hud_duration,
 )
 
 rate_limiter = FixedWindowRateLimiter()
@@ -1780,20 +1806,23 @@ def gym():
 
                 stat = request.form.get("stat", "")
                 raw_trains = request.form.get("trains")
+                # Energy per train varies by gym, so the definition has
+                # to be resolved before the form value can be read as
+                # a number of trains.
+                gym_definition = get_gym(gym_key)
+
+                if gym_definition is None:
+                    raise UnknownGymError("Gym does not exist.")
+
                 energy = (
-                    int(raw_trains) * 10
+                    int(raw_trains)
+                    * gym_definition.energy_per_train
                     if raw_trains is not None
                     else int(
                         request.form.get("energy", "0")
                     )
                 )
                 select_gym(player, gym_key)
-                gain = calculate_training_gain(
-                    gym_key,
-                    stat,
-                    energy,
-                    player=player,
-                )
                 trained = train(
                     player,
                     stat,
@@ -1804,9 +1833,18 @@ def gym():
                 if trained:
                     trained_stat = stat
                     message = (
-                        f"{stat.title()} increased by "
-                        f"{gain:g}. {energy} energy used."
+                        f"{trained.trains} × "
+                        f"{gym_definition.exercise_for(stat)}. "
+                        f"{stat.title()} "
+                        f"+{trained.stat_gain:g}, "
+                        f"energy −{trained.energy_spent}"
                     )
+                    if trained.happiness_spent:
+                        message += (
+                            f", happiness −"
+                            f"{trained.happiness_spent}"
+                        )
+                    message += "."
                 else:
                     block = get_training_block(player)
                     if block:
@@ -1857,7 +1895,27 @@ def gym():
             "speed": "Chance of landing an attack",
             "dexterity": "Ability to evade an attack",
         },
-        max_trains=min(10, player.energy // 10),
+        # Per gym, not one figure for the page: a district can hold
+        # gyms of different weight classes, and one number would be
+        # wrong for all but one of them.
+        max_trains={
+            gym.key: player.energy // gym.energy_per_train
+            for gym in gyms
+        },
+        train_previews={
+            gym.key: {
+                stat: calculate_training_gain(
+                    gym.key,
+                    stat,
+                    gym.energy_per_train,
+                    player=player,
+                )
+                for stat in VALID_BATTLE_STATS
+                if gym.trains(stat)
+            }
+            for gym in gyms
+        },
+        happiness_per_train=HAPPINESS_PER_TRAIN,
         trained_stat=trained_stat,
         message=message,
         error=error,

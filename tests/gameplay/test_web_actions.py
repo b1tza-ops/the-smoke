@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from game.gym import TrainingOutcome
 from web.application import app
 
 
@@ -58,7 +59,12 @@ class WebGameplayTests(unittest.TestCase):
     )
     @patch(
         "web.application.train",
-        return_value=True,
+        return_value=TrainingOutcome(
+            trains=2,
+            energy_spent=10,
+            happiness_spent=10,
+            stat_gain=1.98,
+        ),
     )
     @patch(
         "web.application.calculate_training_gain",
@@ -101,10 +107,12 @@ class WebGameplayTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        # Camden is lightweight, so two trains is 10 energy, not 20 --
+        # the route reads the cost from the gym rather than assuming.
         train.assert_called_once_with(
             player,
             "strength",
-            energy=20,
+            energy=10,
             gym_key="camden_community",
         )
         save_player.assert_called_once_with(player)

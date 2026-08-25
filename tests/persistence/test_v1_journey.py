@@ -172,9 +172,11 @@ class V1PlayerJourneyTests(unittest.TestCase):
                     reloaded.residence_key,
                     "tent",
                 )
+                # Two lightweight trains, the second at 95 happiness
+                # because the first one spent 5.
                 self.assertEqual(
                     reloaded.strength,
-                    12,
+                    11.98,
                 )
                 self.assertEqual(reloaded.nerve, 18)
                 self.assertEqual(
@@ -182,7 +184,7 @@ class V1PlayerJourneyTests(unittest.TestCase):
                     1,
                 )
                 self.assertEqual(reloaded.health, 100)
-                self.assertEqual(reloaded.energy, 100)
+                self.assertEqual(reloaded.energy, 150)
                 self.assertEqual(reloaded.inventory, {})
                 self.assertIsNone(
                     reloaded.travel_destination

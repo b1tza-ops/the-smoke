@@ -14,21 +14,27 @@ class GymProgressionTests(unittest.TestCase):
         self.assertEqual(GYMS[-1].membership_cost, 10_000)
 
     def test_gains_progress_from_starter_to_elite(self):
+        """The elite gym is worth twice the starter, per energy.
+
+        Compared at equal *energy* rather than equal trains: the two
+        charge different amounts per train now, so per-train figures
+        are no longer comparable between them.
+        """
         self.assertEqual(
             calculate_training_gain(
                 "camden_community",
                 "strength",
-                10,
+                100,
             ),
-            2.0,
+            20.0,
         )
         self.assertEqual(
             calculate_training_gain(
                 "soho_london_elite",
                 "strength",
-                10,
+                100,
             ),
-            4.0,
+            40.0,
         )
 
     def test_specialist_gym_rejects_unavailable_stat(self):

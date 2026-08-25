@@ -2,31 +2,34 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Gym · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='game-icons-hotfix-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='hud-forecast-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
+{# Ten segments filled in proportion to the gym's multiplier, where the
+   best gym in the game is 2.0 and therefore fills the bar. #}
+{% macro gain_bar(multiplier) %}<span class="gain-bar" role="img" aria-label="Gain rating {{ (multiplier / 2 * 10)|round|int }} of 10">{% for segment in range(10) %}<i class="{{ 'is-filled' if segment < (multiplier / 2 * 10)|round|int }}"></i>{% endfor %}</span>{% endmacro %}
 <main class="dashboard-main game-page gym-page">
 <section class="gym-hero"><div><p class="eyebrow">{{ player.current_district|title }} training district</p><h1>Gym</h1><p>Choose a discipline and put in the work.</p></div><div class="gym-energy"><span>Energy available</span><strong>{{ player.energy }}<small>/{{ player.max_energy }}</small></strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if block_reason %}<div class="game-notice game-notice--error">Training is unavailable while {{ block_reason }}.</div>{% endif %}
 {% for gym in gyms %}
 <section class="gym-club" id="gym-{{ gym.key }}" aria-labelledby="gym-title-{{ gym.key }}">
-<header class="gym-club__header"><div><p class="eyebrow">Level {{ gym.required_level }}+ · {{ player.current_district|title }}</p><h2 id="gym-title-{{ gym.key }}">{{ gym.name }}</h2></div>{% if gym.key in unlocked_gyms %}<span class="level-badge">Member</span>{% else %}<strong class="game-price">£{{ "{:,}".format(gym.membership_cost) }}</strong>{% endif %}</header>
+<header class="gym-club__header"><div><p class="eyebrow">Level {{ gym.required_level }}+ · {{ player.current_district|title }}</p><h2 id="gym-title-{{ gym.key }}">{{ gym.name }}</h2><p class="gym-class"><span class="gym-class__badge gym-class__badge--{{ gym.weight_class }}">{{ gym.weight_class|title }}</span><span>{{ gym.energy_per_train }} energy · {{ happiness_per_train }} happiness per train</span></p></div>{% if gym.key in unlocked_gyms %}<span class="level-badge">Member</span>{% else %}<strong class="game-price">£{{ "{:,}".format(gym.membership_cost) }}</strong>{% endif %}</header>
 {% if gym.key in unlocked_gyms %}
 <div class="gym-stat-grid">
 {% for stat in valid_stats %}
 <article class="gym-stat-card gym-stat-card--{{ stat }}" id="gym-{{ gym.key }}-{{ stat }}">
 <div class="gym-stat-card__title"><span class="gym-stat-icon" aria-hidden="true">{% if stat == "strength" %}◆{% elif stat == "defence" %}⬢{% elif stat == "speed" %}➜{% else %}✦{% endif %}</span><h3>{{ stat|title }}</h3><strong>{{ player|attr(stat) }}</strong></div>
-<p>{{ stat_descriptions[stat] }}</p>{% if gym.multiplier_for(stat) > 0 %}<span class="gym-cost">+{{ gym.gain_for(stat)|string }} per train · 10 energy</span>{% else %}<span class="gym-cost gym-cost--unavailable">Not trained at this gym</span>{% endif %}
+<p>{{ stat_descriptions[stat] }}</p>{% if gym.trains(stat) %}<span class="gym-exercise">{{ gym.exercise_for(stat)|title }}</span>{{ gain_bar(gym.multiplier_for(stat)) }}<span class="gym-cost">+{{ train_previews[gym.key][stat]|string }} per train · {{ gym.energy_per_train }} energy</span>{% else %}{{ gain_bar(0) }}<span class="gym-cost gym-cost--unavailable">Not trained at this gym</span>{% endif %}
 <form class="gym-train-form" method="post" action="{{ url_for('gym') }}#gym-{{ gym.key }}-{{ stat }}"><input type="hidden" name="action" value="train"><input type="hidden" name="gym_key" value="{{ gym.key }}"><input type="hidden" name="stat" value="{{ stat }}">
-<div class="gym-stepper"><button type="button" data-step="-1" aria-label="Decrease {{ stat }} trains">−</button><input type="number" name="trains" value="1" min="1" max="{{ max_trains if max_trains > 0 else 1 }}" aria-label="{{ stat|title }} training count" readonly><button type="button" data-step="1" aria-label="Increase {{ stat }} trains">+</button></div>
-<button class="gym-train-button" type="submit" {% if block_reason or max_trains < 1 or gym.multiplier_for(stat) <= 0 %}disabled{% endif %}>Train</button></form>
+<div class="gym-stepper"><button type="button" data-step="-1" aria-label="Decrease {{ stat }} trains">−</button><input type="number" name="trains" value="1" min="1" max="{{ max_trains[gym.key] if max_trains[gym.key] > 0 else 1 }}" aria-label="{{ stat|title }} training count" readonly><button type="button" data-step="1" aria-label="Increase {{ stat }} trains">+</button></div>
+<button class="gym-train-button" type="submit" {% if block_reason or max_trains[gym.key] < 1 or not gym.trains(stat) %}disabled{% endif %}>Train</button></form>
 {% if message and trained_stat == stat %}<div class="gym-inline-result" role="status">{{ message }}</div>{% endif %}
 </article>
 {% endfor %}</div><p class="gym-prompt">What would you like to train today?</p>
 {% else %}
-<div class="gym-locked"><p>Purchase membership to train at this gym.</p>{% if gym.estimated_energy_to_next %}<p class="gym-progression-note">Estimated {{ "{:,}".format(gym.estimated_energy_to_next) }} energy to reach the next gym.</p>{% endif %}<div class="multiplier-grid">{% for stat in valid_stats %}<span>{{ stat|title }} ×{{ gym.multiplier_for(stat)|string }}</span>{% endfor %}</div><form method="post" action="{{ url_for('gym') }}#gym-{{ gym.key }}"><input type="hidden" name="action" value="unlock"><input type="hidden" name="gym_key" value="{{ gym.key }}"><button class="primary-button" type="submit" {% if player.level < gym.required_level or player.money < gym.membership_cost %}disabled{% endif %}><span>Purchase membership</span><span>→</span></button></form></div>
+<div class="gym-locked"><p>Purchase membership to train at this gym.</p>{% if gym.estimated_energy_to_next %}<p class="gym-progression-note">Estimated {{ "{:,}".format(gym.estimated_energy_to_next) }} energy to reach the next gym.</p>{% endif %}<dl class="gym-spec"><div><dt>Class</dt><dd>{{ gym.weight_class|title }}</dd></div><div><dt>Membership</dt><dd>£{{ "{:,}".format(gym.membership_cost) }}</dd></div><div><dt>Energy usage</dt><dd>{{ gym.energy_per_train }} per train</dd></div></dl><div class="gain-grid">{% for stat in valid_stats %}<div><span>{{ stat|title }}</span>{{ gain_bar(gym.multiplier_for(stat)) }}<small>{{ gym.exercise_for(stat)|title if gym.trains(stat) else "Not trained here" }}</small></div>{% endfor %}</div><form method="post" action="{{ url_for('gym') }}#gym-{{ gym.key }}"><input type="hidden" name="action" value="unlock"><input type="hidden" name="gym_key" value="{{ gym.key }}"><button class="primary-button" type="submit" {% if player.level < gym.required_level or player.money < gym.membership_cost %}disabled{% endif %}><span>Purchase membership</span><span>→</span></button></form></div>
 {% endif %}</section>
 {% else %}<div class="game-notice game-notice--error">No gym is available in this district.</div>{% endfor %}
 </main><footer class="app-footer"><span>The Smoke</span><a class="logout-link" href="{{ url_for('home') }}">Back to dashboard</a></footer></div>

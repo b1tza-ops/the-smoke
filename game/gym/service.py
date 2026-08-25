@@ -7,7 +7,16 @@ from game.gym.definitions import (
     get_district_gyms,
     get_gym,
 )
-from game.player.happiness import training_multiplier
+from game.gym.formula import (
+    HAPPINESS_PER_TRAIN,
+    STANDARD_ENERGY_PER_TRAIN,
+    STAT_GAIN_PER_STANDARD_TRAIN,
+    WEIGHT_CLASS_ENERGY,
+    gain_per_train,
+    trains_for,
+    training_outcome,
+    validate_training_energy,
+)
 from game.player.status import get_active_restriction
 from game.world.travel import get_active_travel
 
@@ -19,8 +28,9 @@ VALID_BATTLE_STATS = (
     "dexterity",
 )
 
-TRAINING_ENERGY_COST = 10
-TRAINING_STAT_GAIN = 2
+# Kept as public aliases -- both are exported from `game.gym`.
+TRAINING_ENERGY_COST = STANDARD_ENERGY_PER_TRAIN
+TRAINING_STAT_GAIN = STAT_GAIN_PER_STANDARD_TRAIN
 
 
 class GymError(Exception):
@@ -65,15 +75,6 @@ class GymUnlockResult:
 @dataclass(frozen=True)
 class GymSelectionResult:
     gym_key: str
-
-
-@dataclass(frozen=True)
-class TrainingResult:
-    gym_key: str
-    stat: str
-    energy_spent: int
-    stat_gain: float
-    new_stat_value: float
 
 
 def get_training_block(player, now=None):
@@ -270,16 +271,20 @@ def gym_menu(player):
 def train(
     player,
     stat,
-    energy=TRAINING_ENERGY_COST,
+    energy=None,
     gym_key=None,
     now=None,
 ):
+    """Train one stat. `energy=None` means a single train at this gym.
+
+    There is no fixed energy per train any more, so the default has to
+    be resolved from the gym rather than a constant -- 10 energy is not
+    even a legal amount at a heavyweight gym.
+    """
     if stat not in VALID_BATTLE_STATS:
         raise ValueError(
             f"Unknown battle stat: {stat}"
         )
-
-    _validate_training_energy(energy)
 
     block_reason = get_training_block(
         player,
@@ -290,29 +295,36 @@ def train(
         display_training_block(block_reason)
         return False
 
+    # Gym before stat before energy: which gym a player is standing in
+    # and whether it trains this stat at all are permanent facts, and
+    # should be reported ahead of a fixable mistake about the amount.
     gym = _resolve_training_gym(
         player,
         gym_key,
     )
     _require_trainable_stat(gym, stat)
 
+    if energy is None:
+        energy = gym.energy_per_train
+
+    validate_training_energy(gym, energy)
+
     if player.energy < energy:
         print("Not enough energy.")
         return False
 
-    base_gain = (
-        energy
-        // TRAINING_ENERGY_COST
-        * TRAINING_STAT_GAIN
-    )
-    stat_gain = round(
-        base_gain
-        * gym.multiplier_for(stat)
-        * training_multiplier(player),
-        2,
+    outcome = training_outcome(
+        gym,
+        stat,
+        energy,
+        happiness=getattr(player, "happiness", None),
+        max_happiness=getattr(player, "max_happiness", None),
     )
 
-    player.energy -= energy
+    player.energy -= outcome.energy_spent
+
+    if outcome.happiness_spent:
+        player.happiness -= outcome.happiness_spent
 
     if hasattr(player, "last_energy_update"):
         from game.player.regeneration import format_timestamp
@@ -324,7 +336,7 @@ def train(
 
     current_value = getattr(player, stat)
     new_value = round(
-        current_value + stat_gain,
+        current_value + outcome.stat_gain,
         2,
     )
     setattr(
@@ -334,33 +346,45 @@ def train(
     )
 
     print("\nTraining complete!")
-    print(stat.capitalize(), "+", stat_gain)
-    print("Energy -", energy)
+    print(
+        f"{outcome.trains} × {gym.exercise_for(stat)}"
+    )
+    print(stat.capitalize(), "+", outcome.stat_gain)
+    print("Energy -", outcome.energy_spent)
 
-    return True
+    if outcome.happiness_spent:
+        print("Happiness -", outcome.happiness_spent)
+
+    # Truthy on success and False when training was refused, so the
+    # existing `if trained:` contract still holds -- but callers that
+    # want the numbers no longer have to recompute them.
+    return outcome
 
 
-def calculate_training_gain(gym_key, stat, energy, player=None):
+def calculate_training_gain(gym_key, stat, energy=None, player=None):
+    """Preview the gain a training batch would produce.
+
+    Shares `training_outcome` with `train()` so the figure shown on the
+    page cannot drift from the one actually awarded.
+    """
     if stat not in VALID_BATTLE_STATS:
         raise ValueError(
             f"Unknown battle stat: {stat}"
         )
 
-    _validate_training_energy(energy)
     gym = _require_gym(gym_key)
     _require_trainable_stat(gym, stat)
-    base_gain = (
-        energy
-        // TRAINING_ENERGY_COST
-        * TRAINING_STAT_GAIN
-    )
 
-    return round(
-        base_gain
-        * gym.multiplier_for(stat)
-        * training_multiplier(player),
-        2,
-    )
+    if energy is None:
+        energy = gym.energy_per_train
+
+    return training_outcome(
+        gym,
+        stat,
+        energy,
+        happiness=getattr(player, "happiness", None),
+        max_happiness=getattr(player, "max_happiness", None),
+    ).stat_gain
 
 
 def _require_trainable_stat(gym, stat):
@@ -416,22 +440,13 @@ def _require_gym_location(player, gym):
         )
 
 
-def _validate_training_energy(energy):
-    if (
-        isinstance(energy, bool)
-        or not isinstance(energy, int)
-        or energy <= 0
-        or energy % TRAINING_ENERGY_COST != 0
-    ):
-        raise ValueError(
-            "Training energy must be a positive "
-            "multiple of 10."
-        )
-
-
 def _training_menu(player, gym):
     while True:
         print(f"\n===== {gym.name.upper()} =====")
+        print(
+            f"{gym.weight_class.title()} · "
+            f"{gym.energy_per_train} energy per train"
+        )
         print("Energy:", player.energy)
 
         for number, stat in enumerate(
@@ -464,7 +479,8 @@ def _training_menu(player, gym):
             continue
 
         raw_energy = input(
-            "Energy to use (multiples of 10): "
+            "Energy to use (multiples of "
+            f"{gym.energy_per_train}): "
         ).strip()
 
         try:
