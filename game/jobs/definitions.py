@@ -19,6 +19,7 @@ class CareerDefinition:
     name: str
     description: str
     roles: tuple[JobRoleDefinition, ...]
+    required_district: str | None = None
 
 
 CONSTRUCTION_ROLES = (
@@ -54,6 +55,72 @@ CONSTRUCTION_ROLES = (
     ),
 )
 
+HOSPITALITY_ROLES = (
+    JobRoleDefinition(
+        key="bar_back",
+        name="Bar Back",
+        salary=110,
+        energy_cost=10,
+        work_xp=15,
+        required_level=1,
+        required_career_xp=0,
+        required_shifts=0,
+    ),
+    JobRoleDefinition(
+        key="bartender",
+        name="Bartender",
+        salary=210,
+        energy_cost=12,
+        work_xp=25,
+        required_level=2,
+        required_career_xp=60,
+        required_shifts=4,
+    ),
+    JobRoleDefinition(
+        key="venue_manager",
+        name="Venue Manager",
+        salary=380,
+        energy_cost=15,
+        work_xp=40,
+        required_level=4,
+        required_career_xp=200,
+        required_shifts=10,
+    ),
+)
+
+TRANSPORT_ROLES = (
+    JobRoleDefinition(
+        key="courier_rider",
+        name="Courier Rider",
+        salary=130,
+        energy_cost=10,
+        work_xp=15,
+        required_level=1,
+        required_career_xp=0,
+        required_shifts=0,
+    ),
+    JobRoleDefinition(
+        key="delivery_driver",
+        name="Delivery Driver",
+        salary=230,
+        energy_cost=12,
+        work_xp=25,
+        required_level=2,
+        required_career_xp=60,
+        required_shifts=4,
+    ),
+    JobRoleDefinition(
+        key="logistics_supervisor",
+        name="Logistics Supervisor",
+        salary=410,
+        energy_cost=15,
+        work_xp=40,
+        required_level=4,
+        required_career_xp=200,
+        required_shifts=10,
+    ),
+)
+
 CAREERS = (
     CareerDefinition(
         key="construction",
@@ -63,6 +130,25 @@ CAREERS = (
             "a London building site."
         ),
         roles=CONSTRUCTION_ROLES,
+    ),
+    CareerDefinition(
+        key="hospitality",
+        name="Soho Hospitality",
+        description=(
+            "Work the bars and venues of Soho's nightlife scene "
+            "and work your way up to running the floor."
+        ),
+        roles=HOSPITALITY_ROLES,
+        required_district="soho",
+    ),
+    CareerDefinition(
+        key="transport",
+        name="London Transport",
+        description=(
+            "Keep London moving as a courier, then a driver, "
+            "then a logistics supervisor."
+        ),
+        roles=TRANSPORT_ROLES,
     ),
 )
 

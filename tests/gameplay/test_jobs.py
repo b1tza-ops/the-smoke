@@ -3,8 +3,10 @@ from types import SimpleNamespace
 import unittest
 
 from game.jobs import (
+    CAREERS,
     SHIFT_SECONDS,
     AlreadyEmployedError,
+    CareerLocationError,
     InsufficientEnergyError,
     JobRestrictedError,
     NoShiftError,
@@ -173,6 +175,87 @@ class JobSystemTests(unittest.TestCase):
         )
         self.assertEqual(player.career_xp, 60)
         self.assertEqual(player.shifts_completed, 4)
+
+    def test_all_three_careers_are_defined(self):
+        self.assertEqual(
+            {career.key for career in CAREERS},
+            {"construction", "hospitality", "transport"},
+        )
+
+    def test_player_can_join_hospitality_career_in_soho(self):
+        player = self.make_player(current_district="soho")
+
+        result = join_career(player, "hospitality")
+
+        self.assertEqual(result.career_key, "hospitality")
+        self.assertEqual(player.job_role_key, "bar_back")
+
+    def test_hospitality_career_requires_soho(self):
+        player = self.make_player(current_district="camden")
+
+        with self.assertRaises(CareerLocationError):
+            join_career(player, "hospitality")
+
+        self.assertIsNone(player.career_key)
+
+    def test_transport_career_has_no_district_requirement(self):
+        for district in ("camden", "brixton", "soho"):
+            with self.subTest(district=district):
+                player = self.make_player(
+                    current_district=district,
+                )
+
+                result = join_career(player, "transport")
+
+                self.assertEqual(
+                    result.career_key,
+                    "transport",
+                )
+                self.assertEqual(
+                    player.job_role_key,
+                    "courier_rider",
+                )
+
+    def test_hospitality_shift_pays_and_can_promote(self):
+        player = self.make_player(
+            current_district="soho",
+            level=2,
+            xp=100,
+            career_key="hospitality",
+            job_role_key="bar_back",
+            career_xp=45,
+            shifts_completed=3,
+        )
+        start_shift(player, now=self.now)
+
+        result = complete_shift(
+            player,
+            now=self.now + timedelta(hours=3),
+        )
+
+        self.assertEqual(result.salary, 110)
+        self.assertEqual(result.promoted_to, "bartender")
+        self.assertEqual(player.job_role_key, "bartender")
+
+    def test_transport_shift_pays_and_can_promote(self):
+        player = self.make_player(
+            level=2,
+            xp=100,
+            career_key="transport",
+            job_role_key="courier_rider",
+            career_xp=45,
+            shifts_completed=3,
+        )
+        start_shift(player, now=self.now)
+
+        result = complete_shift(
+            player,
+            now=self.now + timedelta(hours=3),
+        )
+
+        self.assertEqual(result.salary, 130)
+        self.assertEqual(result.promoted_to, "delivery_driver")
+        self.assertEqual(player.job_role_key, "delivery_driver")
 
     def test_active_shift_blocks_second_shift(self):
         player = self.make_player()
