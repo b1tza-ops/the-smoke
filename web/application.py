@@ -142,6 +142,7 @@ from auth.email_delivery import (
     send_password_reset_email,
     send_verification_email,
 )
+from auth.moderation import is_account_blocked
 from auth.services.password_reset import (
     AccountTokenError,
     request_email_verification,
@@ -2284,6 +2285,12 @@ def login():
         elif is_user_suspended(user[0]):
             error = (
                 "This account has been suspended. "
+                "Contact support if you believe this is an error."
+            )
+
+        elif is_account_blocked(user[0]):
+            error = (
+                "This account has been suspended or banned. "
                 "Contact support if you believe this is an error."
             )
 
