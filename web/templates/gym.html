@@ -2,13 +2,13 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Gym · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gym-stat-scaling-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gym-roster-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
-{# Ten segments filled in proportion to the gym's multiplier, where the
-   best gym in the game is 2.0 and therefore fills the bar. #}
-{% macro gain_bar(multiplier) %}<span class="gain-bar" role="img" aria-label="Gain rating {{ (multiplier / 2 * 10)|round|int }} of 10">{% for segment in range(10) %}<i class="{{ 'is-filled' if segment < (multiplier / 2 * 10)|round|int }}"></i>{% endfor %}</span>{% endmacro %}
+{# Segments filled in proportion to the gym's multiplier, against a
+   ceiling set above the best gym so there is room to grow into. #}
+{% macro gain_bar(multiplier) %}{% set filled = (multiplier / gain_scale_max * gain_bar_segments)|round|int %}<span class="gain-bar" role="img" aria-label="Gain rating {{ filled }} of {{ gain_bar_segments }}">{% for segment in range(gain_bar_segments) %}<i class="{{ 'is-filled' if segment < filled }}"></i>{% endfor %}</span>{% endmacro %}
 <main class="dashboard-main game-page gym-page">
 <section class="gym-hero"><div><p class="eyebrow">{{ player.current_district|title }} training district</p><h1>Gym</h1><p>Choose a discipline and put in the work.</p></div><div class="gym-energy"><span>Energy available</span><strong>{{ player.energy }}<small>/{{ player.max_energy }}</small></strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
