@@ -12,6 +12,7 @@ from game.jobs.definitions import (
 from game.jobs.service import (
     SHIFT_SECONDS,
     AlreadyEmployedError,
+    CareerLocationError,
     EmploymentResult,
     InsufficientEnergyError,
     JobError,
@@ -38,6 +39,7 @@ __all__ = [
     "SHIFT_SECONDS",
     "AlreadyEmployedError",
     "CareerDefinition",
+    "CareerLocationError",
     "EmploymentResult",
     "InsufficientEnergyError",
     "JobError",

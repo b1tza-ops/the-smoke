@@ -59,6 +59,10 @@ class JobRestrictedError(JobError):
     """Raised when travel, jail, or hospital prevents work."""
 
 
+class CareerLocationError(JobError):
+    """Raised when a career requires a district the player isn't in."""
+
+
 @dataclass(frozen=True)
 class EmploymentResult:
     career_key: str
@@ -108,6 +112,16 @@ def join_career(player, career_key):
     if player.level < entry_role.required_level:
         raise JobRestrictedError(
             f"Level {entry_role.required_level} is required."
+        )
+
+    if (
+        career.required_district is not None
+        and getattr(player, "current_district", None)
+        != career.required_district
+    ):
+        raise CareerLocationError(
+            f"You must be in {career.required_district.title()} "
+            "to join this career."
         )
 
     player.career_key = career.key
@@ -416,6 +430,12 @@ def _display_available_careers():
             f"({entry_role.name}, £{entry_role.salary:,}/shift)"
         )
         print("   ", career.description)
+
+        if career.required_district is not None:
+            print(
+                "    Requires:",
+                career.required_district.title(),
+            )
 
 
 def _format_duration(total_seconds):
