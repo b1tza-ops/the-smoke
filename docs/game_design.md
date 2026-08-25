@@ -197,11 +197,55 @@ Gyms may differ by:
 - district
 - membership price
 - unlock requirement
-- energy cost
+- weight class
 - stat multipliers
 - specialization
 
 This allows multiple gyms without hardcoding separate training logic for each one.
+
+### Weight classes
+
+Every gym belongs to a weight class, which fixes how much energy one
+train costs:
+
+| Class | Energy per train | Trains per full 150 bar |
+| --- | --- | --- |
+| Lightweight | 5 | 30 |
+| Middleweight | 10 | 15 |
+| Heavyweight | 25 | 6 |
+
+Gain is expressed per 10 energy, so a heavier class is not simply better
+value — it buys the same gain in fewer, larger commitments.
+
+### Happiness is the real constraint
+
+A train costs a flat **5 happiness** regardless of class, and happiness
+regenerates at 5 every 15 minutes (20 an hour). That turns the weight
+class into a genuine trade-off rather than a label:
+
+- A **Lightweight** gym trains in small responsive chunks but burns
+  happiness roughly 30 an hour — faster than it comes back, so happiness
+  runs out before energy does and gains taper towards the 0.5× floor.
+- A **Heavyweight** gym only needs about 6 happiness an hour, so it
+  sustains full happiness and therefore full gains. Energy is what binds.
+
+Happiness floors at 0 rather than blocking training, so a drained player
+still trains, just at half rate.
+
+Because happiness both scales the gain and is consumed by it, a batch of
+trains cannot be scored with one multiplier. Training is simulated one
+train at a time, which also means N separate trains and one batch of N
+produce exactly the same result — there is no reward for click-spamming.
+
+### One source of truth
+
+All of the above lives in `game/gym/formula.py`. The service, the CLI and
+the web preview all call into it, so the "+N per train" the gym page
+shows is the number training actually awards.
+
+Each gym also names the exercise it trains a stat with (Camden's
+"dumbbell presses", the elite gym's "olympic lifts"), which is what the
+result message reports back.
 
 ---
 
@@ -473,6 +517,20 @@ Example:
 - update the stored timestamp
 
 The same principle applies to jail, hospital and travel timers.
+
+Current rates and caps:
+
+| Resource | Cap | Regeneration |
+| --- | --- | --- |
+| Energy | 150 | +5 every 10 minutes |
+| Nerve | 20 | +1 every 5 minutes |
+| Happiness | 100 | +5 every 15 minutes |
+| Health | 100 + 10 per level | +5 every 15 minutes |
+
+Because the stored timestamp is advanced to the last completed tick
+boundary, the time elapsed since it is exactly the progress made towards
+the next one. The HUD uses that to show, on each meter, how long until
+the next tick and how long until the meter is full.
 
 ---
 

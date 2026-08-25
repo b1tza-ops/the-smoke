@@ -1354,6 +1354,24 @@ def migrate_030_operator_moderation_actions(cursor):
     )
 
 
+def migrate_031_raise_energy_capacity(cursor):
+    """Raise base maximum energy from 100 to 150.
+
+    Added rather than set, so the +10 the `former_athlete` prologue
+    background grants is preserved -- those players land on 160, not
+    flattened back to the base.
+
+    Current energy is untouched; only the ceiling moves, and normal
+    regeneration fills the new headroom.
+    """
+    cursor.execute(
+        """
+        UPDATE players
+        SET max_energy = max_energy + 50
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1504,6 +1522,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=30,
         name="operator_moderation_actions",
         apply=migrate_030_operator_moderation_actions,
+    ),
+    Migration(
+        version=31,
+        name="raise_energy_capacity",
+        apply=migrate_031_raise_energy_capacity,
     ),
 )
 

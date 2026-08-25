@@ -63,6 +63,25 @@ class PlayerPersistenceTests(unittest.TestCase):
                 self.assertEqual(reloaded_player.speed, 10)
                 self.assertEqual(reloaded_player.dexterity, 10)
 
+    def test_a_new_player_starts_with_a_full_150_energy_bar(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = Path(temp_dir) / "data" / "game.db"
+
+            with patch("database.core.connection.DB_PATH", database_path):
+                create_tables()
+
+                user_id = create_user(
+                    username="fresh_player",
+                    email="fresh@example.com",
+                    password_hash="test_hash"
+                )
+                create_player(user_id, "Fresh Character")
+
+                player = Player(*get_player_by_user_id(user_id))
+
+                self.assertEqual(player.max_energy, 150)
+                self.assertEqual(player.energy, 150)
+
     def test_happiness_starts_full_and_persists_after_a_hospital_stay(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             database_path = Path(temp_dir) / "data" / "game.db"
@@ -435,7 +454,7 @@ class PlayerPersistenceTests(unittest.TestCase):
                     reloaded.shift_until,
                     shift.completes_at,
                 )
-                self.assertEqual(reloaded.energy, 90)
+                self.assertEqual(reloaded.energy, 140)
 
                 complete_shift(
                     reloaded,

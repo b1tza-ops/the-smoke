@@ -24,13 +24,16 @@ def create_player(user_id, name):
         INSERT INTO players (
             user_id,
             name,
+            energy,
             nerve,
             max_energy,
             max_nerve,
             last_energy_update,
             last_nerve_update
         )
-        VALUES (?, ?, 20, 100, 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (
+            ?, ?, 150, 20, 150, 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
         """,
         (user_id, name)
     )

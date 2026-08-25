@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -13,12 +13,18 @@ class GymDefinition:
     speed_multiplier: float
     dexterity_multiplier: float
     estimated_energy_to_next: int | None = None
+    weight_class: str = "middleweight"
+    energy_per_train: int = 10
+    exercises: dict[str, str] = field(default_factory=dict)
 
     def multiplier_for(self, stat):
         return getattr(self, f"{stat}_multiplier")
 
-    def gain_for(self, stat, base_gain=2):
-        return round(base_gain * self.multiplier_for(stat), 2)
+    def trains(self, stat):
+        return self.multiplier_for(stat) > 0
+
+    def exercise_for(self, stat):
+        return self.exercises.get(stat, "training sets")
 
 
 DEFAULT_GYM_KEY = "camden_community"
@@ -35,6 +41,14 @@ GYMS = (
         speed_multiplier=1.0,
         dexterity_multiplier=1.0,
         estimated_energy_to_next=200,
+        weight_class="lightweight",
+        energy_per_train=5,
+        exercises={
+            "strength": "dumbbell presses",
+            "defence": "medicine ball throws",
+            "speed": "treadmill intervals",
+            "dexterity": "skipping rope drills",
+        },
     ),
     GymDefinition(
         key="camden_average_joes",
@@ -47,6 +61,14 @@ GYMS = (
         speed_multiplier=1.2,
         dexterity_multiplier=1.2,
         estimated_energy_to_next=500,
+        weight_class="lightweight",
+        energy_per_train=5,
+        exercises={
+            "strength": "bench presses",
+            "defence": "weighted planks",
+            "speed": "shuttle runs",
+            "dexterity": "agility ladder work",
+        },
     ),
     GymDefinition(
         key="camden_ironworks",
@@ -59,6 +81,14 @@ GYMS = (
         speed_multiplier=1.6,
         dexterity_multiplier=1.4,
         estimated_energy_to_next=1_000,
+        weight_class="lightweight",
+        energy_per_train=5,
+        exercises={
+            "strength": "deadlifts",
+            "defence": "farmer's walks",
+            "speed": "sled pushes",
+            "dexterity": "kettlebell flows",
+        },
     ),
     GymDefinition(
         key="brixton_performance",
@@ -71,6 +101,13 @@ GYMS = (
         speed_multiplier=1.6,
         dexterity_multiplier=0.0,
         estimated_energy_to_next=2_000,
+        weight_class="middleweight",
+        energy_per_train=10,
+        exercises={
+            "strength": "squat sets",
+            "defence": "barbell rows",
+            "speed": "power cleans",
+        },
     ),
     GymDefinition(
         key="brixton_south_performance",
@@ -83,6 +120,14 @@ GYMS = (
         speed_multiplier=1.8,
         dexterity_multiplier=1.6,
         estimated_energy_to_next=2_750,
+        weight_class="middleweight",
+        energy_per_train=10,
+        exercises={
+            "strength": "push presses",
+            "defence": "sandbag carries",
+            "speed": "hill sprints",
+            "dexterity": "cone drills",
+        },
     ),
     GymDefinition(
         key="soho_combat",
@@ -95,6 +140,14 @@ GYMS = (
         speed_multiplier=1.8,
         dexterity_multiplier=1.9,
         estimated_energy_to_next=3_000,
+        weight_class="middleweight",
+        energy_per_train=10,
+        exercises={
+            "strength": "heavy bag rounds",
+            "defence": "body shield drills",
+            "speed": "speed bag work",
+            "dexterity": "slip rope drills",
+        },
     ),
     GymDefinition(
         key="soho_fight_lab",
@@ -107,6 +160,13 @@ GYMS = (
         speed_multiplier=0.0,
         dexterity_multiplier=1.85,
         estimated_energy_to_next=3_500,
+        weight_class="heavyweight",
+        energy_per_train=25,
+        exercises={
+            "strength": "clinch work",
+            "defence": "guard retention drills",
+            "dexterity": "footwork ladders",
+        },
     ),
     GymDefinition(
         key="soho_london_elite",
@@ -119,6 +179,14 @@ GYMS = (
         speed_multiplier=2.0,
         dexterity_multiplier=2.0,
         estimated_energy_to_next=None,
+        weight_class="heavyweight",
+        energy_per_train=25,
+        exercises={
+            "strength": "olympic lifts",
+            "defence": "resisted holds",
+            "speed": "sprint blocks",
+            "dexterity": "reaction-ball drills",
+        },
     ),
 )
 

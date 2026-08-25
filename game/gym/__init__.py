@@ -1,5 +1,17 @@
 """Data-driven district gyms and training rules."""
 
+from game.gym.formula import (
+    HAPPINESS_PER_TRAIN,
+    STANDARD_ENERGY_PER_TRAIN,
+    STAT_GAIN_PER_STANDARD_TRAIN,
+    WEIGHT_CLASS_ENERGY,
+    TrainingOutcome,
+    gain_per_train,
+    trains_for,
+    training_outcome,
+    validate_training_energy,
+)
+
 from game.gym.definitions import (
     DEFAULT_GYM_KEY,
     GYMS,
@@ -21,7 +33,6 @@ from game.gym.service import (
     GymSelectionResult,
     GymStatUnavailableError,
     GymUnlockResult,
-    TrainingResult,
     UnknownGymError,
     calculate_training_gain,
     display_training_block,
@@ -34,6 +45,15 @@ from game.gym.service import (
 )
 
 __all__ = [
+    "HAPPINESS_PER_TRAIN",
+    "STANDARD_ENERGY_PER_TRAIN",
+    "STAT_GAIN_PER_STANDARD_TRAIN",
+    "WEIGHT_CLASS_ENERGY",
+    "TrainingOutcome",
+    "gain_per_train",
+    "trains_for",
+    "training_outcome",
+    "validate_training_energy",
     "DEFAULT_GYM_KEY",
     "GYMS",
     "GYMS_BY_KEY",
@@ -50,7 +70,6 @@ __all__ = [
     "GymSelectionResult",
     "GymStatUnavailableError",
     "GymUnlockResult",
-    "TrainingResult",
     "UnknownGymError",
     "calculate_training_gain",
     "display_training_block",

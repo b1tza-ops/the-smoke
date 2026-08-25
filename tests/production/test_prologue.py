@@ -49,8 +49,8 @@ class CamdenPrologueTests(unittest.TestCase):
             "former_athlete",
         )
         player = get_player_by_user_id(self.user_id)
-        self.assertEqual(player[12], 110)
-        self.assertEqual(player[6], 110)
+        self.assertEqual(player[12], 160)
+        self.assertEqual(player[6], 160)
 
         result = complete_opening_mission(
             self.user_id,
@@ -99,7 +99,7 @@ class CamdenPrologueTests(unittest.TestCase):
         )
 
         player = get_player_by_user_id(self.user_id)
-        self.assertEqual(player[6], 102)
+        self.assertEqual(player[6], 152)
         self.assertEqual(player[11], 15)
 
         with self.assertRaises(ValueError):

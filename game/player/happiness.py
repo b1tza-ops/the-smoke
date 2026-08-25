@@ -21,16 +21,29 @@ def happiness_ratio(player):
     return max(0.0, min(1.0, happiness / max_happiness))
 
 
-def training_multiplier(player):
-    ratio = happiness_ratio(player)
+def training_multiplier_at(happiness, max_happiness):
+    """Training multiplier for a bare happiness value.
 
-    if ratio is None:
+    Training spends happiness as it goes, so a batch of trains has to be
+    scored against the happiness remaining at each one rather than the
+    player's happiness when the batch started.
+    """
+    if happiness is None or not max_happiness:
         return 1.0
+
+    ratio = max(0.0, min(1.0, happiness / max_happiness))
 
     return round(
         MIN_TRAINING_MULTIPLIER
         + (1 - MIN_TRAINING_MULTIPLIER) * ratio,
         4,
+    )
+
+
+def training_multiplier(player):
+    return training_multiplier_at(
+        getattr(player, "happiness", None),
+        getattr(player, "max_happiness", None),
     )
 
 

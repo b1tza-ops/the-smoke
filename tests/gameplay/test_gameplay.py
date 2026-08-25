@@ -24,16 +24,21 @@ class GymTests(unittest.TestCase):
         )
 
     def test_strength_training_updates_strength(self):
+        """No energy argument means one train at the current gym.
+
+        Camden Community is lightweight, so that is 5 energy for a
+        single train rather than the old flat 10.
+        """
         train(self.player, "strength")
 
-        self.assertEqual(self.player.strength, 12)
-        self.assertEqual(self.player.energy, 90)
+        self.assertEqual(self.player.strength, 11)
+        self.assertEqual(self.player.energy, 95)
 
     def test_dexterity_training_updates_dexterity(self):
         train(self.player, "dexterity")
 
-        self.assertEqual(self.player.dexterity, 12)
-        self.assertEqual(self.player.energy, 90)
+        self.assertEqual(self.player.dexterity, 11)
+        self.assertEqual(self.player.energy, 95)
 
     def test_jail_prevents_training(self):
         self.player.jail_until = (

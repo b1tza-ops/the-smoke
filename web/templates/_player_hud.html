@@ -40,10 +40,22 @@
                 ("Happiness", "happiness", player.happiness, player.max_happiness, (player.happiness / player.max_happiness * 100)|round if player.max_happiness else 0, "happiness"),
                 ("XP", "xp", player.xp, next_level_xp, xp_percent, "xp")
             ) %}
-            <div class="hud-meter hud-meter--{{ tone }}">
+            {% set forecast = hud_forecast(player, tone) %}
+            <div class="hud-meter hud-meter--{{ tone }}"{% if forecast %} tabindex="0" data-tick-seconds="{{ forecast.tick_seconds }}" data-ticks-needed="{{ forecast.ticks_needed }}" data-next-tick="{{ forecast.seconds_to_next_tick }}" data-resource-full="{{ 1 if forecast.is_full else 0 }}"{% endif %}>
                 <div><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#{{ icon }}"></use></svg><strong>{{ value }}/{{ maximum }}</strong></div>
                 <small>{{ label }}</small>
                 <div class="hud-meter__track"><i style="--progress:{{ percent }}%"></i></div>
+                {% if forecast %}
+                <div class="hud-tip" role="tooltip">
+                    <strong>{{ label }} {{ value }}/{{ maximum }}</strong>
+                    {% if forecast.is_full %}
+                    <span data-tip-state>Fully restored</span>
+                    {% else %}
+                    <span data-tip-state>+{{ forecast.points_per_tick }} in <b data-tip-next>{{ hud_duration(forecast.seconds_to_next_tick) }}</b></span>
+                    <span data-tip-remaining>Full in <b data-tip-full>{{ hud_duration(forecast.seconds_to_full) }}</b></span>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -62,6 +74,7 @@
     const timer = hud && hud.querySelector("[data-cycle-timer]");
     if (!hud || !timer) return;
 
+    const now0 = Date.now();
     const parseUtc = value => {
         if (!value) return null;
         const normalized = value.includes("T") ? value : value.replace(" ", "T") + "Z";
@@ -93,7 +106,63 @@
             + ":" + String(seconds % 60).padStart(2, "0");
     };
 
+    let meters = Array.from(hud.querySelectorAll(".hud-meter[data-tick-seconds]"))
+        .filter(meter => meter.dataset.resourceFull !== "1")
+        .map(meter => ({
+            tick: Number(meter.dataset.tickSeconds),
+            ticksNeeded: Number(meter.dataset.ticksNeeded),
+            deadline: now0 + Number(meter.dataset.nextTick) * 1000,
+            state: meter.querySelector("[data-tip-state]"),
+            remaining: meter.querySelector("[data-tip-remaining]"),
+            next: meter.querySelector("[data-tip-next]"),
+            full: meter.querySelector("[data-tip-full]")
+        }));
+
+    const duration = seconds => {
+        seconds = Math.max(0, Math.round(seconds));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const rest = seconds % 60;
+        if (hours) return hours + "h " + String(minutes).padStart(2, "0") + "m";
+        if (minutes) return minutes + "m " + String(rest).padStart(2, "0") + "s";
+        return rest + "s";
+    };
+
+    const updateTips = () => {
+        const now = Date.now();
+        meters.forEach(meter => {
+            let remaining = (meter.deadline - now) / 1000;
+            // A tick has landed since the page was rendered, so roll the
+            // countdown forward rather than letting it run negative.
+            while (remaining <= 0 && meter.ticksNeeded > 0) {
+                remaining += meter.tick;
+                meter.deadline += meter.tick * 1000;
+                meter.ticksNeeded -= 1;
+            }
+
+            if (meter.ticksNeeded <= 0) {
+                if (meter.state) meter.state.textContent = "Fully restored";
+                if (meter.remaining) meter.remaining.remove();
+                meter.done = true;
+                return;
+            }
+
+            if (meter.next) meter.next.textContent = duration(remaining);
+            if (meter.full) {
+                meter.full.textContent = duration(
+                    remaining + (meter.ticksNeeded - 1) * meter.tick
+                );
+            }
+        });
+
+        meters = meters.filter(meter => !meter.done);
+    };
+
     update();
-    window.setInterval(update, 1000);
+    updateTips();
+    window.setInterval(() => {
+        update();
+        updateTips();
+    }, 1000);
 })();
 </script>
