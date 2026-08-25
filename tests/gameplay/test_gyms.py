@@ -39,11 +39,12 @@ class DistrictGymTests(unittest.TestCase):
         values.update(overrides)
         return SimpleNamespace(**values)
 
-    def test_eight_progressive_gyms_cover_early_districts(self):
-        self.assertEqual(len(GYMS), 8)
+    def test_progressive_gyms_cover_every_district_but_the_east(self):
+        # East London deliberately carries the top of the roster.
+        self.assertEqual(len(GYMS), 14)
         self.assertEqual(
             {gym.district for gym in GYMS},
-            {"camden", "brixton", "soho"},
+            {"camden", "brixton", "soho", "shoreditch", "hackney"},
         )
 
     def test_training_gain_uses_selected_gym_multiplier(self):
@@ -97,20 +98,20 @@ class DistrictGymTests(unittest.TestCase):
                         energy=invalid_energy,
                     )
 
-        elite = self.make_player(
-            level=4,
+        heavyweight = self.make_player(
+            level=15,
             money=20_000,
-            current_district="soho",
-            unlocked_gyms={"soho_london_elite"},
-            current_gym_key="soho_london_elite",
+            current_district="hackney",
+            unlocked_gyms={"hackney_the_lock"},
+            current_gym_key="hackney_the_lock",
         )
 
         with self.assertRaises(ValueError):
             train(
-                elite,
+                heavyweight,
                 "strength",
                 energy=10,
-                gym_key="soho_london_elite",
+                gym_key="hackney_the_lock",
             )
 
     def test_lightweight_gym_accepts_its_own_smaller_multiples(self):

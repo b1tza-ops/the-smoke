@@ -136,11 +136,8 @@ a fare and take time, and **every pair of districts must have a direct
 route**. Travel offers a direct fare between any two districts, so a
 missing edge would simply be a district nobody could reach.
 
-Not every district carries every system. Camden, Brixton and Soho hold
-the eight gyms, and because the best of them already trains every stat
-at the 2.0 ceiling, East London deliberately has none — another gym
-there could only be redundant or break the scale. Shoreditch and Hackney
-bring crimes, a shop and a career each instead.
+Every district has somewhere to train. Shoreditch and Hackney carry the
+top five gyms, along with a shop, a career and two crimes each.
 
 ### District Reputation
 
@@ -229,6 +226,47 @@ train costs:
 
 Weight class decides how big each commitment is, not how efficiently the
 gym converts energy into stats — that is the multiplier's job.
+
+**Class follows price, not district.** As in Torn, a player spends a
+long run of gyms on 5 energy a train — everything up to £2,500 here —
+before the commitments get bigger. Big single commitments belong to the
+late game, where a player has the energy bar and the happiness to absorb
+them.
+
+### The roster
+
+Fourteen gyms, ordered by price, level and average gain together:
+
+| Gym | District | Price | Level | Class |
+| --- | --- | ---: | ---: | --- |
+| Camden Community Gym | Camden | free | 1 | Lightweight |
+| Average Joe's Camden | Camden | £100 | 1 | Lightweight |
+| Camden Ironworks | Camden | £250 | 1 | Lightweight |
+| Brixton Barbell Club | Brixton | £500 | 2 | Lightweight |
+| South London Performance | Brixton | £1,000 | 2 | Lightweight |
+| Soho Fitness Rooms | Soho | £2,500 | 2 | Lightweight |
+| West End Fight Lab | Soho | £5,000 | 3 | Middleweight |
+| London Elite | Soho | £10,000 | 4 | Middleweight |
+| The Warehouse | Shoreditch | £25,000 | 5 | Middleweight |
+| Iron Yard | Shoreditch | £60,000 | 6 | Middleweight |
+| The Arches | Hackney | £150,000 | 7 | Middleweight |
+| Marsh Athletic | Hackney | £400,000 | 9 | Heavyweight |
+| Powerhouse | Hackney | £1,000,000 | 12 | Heavyweight |
+| The Lock | Hackney | £2,500,000 | 15 | Heavyweight |
+
+A specialist can beat the gym above it on its one strong stat without
+being the better gym overall — West End Fight Lab trains no speed, and
+Powerhouse no dexterity — so the roster is ordered on the *average* of
+the stats each gym trains, not its best one.
+
+### Gain bars
+
+Gains are drawn as twelve segments against a ceiling (`GAIN_SCALE_MAX`)
+that sits deliberately **above** the best gym in the game: the free gym
+reads 2 of 12 and the top of the roster 8 of 12. A full bar reads as
+finished and forces the scale to be rewritten the moment a better gym is
+added, so the ceiling is raised before that happens, never to match the
+current best.
 
 ### The gain formula
 

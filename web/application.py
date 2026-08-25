@@ -42,6 +42,8 @@ from game.combat import (
     get_pvp_block,
 )
 from game.gym import (
+    GAIN_BAR_SEGMENTS,
+    GAIN_SCALE_MAX,
     GymError,
     UnknownGymError,
     VALID_BATTLE_STATS,
@@ -1946,6 +1948,8 @@ def gym():
             gym.key: happiness_cost(gym.energy_per_train)
             for gym in gyms
         },
+        gain_scale_max=GAIN_SCALE_MAX,
+        gain_bar_segments=GAIN_BAR_SEGMENTS,
         trained_stat=trained_stat,
         message=message,
         error=error,

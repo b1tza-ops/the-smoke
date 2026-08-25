@@ -16,6 +16,8 @@ from game.gym.formula import (
 
 from game.gym.definitions import (
     DEFAULT_GYM_KEY,
+    GAIN_BAR_SEGMENTS,
+    GAIN_SCALE_MAX,
     GYMS,
     GYMS_BY_KEY,
     GymDefinition,
@@ -59,6 +61,8 @@ __all__ = [
     "training_outcome",
     "validate_training_energy",
     "DEFAULT_GYM_KEY",
+    "GAIN_BAR_SEGMENTS",
+    "GAIN_SCALE_MAX",
     "GYMS",
     "GYMS_BY_KEY",
     "TRAINING_ENERGY_COST",
