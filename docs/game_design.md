@@ -115,19 +115,32 @@ Individual systems also have their own progression, such as crime skills, career
 
 Initial planned districts:
 
-| District | Unlock | Identity |
-| --- | ---: | --- |
-| Camden | 1 | Markets, nightlife, beginner content |
-| Brixton | 1 | Jobs, gyms, local gangs and street progression |
-| Soho | 3 | Nightlife, tourism, pickpocketing and clubs |
-| Shoreditch | 5 | Tech, nightlife and electronics |
-| Hackney | 7 | Residential crime, garages and gang activity |
-| The City | 10 | Finance, banking and investments |
-| Canary Wharf | 12 | Corporate careers and expensive property |
-| Chelsea | 15 | Luxury property and high-value opportunities |
-| Westminster | 20 | Prestige, high security and advanced missions |
+| District | Unlock | Identity | Built |
+| --- | ---: | --- | :---: |
+| Camden | 1 | Markets, nightlife, beginner content | yes |
+| Brixton | 1 | Jobs, gyms, local gangs and street progression | yes |
+| Soho | 2 | Nightlife, tourism, pickpocketing and clubs | yes |
+| Shoreditch | 5 | Tech, nightlife and electronics | yes |
+| Hackney | 7 | Residential crime, garages and gang activity | yes |
+| The City | 10 | Finance, banking and investments | — |
+| Canary Wharf | 12 | Corporate careers and expensive property | — |
+| Chelsea | 15 | Luxury property and high-value opportunities | — |
+| Westminster | 20 | Prestige, high security and advanced missions | — |
 
 Districts contain their own crimes, jobs, gyms, shops, properties and reputation progression.
+
+The catalogue in `game/world/districts.py` is the single source of truth
+for districts and the routes between them, and it validates itself at
+import: keys must be unique, every route must name real districts, cost
+a fare and take time, and **every pair of districts must have a direct
+route**. Travel offers a direct fare between any two districts, so a
+missing edge would simply be a district nobody could reach.
+
+Not every district carries every system. Camden, Brixton and Soho hold
+the eight gyms, and because the best of them already trains every stat
+at the 2.0 ceiling, East London deliberately has none — another gym
+there could only be redundant or break the scale. Shoreditch and Hackney
+bring crimes, a shop and a career each instead.
 
 ### District Reputation
 

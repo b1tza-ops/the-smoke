@@ -121,6 +121,72 @@ TRANSPORT_ROLES = (
     ),
 )
 
+CREATIVE_ROLES = (
+    JobRoleDefinition(
+        key="gallery_assistant",
+        name="Gallery Assistant",
+        salary=180,
+        energy_cost=10,
+        work_xp=18,
+        required_level=5,
+        required_career_xp=0,
+        required_shifts=0,
+    ),
+    JobRoleDefinition(
+        key="studio_manager",
+        name="Studio Manager",
+        salary=340,
+        energy_cost=12,
+        work_xp=30,
+        required_level=6,
+        required_career_xp=90,
+        required_shifts=5,
+    ),
+    JobRoleDefinition(
+        key="creative_director",
+        name="Creative Director",
+        salary=620,
+        energy_cost=15,
+        work_xp=48,
+        required_level=8,
+        required_career_xp=280,
+        required_shifts=12,
+    ),
+)
+
+SECURITY_ROLES = (
+    JobRoleDefinition(
+        key="yard_watchman",
+        name="Yard Watchman",
+        salary=230,
+        energy_cost=10,
+        work_xp=20,
+        required_level=7,
+        required_career_xp=0,
+        required_shifts=0,
+    ),
+    JobRoleDefinition(
+        key="close_protection",
+        name="Close Protection",
+        salary=430,
+        energy_cost=13,
+        work_xp=34,
+        required_level=9,
+        required_career_xp=110,
+        required_shifts=6,
+    ),
+    JobRoleDefinition(
+        key="security_contractor",
+        name="Security Contractor",
+        salary=780,
+        energy_cost=16,
+        work_xp=55,
+        required_level=11,
+        required_career_xp=330,
+        required_shifts=14,
+    ),
+)
+
 CAREERS = (
     CareerDefinition(
         key="construction",
@@ -149,6 +215,26 @@ CAREERS = (
             "then a logistics supervisor."
         ),
         roles=TRANSPORT_ROLES,
+    ),
+    CareerDefinition(
+        key="creative",
+        name="Shoreditch Creative",
+        description=(
+            "Hang the work, run the studio, then decide what "
+            "Shoreditch looks at next."
+        ),
+        roles=CREATIVE_ROLES,
+        required_district="shoreditch",
+    ),
+    CareerDefinition(
+        key="security",
+        name="Hackney Security",
+        description=(
+            "Watch the yards, then the people, then take the "
+            "contracts nobody else will."
+        ),
+        roles=SECURITY_ROLES,
+        required_district="hackney",
     ),
 )
 
