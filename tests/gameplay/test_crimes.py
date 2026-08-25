@@ -50,7 +50,7 @@ class CrimeEngineTests(unittest.TestCase):
         )
         crime = get_crime("soho_pickpocket")
         rng = Mock()
-        rng.randint.side_effect = [1, 75]
+        rng.randint.side_effect = [1, 75, 100]
 
         result = commit_crime(player, crime, rng=rng)
 
@@ -260,7 +260,7 @@ class CrimeEngineTests(unittest.TestCase):
         )
         crime = get_crime("soho_pickpocket")
         rng = Mock()
-        rng.randint.side_effect = [1, 75]
+        rng.randint.side_effect = [1, 75, 100]
 
         result = commit_crime(
             player,

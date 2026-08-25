@@ -183,7 +183,7 @@ class CrimeTests(unittest.TestCase):
         )
 
         rng = Mock()
-        rng.randint.side_effect = [1, 40]
+        rng.randint.side_effect = [1, 40, 100]
 
         result = commit_crime(
             player,

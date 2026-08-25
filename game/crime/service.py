@@ -1,6 +1,14 @@
 import random
 from dataclasses import dataclass
 
+from game.crime.loot import roll_loot
+from game.economy.fence import fence_price
+from game.inventory import (
+    ITEMS_BY_KEY,
+    InventoryFullError,
+    ItemLimitError,
+    add_item,
+)
 from game.player.happiness import crime_success_penalty
 from game.player.progression import award_xp
 from game.world.travel import get_active_travel
@@ -53,6 +61,10 @@ class CrimeResult:
     consequence: str | None = None
     jail_until: str | None = None
     hospital_until: str | None = None
+    loot_item_key: str | None = None
+    loot_item_name: str | None = None
+    # Paid instead of the item when there is nowhere to put it.
+    loot_cash: int = 0
 
 CRIMES = (
     CrimeDefinition(
@@ -319,6 +331,13 @@ def commit_crime(player, crime, rng=None, now=None):
             + crime.reputation_reward
         )
 
+        loot_item, loot_cash = _collect_loot(
+            player,
+            crime,
+            rng,
+        )
+        player.money += loot_cash
+
         return CrimeResult(
             attempted=True,
             crime_key=crime.key,
@@ -332,6 +351,9 @@ def commit_crime(player, crime, rng=None, now=None):
             reputation_reward=crime.reputation_reward,
             levels_gained=levels_gained,
             wanted_gained=crime.wanted_gain,
+            loot_item_key=loot_item.key if loot_item else None,
+            loot_item_name=loot_item.name if loot_item else None,
+            loot_cash=loot_cash,
         )
 
     return _resolve_failed_crime(
@@ -340,6 +362,29 @@ def commit_crime(player, crime, rng=None, now=None):
         rng=rng,
         now=now,
     )
+
+
+def _collect_loot(player, crime, rng):
+    """Roll for loot and try to carry it home.
+
+    Returns the item and the cash paid instead of it. A player whose
+    bag is full, or who already owns the one machete they are allowed,
+    offloads it on the way rather than losing the drop -- so the item is
+    the good outcome and the cash is the consolation, never nothing.
+    """
+    item_key = roll_loot(crime.key, rng)
+
+    if item_key is None:
+        return None, 0
+
+    item = ITEMS_BY_KEY[item_key]
+
+    try:
+        add_item(player, item_key)
+    except (InventoryFullError, ItemLimitError):
+        return item, fence_price(item, crime.district.casefold())
+
+    return item, 0
 
 
 def _resolve_failed_crime(

@@ -346,7 +346,9 @@ class CampaignBackfillTests(unittest.TestCase):
         connection.commit()
         connection.close()
 
-        self.assertEqual(migrations.run_migrations(), (32,))
+        # Everything from the build point onwards, which is at least
+        # the campaign migration this test is about.
+        self.assertIn(32, migrations.run_migrations())
 
         camden, soho = get_campaign(user_id)[:2]
 

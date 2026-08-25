@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Black Market · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='black-market-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+<header class="topbar">
+<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+<a class="logout-link" href="{{ url_for('district_shop') }}">Shop</a>
+</header>
+{% include "_player_hud.html" %}
+<main class="dashboard-main game-page">
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+
+{% if not fence %}
+<section class="shop-hero"><div><p class="eyebrow">{{ player.current_district|title }}</p><h1>No fence here</h1><p>Nobody in this district is buying. Try somewhere else.</p></div></section>
+{% else %}
+<section class="shop-hero">
+<div><p class="eyebrow">{{ fence.district|title }} · Black market</p><h1>{{ fence.name }}</h1><p>{{ fence.strapline }}</p></div>
+<div class="fence-rates"><small>Pays</small><strong>{{ (fence_base * 100)|int }}%</strong><small>of value{% if fence.specialities %} · {{ (fence_speciality * 100)|int }}% for {{ fence.specialities|sort|join(", ") }}{% endif %}</small></div>
+</section>
+
+{% if not accessible %}<div class="game-notice game-notice--error">You cannot deal while travelling or restricted.</div>{% endif %}
+
+{% if offers %}
+<section class="shop-counter" aria-label="What you are carrying">
+{% for offer in offers %}
+<article class="shop-line{{ ' shop-line--premium' if offer.premium }}">
+<div class="shop-line__item">
+<img src="{{ url_for('static', filename=offer.item.image_filename) }}" alt="" width="56" height="56" loading="lazy">
+<div><strong>{{ offer.item.name }}</strong><small>{{ offer.item.category|title }} · worth £{{ "{:,}".format(offer.item.value) }} new{% if offer.premium %} · they want these{% endif %}</small></div>
+</div>
+<div class="shop-line__price"><strong>£{{ "{:,}".format(offer.unit_price) }}</strong><small>each · you have {{ offer.quantity }}</small></div>
+<form method="post" class="shop-buy">
+<input type="hidden" name="item_key" value="{{ offer.item.key }}">
+<label><span class="sr-only">{{ offer.item.name }} quantity</span>
+<input type="number" name="quantity" value="1" min="1" max="{{ offer.quantity if offer.quantity <= 20 else 20 }}" {% if not accessible %}disabled{% endif %}></label>
+<button type="submit" {% if not accessible %}disabled{% endif %}>Sell</button>
+</form>
+</article>
+{% endfor %}
+</section>
+{% else %}
+<div class="game-notice">You have nothing to sell. Go and earn some.</div>
+{% endif %}
+{% endif %}
+</main>
+<footer class="app-footer"><span>The Smoke</span><a class="logout-link" href="{{ url_for('home') }}">Back to dashboard</a></footer>
+</div>
+</body></html>
