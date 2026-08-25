@@ -4,10 +4,16 @@ This is the one place a training gain is calculated. It deliberately
 imports nothing from `game.gym.service`, so both `service` and the web
 layer can rely on it without a cycle.
 
-A train spends energy *and* happiness. Because happiness also scales the
-gain, a batch of trains cannot be scored with a single multiplier -- the
-happiness left at each train differs. So a batch is simulated one train
-at a time, which also means N separate trains and one batch of N produce
+The shape follows Torn's: gain is linear in the stat being trained, so
+training keeps paying as the stat grows, with a floor that keeps a new
+player's first sessions worthwhile. Happiness scales the result and is
+spent in proportion to the energy spent -- a heavier gym costs more
+energy and proportionally more happiness, so the weight class decides
+how big each commitment is, not how efficiently it burns happiness.
+
+Because happiness falls and the stat rises as a batch runs, a batch
+cannot be scored with a single multiplier. It is simulated one train at
+a time, which also means N separate trains and one batch of N produce
 exactly the same result.
 """
 
@@ -17,8 +23,8 @@ from game.player.happiness import training_multiplier_at
 
 
 # Energy per train for each weight class. A lighter gym trains in
-# smaller, more responsive chunks; a heavier one commits more energy per
-# train and so spends happiness far more slowly.
+# smaller, more responsive chunks; a heavier one commits more energy --
+# and proportionally more happiness -- to each one.
 WEIGHT_CLASS_ENERGY = {
     "lightweight": 5,
     "middleweight": 10,
@@ -26,8 +32,22 @@ WEIGHT_CLASS_ENERGY = {
 }
 
 STANDARD_ENERGY_PER_TRAIN = 10
-STAT_GAIN_PER_STANDARD_TRAIN = 2
-HAPPINESS_PER_TRAIN = 5
+
+# Stat gained per point of energy by a beginner at a x1.0 gym on full
+# happiness. A new player at Camden still gains exactly 1.0 a train.
+GAIN_PER_ENERGY = 0.2
+
+# Gain grows linearly with the stat being trained and doubles when it
+# reaches this value: 2x at 2,000, 3x at 4,000, and so on. Without it,
+# a flat gain that is transformative at 10 strength is invisible at
+# 5,000, and training stops meaning anything.
+STAT_SCALE = 2000
+
+# Happiness spent per point of energy, rounded up to a whole point.
+# Torn charges roughly half the energy spent; this is that, without the
+# randomness, so the number the gym page previews is the number the
+# player actually gets.
+HAPPINESS_PER_ENERGY = 0.5
 
 
 @dataclass(frozen=True)
@@ -40,6 +60,11 @@ class TrainingOutcome:
 
 def trains_for(gym, energy):
     return energy // gym.energy_per_train
+
+
+def happiness_cost(energy):
+    """Happiness spent for a given amount of energy, rounded up."""
+    return int(-(-energy * HAPPINESS_PER_ENERGY // 1))
 
 
 def validate_training_energy(gym, energy):
@@ -57,7 +82,7 @@ def validate_training_energy(gym, energy):
         )
 
 
-def gain_per_train(gym, stat):
+def gain_per_train(gym, stat, stat_value=0):
     """Gain for one train at full happiness.
 
     Multiplied before dividing so the arithmetic stays exact for any
@@ -65,9 +90,9 @@ def gain_per_train(gym, stat):
     """
     return (
         gym.energy_per_train
-        * STAT_GAIN_PER_STANDARD_TRAIN
         * gym.multiplier_for(stat)
-        / STANDARD_ENERGY_PER_TRAIN
+        * GAIN_PER_ENERGY
+        * (1 + stat_value / STAT_SCALE)
     )
 
 
@@ -75,6 +100,7 @@ def training_outcome(
     gym,
     stat,
     energy,
+    stat_value=0,
     happiness=None,
     max_happiness=None,
 ):
@@ -86,19 +112,28 @@ def training_outcome(
     validate_training_energy(gym, energy)
 
     trains = trains_for(gym, energy)
-    per_train = gain_per_train(gym, stat)
+    per_train_happiness = happiness_cost(gym.energy_per_train)
     remaining = happiness
     happiness_spent = 0
     total_gain = 0.0
+    current_stat = stat_value
 
     for _ in range(trains):
-        total_gain += per_train * training_multiplier_at(
+        gain = gain_per_train(
+            gym,
+            stat,
+            current_stat,
+        ) * training_multiplier_at(
             remaining,
             max_happiness,
         )
+        total_gain += gain
+        # The stat rises as the batch runs, so later trains in a long
+        # session are worth slightly more than the first.
+        current_stat += gain
 
         if remaining is not None:
-            spent = min(remaining, HAPPINESS_PER_TRAIN)
+            spent = min(remaining, per_train_happiness)
             remaining -= spent
             happiness_spent += spent
 

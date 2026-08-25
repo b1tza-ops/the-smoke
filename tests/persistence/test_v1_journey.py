@@ -176,7 +176,7 @@ class V1PlayerJourneyTests(unittest.TestCase):
                 # because the first one spent 5.
                 self.assertEqual(
                     reloaded.strength,
-                    11.98,
+                    12.0,
                 )
                 self.assertEqual(reloaded.nerve, 18)
                 self.assertEqual(

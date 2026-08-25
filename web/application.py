@@ -43,10 +43,10 @@ from game.combat import (
 )
 from game.gym import (
     GymError,
-    HAPPINESS_PER_TRAIN,
     UnknownGymError,
     VALID_BATTLE_STATS,
     calculate_training_gain,
+    happiness_cost,
     get_district_gyms,
     get_gym,
     get_training_block,
@@ -1940,7 +1940,12 @@ def gym():
             }
             for gym in gyms
         },
-        happiness_per_train=HAPPINESS_PER_TRAIN,
+        # Happiness now costs half the energy spent, so it varies
+        # by weight class rather than being one figure for the page.
+        happiness_per_train={
+            gym.key: happiness_cost(gym.energy_per_train)
+            for gym in gyms
+        },
         trained_stat=trained_stat,
         message=message,
         error=error,

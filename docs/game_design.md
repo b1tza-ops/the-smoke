@@ -227,26 +227,45 @@ train costs:
 | Middleweight | 10 | 15 |
 | Heavyweight | 25 | 6 |
 
-Gain is expressed per 10 energy, so a heavier class is not simply better
-value — it buys the same gain in fewer, larger commitments.
+Weight class decides how big each commitment is, not how efficiently the
+gym converts energy into stats — that is the multiplier's job.
 
-### Happiness is the real constraint
+### The gain formula
 
-A train costs a flat **5 happiness** regardless of class, and happiness
-regenerates at 5 every 15 minutes (20 an hour). That turns the weight
-class into a genuine trade-off rather than a label:
+```
+gain = energy × gym multiplier × 0.2 × (1 + stat / 2000) × happiness
+```
 
-- A **Lightweight** gym trains in small responsive chunks but burns
-  happiness roughly 30 an hour — faster than it comes back, so happiness
-  runs out before energy does and gains taper towards the 0.5× floor.
-- A **Heavyweight** gym only needs about 6 happiness an hour, so it
-  sustains full happiness and therefore full gains. Energy is what binds.
+Following Torn's shape, gain is **linear in the stat being trained**,
+with a floor so a beginner's first sessions still matter. It doubles at
+2,000, triples at 4,000, and keeps going. Without that, a flat gain that
+is transformative at 10 strength is invisible at 5,000 and training
+stops meaning anything.
 
-Happiness floors at 0 rather than blocking training, so a drained player
-still trains, just at half rate.
+The 0.2 floor is set so the opening experience is unchanged: a new
+player at Camden still gains exactly 1.0 a train.
 
-Because happiness both scales the gain and is consumed by it, a batch of
-trains cannot be scored with one multiplier. Training is simulated one
+| Stat | Camden (5 energy, ×1.0) | London Elite (25 energy, ×2.0) |
+| ---: | ---: | ---: |
+| 10 | 1.0 | 10.05 |
+| 1,000 | 1.5 | 15.0 |
+| 5,000 | 3.5 | 35.0 |
+| 10,000 | 6.0 | 60.0 |
+
+### Happiness
+
+A train costs **half the energy it spends, rounded up** — 3 at a
+lightweight gym, 5 at middleweight, 13 at heavyweight — so a full
+150-energy bar costs roughly the same happiness however it is broken up.
+This is Torn's rule, and it is why weight class does not gate happiness
+efficiency.
+
+Happiness then scales the gain between 0.5× and 1.0×, and floors at 0
+rather than blocking training, so a drained player still trains at half
+rate.
+
+Because happiness falls and the stat rises as a batch runs, a batch
+cannot be scored with one multiplier. Training is simulated one
 train at a time, which also means N separate trains and one batch of N
 produce exactly the same result — there is no reward for click-spamming.
 
