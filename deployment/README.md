@@ -31,6 +31,29 @@ Copy the resulting hash and a private username into
 `/etc/the-smoke.env`, restart the service, then visit
 `https://play.the-smoke.com/admin/login`.
 
+These credentials sign you in as the **server operator**: full
+administrator authority, not tied to any player account. Moderation
+actions taken this way are recorded in the audit trail as
+"Server operator" rather than a named person.
+
+## Grant staff roles
+
+Staff can also sign in at `/admin/login` with their own game account
+username and password, provided their account has a staff role. Use the
+operator credentials above once to grant the first role, then let people
+use their own accounts so the audit trail names them.
+
+On a player's record page (`/admin/users/<id>`), the Moderation panel
+has an "Assign role" control:
+
+- `moderator` — warn, suspend, and restore accounts.
+- `admin` — the above, plus banning, role changes, granting items, and
+  forcing jail/hospital.
+
+The last active administrator cannot demote, suspend, or ban
+themselves. Suspended and banned accounts cannot sign in to the game or
+to operations.
+
 ## Prepare runtime directories
 
 ```bash

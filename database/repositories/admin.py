@@ -20,7 +20,9 @@ def get_admin_player_overview():
                 players.level,
                 players.money,
                 players.current_district,
-                players.last_seen
+                players.last_seen,
+                users.role,
+                users.account_state
             FROM users
             LEFT JOIN players
                 ON players.user_id = users.id
@@ -84,6 +86,9 @@ def get_admin_player_details(user_id):
                 users.email_verified_at,
                 users.suspended_at,
                 users.created_at,
+                users.role,
+                users.account_state,
+                users.suspended_until,
                 players.*
             FROM users
             LEFT JOIN players

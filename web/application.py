@@ -71,6 +71,7 @@ from database.repositories.growth import (
     get_recent_feedback,
     submit_feedback,
 )
+from database.repositories.moderation import get_user_role
 from database.repositories.admin import (
     get_admin_player_details,
     get_admin_player_overview,
@@ -142,7 +143,18 @@ from auth.email_delivery import (
     send_password_reset_email,
     send_verification_email,
 )
-from auth.moderation import is_account_blocked
+from auth.moderation import (
+    MODERATOR_ROLES,
+    ModerationError,
+    ROLES,
+    ban_user,
+    get_history,
+    is_account_blocked,
+    reverse_moderation,
+    set_user_role,
+    suspend_user,
+    warn_user,
+)
 from auth.services.password_reset import (
     AccountTokenError,
     request_email_verification,
@@ -315,9 +327,57 @@ def admin_required(view):
         if not session.get("admin_authenticated"):
             return redirect("/admin/login")
 
+        if "admin_role" not in session:
+            # A session opened before staff sign-in existed carries no
+            # role or actor, so there is nothing to attribute an
+            # audited action to. Make it sign in again rather than
+            # guessing who is holding it.
+            session.clear()
+            return redirect("/admin/login")
+
         return view(*args, **kwargs)
 
     return wrapped
+
+
+def admin_role_required(view):
+    """Restrict a panel action to full administrators.
+
+    Moderators can reach the panel but only to use the moderation
+    controls; the older operational tools (granting items, forcing
+    jail/hospital) stay with administrators and the server operator.
+    """
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("admin_authenticated"):
+            return redirect("/admin/login")
+
+        if "admin_role" not in session:
+            session.clear()
+            return redirect("/admin/login")
+
+        if session.get("admin_role") != "admin":
+            session["admin_player_notice"] = {
+                "type": "error",
+                "message": (
+                    "That action requires an administrator."
+                ),
+            }
+            user_id = kwargs.get("user_id")
+            return redirect(
+                f"/admin/users/{user_id}"
+                if user_id is not None
+                else "/admin"
+            )
+
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def current_admin_actor():
+    """Return the acting account id, or None for the server operator."""
+    return session.get("admin_user_id")
 
 
 def record_player_action(action_type, summary, metadata=None):
@@ -376,6 +436,42 @@ def internal_server_error(error):
     ), 500
 
 
+def _authenticate_staff_account(username, password):
+    """Authenticate a moderator or administrator by game account.
+
+    Returns None for any failure -- unknown account, wrong password,
+    insufficient role, or a suspended/banned account -- so the caller
+    shows one generic error and never reveals which check failed.
+    """
+    if not username or not password:
+        return None
+
+    user = get_user_by_username(username)
+
+    if user is None:
+        return None
+
+    try:
+        if not verify_password(password, user[3]):
+            return None
+    except ValueError:
+        return None
+
+    role = get_user_role(user[0])
+
+    if role not in MODERATOR_ROLES:
+        return None
+
+    if is_user_suspended(user[0]) or is_account_blocked(user[0]):
+        return None
+
+    return {
+        "user_id": user[0],
+        "username": user[1],
+        "role": role,
+    }
+
+
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if session.get("admin_authenticated"):
@@ -424,10 +520,31 @@ def admin_login():
         if valid_username and valid_password:
             session.clear()
             session["admin_authenticated"] = True
+            session["admin_user_id"] = None
+            session["admin_role"] = "admin"
+            session["admin_display_name"] = "Server operator"
             record_activity(
                 None,
                 "admin_login",
-                "Administrator signed in.",
+                "Server operator signed in.",
+            )
+            return redirect("/admin")
+
+        staff = _authenticate_staff_account(
+            supplied_username,
+            supplied_password,
+        )
+
+        if staff is not None:
+            session.clear()
+            session["admin_authenticated"] = True
+            session["admin_user_id"] = staff["user_id"]
+            session["admin_role"] = staff["role"]
+            session["admin_display_name"] = staff["username"]
+            record_activity(
+                staff["user_id"],
+                "admin_login",
+                f"{staff['role'].title()} signed in to operations.",
             )
             return redirect("/admin")
 
@@ -447,6 +564,11 @@ def admin_dashboard():
         players=get_admin_player_overview(),
         activities=get_recent_activity(limit=100),
         feedback=get_recent_feedback(limit=100),
+        admin_role=session.get("admin_role"),
+        admin_display_name=session.get(
+            "admin_display_name",
+            "Operations",
+        ),
     )
 
 
@@ -474,6 +596,10 @@ def admin_user_details(user_id):
             "admin_player_notice",
             None,
         ),
+        moderation_history=get_history(user_id),
+        assignable_roles=ROLES,
+        admin_role=session.get("admin_role"),
+        admin_user_id=session.get("admin_user_id"),
     )
 
 
@@ -481,7 +607,7 @@ def admin_user_details(user_id):
     "/admin/users/<int:user_id>/suspension",
     methods=["POST"],
 )
-@admin_required
+@admin_role_required
 def admin_user_suspension(user_id):
     suspended = (
         request.form.get("suspended") == "1"
@@ -509,7 +635,7 @@ def admin_user_suspension(user_id):
     "/admin/users/<int:user_id>/inventory",
     methods=["POST"],
 )
-@admin_required
+@admin_role_required
 def admin_user_inventory(user_id):
     player_data = get_player_by_user_id(user_id)
 
@@ -581,7 +707,7 @@ def admin_user_inventory(user_id):
     "/admin/users/<int:user_id>/status",
     methods=["POST"],
 )
-@admin_required
+@admin_role_required
 def admin_user_status(user_id):
     restriction = request.form.get(
         "restriction",
@@ -645,6 +771,128 @@ def admin_user_status(user_id):
         }
 
     return redirect(f"/admin/users/{user_id}")
+
+
+@app.route(
+    "/admin/users/<int:user_id>/moderation",
+    methods=["POST"],
+)
+@admin_required
+def admin_user_moderation(user_id):
+    action = request.form.get("action", "")
+    reason = request.form.get("reason", "").strip()[:200]
+    actor_id = current_admin_actor()
+
+    try:
+        if action == "warn":
+            warn_user(actor_id, user_id, reason)
+            summary = f"Warning issued. Reason: {reason}"
+
+        elif action == "suspend":
+            raw_duration = request.form.get(
+                "duration_minutes",
+                "",
+            ).strip()
+
+            if raw_duration:
+                if not raw_duration.isdigit():
+                    raise ModerationError(
+                        "Enter a positive whole number of minutes, "
+                        "or leave the duration blank to suspend "
+                        "indefinitely."
+                    )
+                duration = int(raw_duration)
+            else:
+                duration = None
+
+            until = suspend_user(
+                actor_id,
+                user_id,
+                reason,
+                duration_minutes=duration,
+            )
+            summary = (
+                f"Account suspended until {until}. "
+                f"Reason: {reason}"
+                if until
+                else
+                f"Account suspended indefinitely. "
+                f"Reason: {reason}"
+            )
+
+        elif action == "ban":
+            ban_user(actor_id, user_id, reason)
+            summary = f"Account banned. Reason: {reason}"
+
+        elif action == "reverse":
+            reverse_moderation(actor_id, user_id, reason)
+            summary = (
+                f"Account restored to active. Reason: {reason}"
+            )
+
+        else:
+            raise ModerationError(
+                "Choose warn, suspend, ban or restore."
+            )
+
+        record_activity(
+            user_id,
+            f"moderation_{action}",
+            summary,
+            {
+                "actor_user_id": actor_id,
+                "reason": reason,
+            },
+        )
+        session["admin_player_notice"] = {
+            "type": "success",
+            "message": summary,
+        }
+    except (ValueError, ModerationError) as moderation_error:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": str(moderation_error),
+        }
+
+    return redirect(
+        f"/admin/users/{user_id}#admin-moderation"
+    )
+
+
+@app.route(
+    "/admin/users/<int:user_id>/role",
+    methods=["POST"],
+)
+@admin_role_required
+def admin_user_role(user_id):
+    new_role = request.form.get("role", "")
+    actor_id = current_admin_actor()
+
+    try:
+        set_user_role(actor_id, user_id, new_role)
+        summary = f"Role set to {new_role}."
+        record_activity(
+            user_id,
+            "moderation_role_change",
+            summary,
+            {
+                "actor_user_id": actor_id,
+                "role": new_role,
+            },
+        )
+        session["admin_player_notice"] = {
+            "type": "success",
+            "message": summary,
+        }
+    except ModerationError as role_error:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": str(role_error),
+        }
+
+    return redirect(
+        f"/admin/users/{user_id}#admin-moderation"
+    )
 
 
 @app.route("/admin/logout")
