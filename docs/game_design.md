@@ -249,6 +249,45 @@ result message reports back.
 
 ---
 
+## Operations
+
+Operations are the story spine: a fixed chain of five jobs across London
+that pays off the £2,000 debt the player starts owing. They are not
+repeatable — each one is run once, and the campaign ends when the debt
+does.
+
+| # | Operation | District | Level |
+| --- | --- | --- | --- |
+| 1 | The Camden Collection | Camden | 1 |
+| 2 | A Favour in Soho | Soho | 3 |
+| 3 | The Brixton Warehouse | Brixton | 5 |
+| 4 | The Camden Lockup | Camden | 8 |
+| 5 | Clearing the Ledger | Soho | 12 |
+
+Every operation offers the same three-way choice, so a player can lean on
+whichever stat they have been training:
+
+- **Persuasion** (dexterity) — cheapest, quietest, least wanted level,
+  smallest payout.
+- **Stealth** (speed) — the middle of everything.
+- **Force** (strength) — most expensive in energy and nerve, biggest
+  payout, and the loudest trail.
+
+The approach decides the energy and nerve spent up front, how long the
+operation runs for, the cash and XP on completion, the wanted level
+earned, and how much of the debt it clears.
+
+An operation opens only when the one before it is complete, the level is
+reached and the player is standing in the right district. That chain is
+also what keeps a player to one operation at a time: a running operation
+is not a completed one, so nothing behind it can open.
+
+The first four operations clear between £1,125 and £1,925 between them,
+which is deliberately never the full £2,000 — the finale settles whatever
+is left, whichever way it is played.
+
+---
+
 ## Crimes
 
 Crime uses **nerve** and has risk/reward progression.
