@@ -197,6 +197,7 @@ from game.inventory import (
 from game.jobs import (
     CAREERS,
     JobError,
+    cancel_shift,
     complete_shift,
     get_career,
     get_job_role,
@@ -1246,6 +1247,7 @@ def _work_page(active_section):
             "join_career",
             "start_shift",
             "complete_shift",
+            "cancel_shift",
         },
         "inventory": {"use_item", "equip_item", "unequip_item"},
     }
@@ -1272,6 +1274,21 @@ def _work_page(active_section):
                     f"Shift started. {shift.energy_spent} "
                     f"energy used."
                 )
+            elif action == "cancel_shift":
+                cancelled = cancel_shift(player)
+                message = (
+                    f"You left after {cancelled.percent_worked}% "
+                    f"of the shift and were paid "
+                    f"£{cancelled.salary:,} with "
+                    f"{cancelled.work_xp} XP."
+                )
+                if cancelled.promoted_to is not None:
+                    promoted = get_job_role(
+                        cancelled.promoted_to
+                    )
+                    message += (
+                        f" Promoted to {promoted.name}."
+                    )
             elif action == "complete_shift":
                 completed = complete_shift(player)
                 message = (
