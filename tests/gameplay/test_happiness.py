@@ -116,14 +116,13 @@ class HappinessGymIntegrationTests(unittest.TestCase):
         trained = train(player, "strength", energy=10)
 
         self.assertTrue(trained)
-        self.assertEqual(player.strength, 11.0)
+        self.assertEqual(player.strength, 11.01)
 
     def test_training_spends_happiness_and_tapers_within_a_batch(self):
-        """Happiness is spent per train, so a batch tapers as it runs.
+        """Happiness is spent per train, in proportion to the energy.
 
-        10 energy at Camden is two trains: the first scores at 100
-        happiness, the second at 95, so the pair yields 1.98 rather
-        than a flat 2.0.
+        10 energy at Camden is two trains at 3 happiness each -- half
+        the 5 energy a train costs there, rounded up.
         """
         player = self.make_player()
 
@@ -131,9 +130,9 @@ class HappinessGymIntegrationTests(unittest.TestCase):
 
         self.assertTrue(trained)
         self.assertEqual(trained.trains, 2)
-        self.assertEqual(trained.happiness_spent, 10)
-        self.assertEqual(player.happiness, 90)
-        self.assertEqual(player.strength, 11.98)
+        self.assertEqual(trained.happiness_spent, 6)
+        self.assertEqual(player.happiness, 94)
+        self.assertEqual(player.strength, 12.0)
 
     def test_happiness_floors_at_zero_without_blocking_training(self):
         player = self.make_player(happiness=5)
@@ -152,13 +151,13 @@ class HappinessGymIntegrationTests(unittest.TestCase):
             calculate_training_gain(
                 "camden_community", "strength", 10, player=happy_player,
             ),
-            1.98,
+            2.0,
         )
         self.assertEqual(
             calculate_training_gain(
                 "camden_community", "strength", 10, player=sad_player,
             ),
-            1.0,
+            1.01,
         )
 
     def test_preview_matches_what_training_actually_awards(self):

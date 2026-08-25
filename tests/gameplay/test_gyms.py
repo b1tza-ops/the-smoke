@@ -47,19 +47,25 @@ class DistrictGymTests(unittest.TestCase):
         )
 
     def test_training_gain_uses_selected_gym_multiplier(self):
+        """Compared one train at a time, so the rates are exact.
+
+        Across a batch the stat itself rises, which lifts the later
+        trains and leaves the totals just off a round number.
+        """
         camden_gain = calculate_training_gain(
             "camden_community",
             "speed",
-            100,
+            5,
         )
         brixton_gain = calculate_training_gain(
             "brixton_performance",
             "speed",
-            100,
+            10,
         )
 
-        self.assertEqual(camden_gain, 20)
-        self.assertEqual(brixton_gain, 32)
+        # 0.2 a point of energy at x1.0, and x1.6 at Brixton.
+        self.assertEqual(camden_gain, 1.0)
+        self.assertEqual(brixton_gain, 3.2)
 
     def test_player_can_spend_one_hundred_energy(self):
         player = self.make_player()
@@ -72,7 +78,7 @@ class DistrictGymTests(unittest.TestCase):
 
         self.assertTrue(trained)
         self.assertEqual(player.energy, 0)
-        self.assertEqual(player.strength, 30)
+        self.assertEqual(player.strength, 30.2)
 
     def test_training_energy_must_be_a_multiple_of_the_gyms_cost(self):
         """Valid energy now depends on the gym, not a global 10.
@@ -212,7 +218,7 @@ class DistrictGymTests(unittest.TestCase):
 
         self.assertTrue(trained)
         self.assertEqual(player.energy, 80)
-        self.assertEqual(player.strength, 16.4)
+        self.assertEqual(player.strength, 16.44)
 
 
 if __name__ == "__main__":

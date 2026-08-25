@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Gym · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='operations-campaign-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gym-stat-scaling-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
@@ -15,7 +15,7 @@
 {% if block_reason %}<div class="game-notice game-notice--error">Training is unavailable while {{ block_reason }}.</div>{% endif %}
 {% for gym in gyms %}
 <section class="gym-club" id="gym-{{ gym.key }}" aria-labelledby="gym-title-{{ gym.key }}">
-<header class="gym-club__header"><div><p class="eyebrow">Level {{ gym.required_level }}+ · {{ player.current_district|title }}</p><h2 id="gym-title-{{ gym.key }}">{{ gym.name }}</h2><p class="gym-class"><span class="gym-class__badge gym-class__badge--{{ gym.weight_class }}">{{ gym.weight_class|title }}</span><span>{{ gym.energy_per_train }} energy · {{ happiness_per_train }} happiness per train</span></p></div>{% if gym.key in unlocked_gyms %}<span class="level-badge">Member</span>{% else %}<strong class="game-price">£{{ "{:,}".format(gym.membership_cost) }}</strong>{% endif %}</header>
+<header class="gym-club__header"><div><p class="eyebrow">Level {{ gym.required_level }}+ · {{ player.current_district|title }}</p><h2 id="gym-title-{{ gym.key }}">{{ gym.name }}</h2><p class="gym-class"><span class="gym-class__badge gym-class__badge--{{ gym.weight_class }}">{{ gym.weight_class|title }}</span><span>{{ gym.energy_per_train }} energy · {{ happiness_per_train[gym.key] }} happiness per train</span></p></div>{% if gym.key in unlocked_gyms %}<span class="level-badge">Member</span>{% else %}<strong class="game-price">£{{ "{:,}".format(gym.membership_cost) }}</strong>{% endif %}</header>
 {% if gym.key in unlocked_gyms %}
 <div class="gym-stat-grid">
 {% for stat in valid_stats %}

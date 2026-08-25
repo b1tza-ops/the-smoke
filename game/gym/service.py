@@ -8,12 +8,8 @@ from game.gym.definitions import (
     get_gym,
 )
 from game.gym.formula import (
-    HAPPINESS_PER_TRAIN,
+    GAIN_PER_ENERGY,
     STANDARD_ENERGY_PER_TRAIN,
-    STAT_GAIN_PER_STANDARD_TRAIN,
-    WEIGHT_CLASS_ENERGY,
-    gain_per_train,
-    trains_for,
     training_outcome,
     validate_training_energy,
 )
@@ -30,7 +26,7 @@ VALID_BATTLE_STATS = (
 
 # Kept as public aliases -- both are exported from `game.gym`.
 TRAINING_ENERGY_COST = STANDARD_ENERGY_PER_TRAIN
-TRAINING_STAT_GAIN = STAT_GAIN_PER_STANDARD_TRAIN
+TRAINING_STAT_GAIN = GAIN_PER_ENERGY * STANDARD_ENERGY_PER_TRAIN
 
 
 class GymError(Exception):
@@ -317,6 +313,7 @@ def train(
         gym,
         stat,
         energy,
+        stat_value=getattr(player, stat),
         happiness=getattr(player, "happiness", None),
         max_happiness=getattr(player, "max_happiness", None),
     )
@@ -382,6 +379,7 @@ def calculate_training_gain(gym_key, stat, energy=None, player=None):
         gym,
         stat,
         energy,
+        stat_value=getattr(player, stat, 0) or 0,
         happiness=getattr(player, "happiness", None),
         max_happiness=getattr(player, "max_happiness", None),
     ).stat_gain

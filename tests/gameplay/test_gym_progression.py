@@ -16,26 +16,23 @@ class GymProgressionTests(unittest.TestCase):
     def test_gains_progress_from_starter_to_elite(self):
         """The elite gym is worth twice the starter, per energy.
 
-        Compared at equal *energy* rather than equal trains: the two
-        charge different amounts per train now, so per-train figures
-        are no longer comparable between them.
+        One train at each, because the two charge different amounts per
+        train and a longer batch lifts itself as the stat rises.
         """
-        self.assertEqual(
-            calculate_training_gain(
-                "camden_community",
-                "strength",
-                100,
-            ),
-            20.0,
+        camden = calculate_training_gain(
+            "camden_community",
+            "strength",
+            5,
         )
-        self.assertEqual(
-            calculate_training_gain(
-                "soho_london_elite",
-                "strength",
-                100,
-            ),
-            40.0,
+        elite = calculate_training_gain(
+            "soho_london_elite",
+            "strength",
+            25,
         )
+
+        self.assertEqual(camden, 1.0)
+        self.assertEqual(elite, 10.0)
+        self.assertEqual(elite / 25, camden / 5 * 2)
 
     def test_specialist_gym_rejects_unavailable_stat(self):
         with self.assertRaises(GymStatUnavailableError):

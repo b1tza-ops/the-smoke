@@ -72,7 +72,8 @@ class CoreBoundaryTests(unittest.TestCase):
 
         self.assertTrue(trained)
         self.assertEqual(player.energy, 0)
-        self.assertEqual(player.strength, 12)
+        # Two trains, and the stat rises a little as they run.
+        self.assertEqual(player.strength, 12.01)
 
     def test_zero_nerve_cannot_attempt_crime(self):
         player = self.make_player(nerve=0)

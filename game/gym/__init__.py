@@ -1,12 +1,14 @@
 """Data-driven district gyms and training rules."""
 
 from game.gym.formula import (
-    HAPPINESS_PER_TRAIN,
+    GAIN_PER_ENERGY,
+    HAPPINESS_PER_ENERGY,
     STANDARD_ENERGY_PER_TRAIN,
-    STAT_GAIN_PER_STANDARD_TRAIN,
+    STAT_SCALE,
     WEIGHT_CLASS_ENERGY,
     TrainingOutcome,
     gain_per_train,
+    happiness_cost,
     trains_for,
     training_outcome,
     validate_training_energy,
@@ -45,12 +47,14 @@ from game.gym.service import (
 )
 
 __all__ = [
-    "HAPPINESS_PER_TRAIN",
+    "GAIN_PER_ENERGY",
+    "HAPPINESS_PER_ENERGY",
     "STANDARD_ENERGY_PER_TRAIN",
-    "STAT_GAIN_PER_STANDARD_TRAIN",
+    "STAT_SCALE",
     "WEIGHT_CLASS_ENERGY",
     "TrainingOutcome",
     "gain_per_train",
+    "happiness_cost",
     "trains_for",
     "training_outcome",
     "validate_training_energy",
