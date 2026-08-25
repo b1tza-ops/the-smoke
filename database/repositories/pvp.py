@@ -63,7 +63,8 @@ def get_pvp_targets(attacker_id, district, now=None):
                 players.jail_until, players.hospital_until,
                 players.travel_destination, players.travel_until,
                 players.shift_until, users.created_at,
-                COALESCE(rating.rating, 1000)
+                COALESCE(rating.rating, 1000),
+                players.max_health
             FROM players
             JOIN users ON users.id = players.user_id
             LEFT JOIN player_pvp_ratings AS rating
@@ -96,6 +97,7 @@ def get_pvp_targets(attacker_id, district, now=None):
             "name": row[2],
             "level": row[3],
             "health": row[4],
+            "max_health": row[17],
             "money": row[5],
             "strength": row[6],
             "defence": row[7],

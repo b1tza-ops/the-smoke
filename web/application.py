@@ -436,6 +436,43 @@ def internal_server_error(error):
     ), 500
 
 
+def build_pvp_playback(result):
+    """Shape a finished fight for the arena's round-by-round replay.
+
+    Rounds record raw health, and maximum health grows with level, so
+    the client is given each fighter's scale rather than assuming 100.
+    """
+    if result is None:
+        return None
+
+    return {
+        "victory": result.victory,
+        "total_rounds": max(
+            (event.round_number for event in result.rounds),
+            default=1,
+        ),
+        "max_health": {
+            "attacker": result.attacker_max_health,
+            "defender": result.defender_max_health,
+        },
+        "start_health": {
+            "attacker": result.attacker_start_health,
+            "defender": result.defender_start_health,
+        },
+        "rounds": [
+            {
+                "round": event.round_number,
+                "actor": event.actor,
+                "event": event.event,
+                "damage": event.damage,
+                "attacker": event.attacker_health,
+                "defender": event.defender_health,
+            }
+            for event in result.rounds
+        ],
+    }
+
+
 def _authenticate_staff_account(username, password):
     """Authenticate a moderator or administrator by game account.
 
@@ -1984,6 +2021,8 @@ def pvp():
     rating_update = None
     defender = None
     error = None
+    attacker_equipment = None
+    defender_equipment = None
     selected_approach = request.form.get("approach", "balanced")
     if selected_approach == "balanced":
         selected_approach = "defensive"
@@ -2003,11 +2042,14 @@ def pvp():
 
             limits = reserve_pvp_attack(player.id, defender.id)
 
+            attacker_equipment = get_equipment_summary(player.id)
+            defender_equipment = get_equipment_summary(defender.id)
+
             result = fight_player(
                 player,
                 defender,
-                get_equipment_summary(player.id),
-                get_equipment_summary(defender.id),
+                attacker_equipment,
+                defender_equipment,
                 selected_approach,
                 reward_multiplier=limits.reward_multiplier,
             )
@@ -2086,6 +2128,9 @@ def pvp():
         block_reason=get_pvp_block(player),
         result=result,
         defender=defender,
+        attacker_equipment=attacker_equipment,
+        defender_equipment=defender_equipment,
+        playback=build_pvp_playback(result),
         error=error,
         history=get_recent_pvp_attacks(player.id),
         notifications=notifications,

@@ -1,3 +1,4 @@
+import random
 import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -107,6 +108,51 @@ class PvpCombatTests(unittest.TestCase):
         self.assertIn(first.actor, {"attacker", "defender"})
         self.assertIn(first.event, {"hit", "miss", "dodge"})
 
+    def test_playback_carries_each_fighters_health_scale(self):
+        """Maximum health grows with level, so it cannot be assumed.
+
+        Without this the arena drew a bar as `health%`, which overflows
+        its track and reads "140/100" for a levelled-up fighter.
+        """
+        attacker = player(
+            1, level=5, health=140, max_health=140,
+        )
+        defender = player(
+            2, level=1, health=100, max_health=100,
+        )
+
+        result = fight_player(
+            attacker, defender,
+            self.empty_equipment, self.empty_equipment,
+            "precise", rng=random.Random(3),
+        )
+
+        self.assertEqual(result.attacker_start_health, 140)
+        self.assertEqual(result.attacker_max_health, 140)
+        self.assertEqual(result.defender_start_health, 100)
+        self.assertEqual(result.defender_max_health, 100)
+
+        for event in result.rounds:
+            self.assertLessEqual(
+                event.attacker_health, result.attacker_max_health,
+            )
+            self.assertLessEqual(
+                event.defender_health, result.defender_max_health,
+            )
+
+    def test_playback_falls_back_when_max_health_is_absent(self):
+        attacker = player(1, health=90)
+        defender = player(2, health=100)
+
+        result = fight_player(
+            attacker, defender,
+            self.empty_equipment, self.empty_equipment,
+            "precise", rng=random.Random(3),
+        )
+
+        self.assertEqual(result.attacker_max_health, 90)
+        self.assertEqual(result.defender_max_health, 100)
+
     def test_difficulty_estimate_is_relative(self):
         attacker = player(1)
         self.assertEqual(
@@ -123,6 +169,64 @@ class PvpCombatTests(unittest.TestCase):
             ),
             "Dangerous",
         )
+
+
+class PvpPlaybackPayloadTests(unittest.TestCase):
+    """The shape handed to the arena's replay script."""
+
+    def build(self, **overrides):
+        from web.application import build_pvp_playback
+        from game.combat.pvp import CombatRound, PvpResult
+
+        values = dict(
+            victory=True,
+            attacker_health=60,
+            defender_health=0,
+            cash_stolen=25,
+            xp_reward=30,
+            rounds=(
+                CombatRound(1, "attacker", "hit", 40, 140, 60),
+                CombatRound(2, "defender", "miss", 0, 140, 60),
+                CombatRound(2, "attacker", "hit", 60, 140, 0),
+            ),
+            hospital_until=None,
+            attacker_start_health=140,
+            attacker_max_health=140,
+            defender_start_health=100,
+            defender_max_health=100,
+        )
+        values.update(overrides)
+        return build_pvp_playback(PvpResult(**values))
+
+    def test_payload_carries_both_health_scales(self):
+        payload = self.build()
+
+        self.assertEqual(payload["max_health"]["attacker"], 140)
+        self.assertEqual(payload["max_health"]["defender"], 100)
+        self.assertEqual(payload["start_health"]["attacker"], 140)
+        self.assertEqual(payload["start_health"]["defender"], 100)
+
+    def test_payload_counts_rounds_not_events(self):
+        payload = self.build()
+
+        self.assertEqual(len(payload["rounds"]), 3)
+        self.assertEqual(payload["total_rounds"], 2)
+
+    def test_payload_is_json_serialisable(self):
+        import json
+
+        self.assertIn('"victory": true', json.dumps(self.build()))
+
+    def test_no_fight_produces_no_payload(self):
+        from web.application import build_pvp_playback
+
+        self.assertIsNone(build_pvp_playback(None))
+
+    def test_a_fight_with_no_rounds_still_reports_one_round(self):
+        payload = self.build(rounds=())
+
+        self.assertEqual(payload["total_rounds"], 1)
+        self.assertEqual(payload["rounds"], [])
 
 
 if __name__ == "__main__":
