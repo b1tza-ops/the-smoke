@@ -86,6 +86,18 @@ class ShiftState:
 
 
 @dataclass(frozen=True)
+class ShiftCancellationResult:
+    role_key: str
+    salary: int
+    work_xp: int
+    levels_gained: int
+    total_career_xp: int
+    seconds_worked: int
+    percent_worked: int
+    promoted_to: str | None
+
+
+@dataclass(frozen=True)
 class ShiftCompletionResult:
     role_key: str
     salary: int
@@ -255,6 +267,57 @@ def complete_shift(player, now=None):
     )
 
 
+def cancel_shift(player, now=None):
+    """Leave a shift early, paid for the time actually worked.
+
+    Pay and career XP are pro-rated against the full shift length.
+    The shift does not count towards `shifts_completed`, so promotion
+    thresholds measured in shifts still require finishing them, and
+    the energy spent starting the shift is not refunded -- leaving
+    early is always worse than seeing it through.
+    """
+    role = _require_current_role(player)
+    state = get_shift_state(player, now=now)
+
+    if state is None:
+        raise NoShiftError("There is no shift to leave.")
+
+    now = normalise_now(now)
+    started_at = getattr(player, "shift_started_at", None)
+
+    if started_at is None:
+        seconds_worked = 0
+    else:
+        seconds_worked = int(
+            (now - parse_timestamp(started_at)).total_seconds()
+        )
+
+    seconds_worked = max(0, min(SHIFT_SECONDS, seconds_worked))
+    worked_fraction = seconds_worked / SHIFT_SECONDS
+
+    salary = int(role.salary * worked_fraction)
+    work_xp = int(role.work_xp * worked_fraction)
+
+    player.money += salary
+    player.career_xp += work_xp
+    player.shift_started_at = None
+    player.shift_until = None
+
+    levels_gained = award_xp(player, work_xp)
+    promoted_to = _apply_available_promotion(player)
+
+    return ShiftCancellationResult(
+        role_key=role.key,
+        salary=salary,
+        work_xp=work_xp,
+        levels_gained=levels_gained,
+        total_career_xp=player.career_xp,
+        seconds_worked=seconds_worked,
+        percent_worked=int(worked_fraction * 100),
+        promoted_to=promoted_to,
+    )
+
+
 def jobs_menu(player):
     while True:
         print("\n===== JOBS =====")
@@ -311,9 +374,33 @@ def jobs_menu(player):
                 "Shift remaining:",
                 _format_duration(state.remaining_seconds),
             )
-            print("\n1. Back")
-            input("Choose: ")
-            return
+            print("\n1. Leave early for part pay")
+            print("2. Back")
+            choice = input("Choose: ").strip()
+
+            if choice != "1":
+                return
+
+            try:
+                cancelled = cancel_shift(player)
+            except JobError as error:
+                print(f"\nCould not leave the shift: {error}")
+                continue
+
+            print(
+                f"\nYou left after {cancelled.percent_worked}% "
+                f"of the shift."
+            )
+            print(f"Part pay: £{cancelled.salary:,}")
+            print("Work XP +", cancelled.work_xp)
+
+            if cancelled.promoted_to is not None:
+                promoted_role = get_job_role(
+                    cancelled.promoted_to
+                )
+                print("Promotion:", promoted_role.name)
+
+            continue
 
         if state is not None:
             print("\n1. Complete shift")

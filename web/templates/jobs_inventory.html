@@ -23,7 +23,10 @@
 <div class="career-metrics"><div><span>Career XP</span><strong>{{ player.career_xp }}</strong></div><div><span>Shifts</span><strong>{{ player.shifts_completed }}</strong></div><div><span>Energy cost</span><strong>{{ role.energy_cost }}</strong></div></div>
 {% if shift_state %}
 <div class="shift-status"><span>{{ 'Shift ready to claim' if shift_state.ready_to_complete else 'Shift in progress' }}</span>{% if not shift_state.ready_to_complete %}<strong id="shift-countdown" data-seconds="{{ shift_state.remaining_seconds }}">--:--:--</strong>{% endif %}</div>
-{% if shift_state.ready_to_complete %}<form method="post" action="{{ url_for('jobs') }}#jobs-panel"><input type="hidden" name="action" value="complete_shift"><button class="work-button" type="submit"><span>Collect wages</span><span>→</span></button></form>{% endif %}
+{% if shift_state.ready_to_complete %}<form method="post" action="{{ url_for('jobs') }}#jobs-panel"><input type="hidden" name="action" value="complete_shift"><button class="work-button" type="submit"><span>Collect wages</span><span>→</span></button></form>
+{% else %}
+<div class="shift-leave"><p>Leaving early pays only for the time worked, and the shift will not count towards a promotion.</p><form method="post" action="{{ url_for('jobs') }}#jobs-panel"><input type="hidden" name="action" value="cancel_shift"><button class="admin-action" type="submit">Leave early for part pay</button></form></div>
+{% endif %}
 {% else %}<form method="post" action="{{ url_for('jobs') }}#jobs-panel"><input type="hidden" name="action" value="start_shift"><button class="work-button" type="submit" {% if player.energy < role.energy_cost %}disabled{% endif %}><span>Start three-hour shift</span><span>→</span></button></form>{% endif %}
 </article>
 {% else %}
