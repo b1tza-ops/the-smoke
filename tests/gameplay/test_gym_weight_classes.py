@@ -55,7 +55,7 @@ class GymWeightClassTests(unittest.TestCase):
 class TrainingEconomyTests(unittest.TestCase):
     def setUp(self):
         self.camden = GYMS_BY_KEY["camden_community"]
-        self.elite = GYMS_BY_KEY["soho_london_elite"]
+        self.elite = GYMS_BY_KEY["hackney_the_lock"]
 
     def test_a_batch_equals_the_same_trains_taken_one_at_a_time(self):
         batch = training_outcome(
@@ -236,7 +236,7 @@ class StatScaledGainTests(unittest.TestCase):
 
     def setUp(self):
         self.camden = GYMS_BY_KEY["camden_community"]
-        self.elite = GYMS_BY_KEY["soho_london_elite"]
+        self.elite = GYMS_BY_KEY["hackney_the_lock"]
 
     def one_train(self, gym, stat_value):
         return training_outcome(
@@ -249,7 +249,8 @@ class StatScaledGainTests(unittest.TestCase):
     def test_a_beginner_gains_exactly_what_they_used_to(self):
         # The floor is set so the opening experience is unchanged.
         self.assertEqual(self.one_train(self.camden, 10), 1.0)
-        self.assertEqual(self.one_train(self.elite, 10), 10.05)
+        # 25 energy at x4.0 -- the top of the roster, in one commitment.
+        self.assertEqual(self.one_train(self.elite, 10), 20.1)
 
     def test_gain_doubles_at_the_scaling_point(self):
         self.assertEqual(
@@ -302,10 +303,13 @@ class StatScaledGainTests(unittest.TestCase):
         # rounded to two places before it reaches the player.
         for stat_value in (10, 2000, 8000):
             with self.subTest(stat_value=stat_value):
-                # Per point of energy, the elite gym is worth double.
+                # Per point of energy, the top gym is worth four times.
                 self.assertAlmostEqual(
-                    gain_per_train(self.elite, "strength", stat_value) / 25,
-                    gain_per_train(self.camden, "strength", stat_value) / 5 * 2,
+                    gain_per_train(self.elite, "strength", stat_value)
+                    / self.elite.energy_per_train,
+                    gain_per_train(self.camden, "strength", stat_value)
+                    / self.camden.energy_per_train
+                    * 4,
                     places=9,
                 )
 
