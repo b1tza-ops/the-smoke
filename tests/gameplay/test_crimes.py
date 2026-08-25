@@ -11,11 +11,17 @@ from game.crime import (
     display_crime_result,
     get_crime,
 )
+from game.world.districts import DISTRICTS
 class CrimeDefinitionTests(unittest.TestCase):
-    def test_starter_crimes_cover_each_planned_district(self):
+    def test_every_district_has_crimes_of_its_own(self):
+        # Derived from the district catalogue, so a new district cannot
+        # ship as an empty room.
         districts = {crime.district for crime in CRIMES}
 
-        self.assertEqual(districts, {"Camden", "Brixton", "Soho"})
+        self.assertEqual(
+            districts,
+            {district.name for district in DISTRICTS},
+        )
         self.assertEqual(len({crime.key for crime in CRIMES}), len(CRIMES))
 
 

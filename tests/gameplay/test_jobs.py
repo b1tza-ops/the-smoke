@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 import unittest
 
+from game.world.districts import DISTRICTS_BY_KEY
 from game.jobs import (
     CAREERS,
     SHIFT_SECONDS,
@@ -177,11 +178,28 @@ class JobSystemTests(unittest.TestCase):
         self.assertEqual(player.career_xp, 60)
         self.assertEqual(player.shifts_completed, 4)
 
-    def test_all_three_careers_are_defined(self):
+    def test_every_career_is_defined_once(self):
+        keys = [career.key for career in CAREERS]
+
         self.assertEqual(
-            {career.key for career in CAREERS},
-            {"construction", "hospitality", "transport"},
+            set(keys),
+            {
+                "construction",
+                "hospitality",
+                "transport",
+                "creative",
+                "security",
+            },
         )
+        self.assertEqual(len(keys), len(set(keys)))
+
+    def test_district_careers_name_a_real_district(self):
+        for career in CAREERS:
+            if career.required_district is None:
+                continue
+
+            with self.subTest(career=career.key):
+                self.assertIn(career.required_district, DISTRICTS_BY_KEY)
 
     def test_player_can_join_hospitality_career_in_soho(self):
         player = self.make_player(current_district="soho")
