@@ -91,6 +91,7 @@ from database.repositories.users import (
     get_user_by_username,
     is_email_verified,
 )
+from database.repositories.fence import FenceError, sell_to_fence
 from database.repositories.operations import (
     get_campaign,
     resolve_operation,
@@ -187,10 +188,17 @@ from game.economy.bank import (
     deposit_cash,
     withdraw_cash,
 )
+from game.economy.fence import (
+    FENCE_RATE,
+    SPECIALITY_RATE,
+    fence_price,
+    get_fence,
+)
 from game.shop import ShopError, get_district_shop, purchase
 from game.inventory import (
     INVENTORY_SLOT_CAPACITY,
     ITEMS,
+    ITEMS_BY_KEY,
     EquipmentError,
     InventoryError,
     add_item,
@@ -1247,6 +1255,83 @@ def district_shop():
             and player.hospital_until is None
         ),
     )
+
+@app.route("/blackmarket", methods=["GET", "POST"])
+def black_market():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    message = None
+    error = None
+
+    if request.method == "POST":
+        try:
+            result = sell_to_fence(
+                session["user_id"],
+                player.current_district,
+                request.form.get("item_key", ""),
+                int(request.form.get("quantity", "0")),
+            )
+            message = (
+                f"Sold {result['quantity']} × {result['item'].name} "
+                f"for £{result['payout']:,}."
+            )
+            record_player_action(
+                "fence_sale",
+                message,
+                {
+                    "fence": result["fence"].key,
+                    "item_key": result["item"].key,
+                    "quantity": result["quantity"],
+                    "payout": result["payout"],
+                },
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (ValueError, FenceError) as fence_error:
+            error = str(fence_error)
+
+    fence = get_fence(player.current_district)
+    inventory = getattr(player, "inventory", {}) or {}
+
+    return render_template(
+        "blackmarket.html",
+        player=player,
+        fence=fence,
+        fence_base=FENCE_RATE,
+        fence_speciality=SPECIALITY_RATE,
+        offers=sorted(
+            (
+                {
+                    "item": ITEMS_BY_KEY[key],
+                    "quantity": quantity,
+                    "unit_price": fence_price(ITEMS_BY_KEY[key], player.current_district),
+                    "premium": (
+                        fence is not None
+                        and ITEMS_BY_KEY[key].category in fence.specialities
+                    ),
+                }
+                for key, quantity in inventory.items()
+                if key in ITEMS_BY_KEY
+            ),
+            key=lambda offer: -offer["unit_price"] * offer["quantity"],
+        ),
+        message=message,
+        error=error,
+        accessible=(
+            player.travel_destination is None
+            and player.jail_until is None
+            and player.hospital_until is None
+        ),
+    )
+
 
 @app.route("/jobs", methods=["GET", "POST"])
 def jobs():

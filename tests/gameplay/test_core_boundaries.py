@@ -104,6 +104,7 @@ class CoreBoundaryTests(unittest.TestCase):
         rng.randint.side_effect = [
             1,
             crime.min_reward,
+            100,          # loot roll: nothing this time
         ]
 
         result = commit_crime(

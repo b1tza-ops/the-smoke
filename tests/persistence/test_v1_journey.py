@@ -93,7 +93,7 @@ class V1PlayerJourneyTests(unittest.TestCase):
                     "camden_shoplift"
                 )
                 rng = Mock()
-                rng.randint.side_effect = [1, 40]
+                rng.randint.side_effect = [1, 40, 100]
                 commit_crime(
                     player,
                     crime,

@@ -219,7 +219,7 @@ class HappinessCrimeIntegrationTests(unittest.TestCase):
     def test_full_happiness_keeps_the_unboosted_chance(self):
         crime = get_crime("soho_pickpocket")
         rng = Mock()
-        rng.randint.side_effect = [60, 1]
+        rng.randint.side_effect = [60, 1, 100]
 
         player = self.make_player(happiness=100)
         result = commit_crime(player, crime, rng=rng)

@@ -1436,6 +1436,41 @@ def migrate_032_operations_campaign(cursor):
     )
 
 
+def migrate_033_black_market(cursor):
+    """A ledger for black market sales.
+
+    Mirrors `shop_transactions`, which records the other direction, so
+    the two halves of the item economy are auditable the same way.
+    """
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fence_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            fence_key TEXT NOT NULL,
+            item_key TEXT NOT NULL,
+            quantity INTEGER NOT NULL CHECK (quantity > 0),
+            unit_price INTEGER NOT NULL CHECK (unit_price >= 0),
+            payout INTEGER NOT NULL CHECK (payout >= 0),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_fence_transactions_player
+        ON fence_transactions (player_id, created_at DESC)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1596,6 +1631,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=32,
         name="operations_campaign",
         apply=migrate_032_operations_campaign,
+    ),
+    Migration(
+        version=33,
+        name="black_market",
+        apply=migrate_033_black_market,
     ),
 )
 

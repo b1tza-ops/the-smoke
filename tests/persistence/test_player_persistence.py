@@ -178,7 +178,7 @@ class PlayerPersistenceTests(unittest.TestCase):
                 player = Player(*get_player_by_user_id(user_id))
                 crime = get_crime("camden_shoplift")
                 rng = Mock()
-                rng.randint.side_effect = [1, 40]
+                rng.randint.side_effect = [1, 40, 100]
 
                 commit_crime(player, crime, rng=rng)
                 save_player(player)

@@ -455,6 +455,47 @@ Items may come from shops, crimes, jobs, missions, events, rewards or player tra
 
 Shops belong to districts and can have individual stock and pricing.
 
+### Item value
+
+Every item has a `value`: the lowest price any shop charges for it. That is
+the single source of truth for what an item is worth, and everything that
+pays out for an item is a fraction of it.
+
+### The black market
+
+Legitimate shops sell but never buy — they do not take stolen goods. Selling
+happens at a **fence**, one per district, which buys anything at **50% of
+value**, or **65%** for the categories that fence deals in:
+
+| Fence | District | Deals in |
+| --- | --- | --- |
+| Camden Lock Market | Camden | Boosts, medical |
+| The Railway Arch | Brixton | Weapons |
+| The Back Room | Soho | Medical, tools |
+| Unit Nine | Shoreditch | Tools |
+| The Towpath | Hackney | Weapons, armour |
+
+Because value is the *cheapest* shop price and the best fence rate is 65%,
+buying in one district and fencing in another is always a loss. Cross-district
+arbitrage is closed by construction rather than by a rule, and a test pins it.
+
+### Loot
+
+A successful crime yields an item some of the time — 45% for the small Camden
+jobs, up to 60% for the Hackney canal handover — from a pool suited to the
+crime. A Camden shoplift yields whatever was by the till; the canal handover
+yields the sort of kit somebody was moving for a reason.
+
+Failed crimes drop nothing. When there is nowhere to put a drop — the bag is
+full, or it is a second machete and only one may be carried — the fence price
+is paid in cash instead, so a drop is never silently lost.
+
+Loot lifts the safe early crimes by roughly 30–40%: a Camden shoplift goes
+from about £188 to £241 an hour. It deliberately does **not** rescue the
+high-tier crimes whose multi-day jail sentences dominate their rate — Soho
+Nightclub moves from £12 to £18 an hour against the shoplift's £241, so the
+safe crimes stay correct.
+
 ---
 
 ## Combat
