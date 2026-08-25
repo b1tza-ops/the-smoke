@@ -130,7 +130,57 @@ class WebRegistrationTests(unittest.TestCase):
         )
 
     @patch(
+        "web.application.is_account_blocked",
+        return_value=True,
+    )
+    @patch(
+        "web.application.is_user_suspended",
+        return_value=False,
+    )
+    @patch(
+        "web.application.verify_password",
+        return_value=True,
+    )
+    @patch(
+        "web.application.get_user_by_username",
+        return_value=(
+            7,
+            "player",
+            "player@example.com",
+            "hash",
+            "created",
+        ),
+    )
+    def test_banned_or_suspended_player_cannot_log_in(
+        self,
+        get_user_by_username,
+        verify_password,
+        is_user_suspended,
+        is_account_blocked,
+    ):
+        response = self.client.post(
+            "/login",
+            data={
+                "username": "player",
+                "password": "password",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"suspended or banned", response.data)
+        with self.client.session_transaction() as session:
+            self.assertNotIn("user_id", session)
+
+    @patch(
         "web.application.is_email_verified",
+        return_value=False,
+    )
+    @patch(
+        "web.application.is_account_blocked",
+        return_value=False,
+    )
+    @patch(
+        "web.application.is_user_suspended",
         return_value=False,
     )
     @patch(
@@ -151,6 +201,8 @@ class WebRegistrationTests(unittest.TestCase):
         self,
         get_user_by_username,
         verify_password,
+        is_user_suspended,
+        is_account_blocked,
         is_email_verified,
     ):
         response = self.client.post(

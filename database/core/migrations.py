@@ -1162,6 +1162,95 @@ def migrate_028_level_scaled_max_health(cursor):
     )
 
 
+def migrate_029_admin_moderation_foundation(cursor):
+    existing_user_columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(users)"
+        )
+    }
+
+    if "role" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN role TEXT NOT NULL DEFAULT 'player'
+                CHECK (role IN ('player', 'moderator', 'admin'))
+            """
+        )
+
+    if "account_state" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN account_state TEXT NOT NULL DEFAULT 'active'
+                CHECK (
+                    account_state IN (
+                        'active', 'suspended', 'banned'
+                    )
+                )
+            """
+        )
+
+    if "suspended_until" not in existing_user_columns:
+        cursor.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN suspended_until TEXT
+            """
+        )
+
+    cursor.execute(
+        """
+        UPDATE users
+        SET account_state = 'suspended'
+        WHERE suspended_at IS NOT NULL
+            AND account_state = 'active'
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS moderation_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor_user_id INTEGER NOT NULL,
+            target_user_id INTEGER NOT NULL,
+            action_type TEXT NOT NULL
+                CHECK (
+                    action_type IN (
+                        'warn', 'suspend', 'ban', 'reverse',
+                        'role_change'
+                    )
+                ),
+            reason TEXT NOT NULL,
+            previous_state TEXT NOT NULL,
+            new_state TEXT NOT NULL,
+            expires_at TEXT,
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (actor_user_id)
+                REFERENCES users(id)
+                ON DELETE RESTRICT,
+            FOREIGN KEY (target_user_id)
+                REFERENCES users(id)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_moderation_actions_target_created
+        ON moderation_actions (
+            target_user_id,
+            created_at DESC
+        )
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1302,6 +1391,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=28,
         name="level_scaled_max_health",
         apply=migrate_028_level_scaled_max_health,
+    ),
+    Migration(
+        version=29,
+        name="admin_moderation_foundation",
+        apply=migrate_029_admin_moderation_foundation,
     ),
 )
 
