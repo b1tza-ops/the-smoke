@@ -1251,6 +1251,109 @@ def migrate_029_admin_moderation_foundation(cursor):
     )
 
 
+def migrate_030_operator_moderation_actions(cursor):
+    """Let the server operator appear in the moderation audit trail.
+
+    The `/admin` panel can be entered with the shared credential
+    configured in the server environment, which is not tied to any
+    player account. Those sessions still need to be auditable, so
+    `actor_user_id` becomes nullable and a NULL actor means "server
+    operator (bootstrap credential)" -- the same convention
+    `player_activity` already uses for system-generated entries.
+
+    SQLite cannot drop a NOT NULL constraint in place, so the table is
+    rebuilt and its rows are copied across.
+    """
+    actor_column = next(
+        (
+            row
+            for row in cursor.execute(
+                "PRAGMA table_info(moderation_actions)"
+            )
+            if row[1] == "actor_user_id"
+        ),
+        None,
+    )
+
+    if actor_column is None or actor_column[3] == 0:
+        return
+
+    cursor.execute(
+        """
+        CREATE TABLE moderation_actions_rebuilt (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor_user_id INTEGER,
+            target_user_id INTEGER NOT NULL,
+            action_type TEXT NOT NULL
+                CHECK (
+                    action_type IN (
+                        'warn', 'suspend', 'ban', 'reverse',
+                        'role_change'
+                    )
+                ),
+            reason TEXT NOT NULL,
+            previous_state TEXT NOT NULL,
+            new_state TEXT NOT NULL,
+            expires_at TEXT,
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (actor_user_id)
+                REFERENCES users(id)
+                ON DELETE SET NULL,
+            FOREIGN KEY (target_user_id)
+                REFERENCES users(id)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT INTO moderation_actions_rebuilt (
+            id,
+            actor_user_id,
+            target_user_id,
+            action_type,
+            reason,
+            previous_state,
+            new_state,
+            expires_at,
+            created_at
+        )
+        SELECT
+            id,
+            actor_user_id,
+            target_user_id,
+            action_type,
+            reason,
+            previous_state,
+            new_state,
+            expires_at,
+            created_at
+        FROM moderation_actions
+        """
+    )
+
+    cursor.execute("DROP TABLE moderation_actions")
+    cursor.execute(
+        """
+        ALTER TABLE moderation_actions_rebuilt
+        RENAME TO moderation_actions
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+            idx_moderation_actions_target_created
+        ON moderation_actions (
+            target_user_id,
+            created_at DESC
+        )
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1396,6 +1499,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=29,
         name="admin_moderation_foundation",
         apply=migrate_029_admin_moderation_foundation,
+    ),
+    Migration(
+        version=30,
+        name="operator_moderation_actions",
+        apply=migrate_030_operator_moderation_actions,
     ),
 )
 

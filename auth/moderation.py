@@ -1,13 +1,16 @@
 """Roles, account states, and an audited moderation trail.
 
-This is a backend foundation only -- it does not wire into the existing
-`/admin` panel, which still uses its own single shared credential. A
-future staff tool can call these functions once real per-account admin
-sessions exist.
-
 The acting account's role is always looked up fresh from the database
 inside these functions; nothing here trusts a role passed in from a
 caller, so a spoofed or stale client-side role can't grant access.
+
+`actor_user_id=None` means the server operator: whoever entered the
+`/admin` panel with the shared credential configured in the server
+environment, which is deliberately not tied to any player account. That
+actor carries full admin authority (it is the bootstrap path used to
+grant the first real admin role) and is recorded in the audit trail as
+a NULL actor, the same convention `player_activity` already uses for
+system-generated entries.
 
 The audit trail (`moderation_actions`) is append-only by construction:
 the repository layer only exposes inserts and reads for that table, so
@@ -32,6 +35,10 @@ from game.player.status import normalise_now
 ROLES = ("player", "moderator", "admin")
 MODERATOR_ROLES = ("moderator", "admin")
 ADMIN_ROLES = ("admin",)
+
+# Effective role of a `None` actor: the server operator signed in with
+# the shared credential from the server environment.
+OPERATOR_ROLE = "admin"
 
 
 class ModerationError(Exception):
@@ -209,6 +216,9 @@ def get_history(target_user_id):
 
 
 def _require_role(actor_user_id, allowed_roles):
+    if actor_user_id is None:
+        return OPERATOR_ROLE
+
     role = get_user_role(actor_user_id)
 
     if role is None:

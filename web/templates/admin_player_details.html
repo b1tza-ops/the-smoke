@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ details.account.username }} · Operations · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-inventory-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='admin-moderation-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -30,7 +30,9 @@
                 <p>{{ details.account.email }}</p>
             </div>
             <div>
-                {% if details.account.suspended_at %}
+                {% if details.account.account_state == "banned" %}
+                    <span class="admin-state admin-state--blocked">Banned</span>
+                {% elif details.account.account_state == "suspended" or details.account.suspended_at %}
                     <span class="admin-state admin-state--blocked">Suspended</span>
                 {% elif details.account.email_verified %}
                     <span class="admin-state">Active</span>
@@ -49,6 +51,7 @@
             <a href="#admin-inventory">Inventory</a>
             <a href="#admin-crimes">Crimes</a>
             {% endif %}
+            <a href="#admin-moderation">Moderation</a>
             <a href="#admin-activity">Activity</a>
         </nav>
 
@@ -63,12 +66,14 @@
                     <div><dt>Last seen</dt><dd>{{ details.account.last_seen or "Never" }}</dd></div>
                     <div><dt>Suspended at</dt><dd>{{ details.account.suspended_at or "—" }}</dd></div>
                 </dl>
+                {% if admin_role == "admin" %}
                 <form method="post" action="{{ url_for('admin_user_suspension', user_id=details.account.user_id) }}">
                     <input type="hidden" name="suspended" value="{{ 0 if details.account.suspended_at else 1 }}">
                     <button class="admin-action {{ 'admin-action--restore' if details.account.suspended_at }}" type="submit">
                         {{ "Reactivate account" if details.account.suspended_at else "Suspend account" }}
                     </button>
                 </form>
+                {% endif %}
             </article>
 
             <article class="admin-panel" id="admin-economy">
@@ -114,6 +119,7 @@
                     <div><dt>Jail until</dt><dd>{{ details.account.jail_until or "—" }}</dd></div>
                     <div><dt>Hospital until</dt><dd>{{ details.account.hospital_until or "—" }}</dd></div>
                 </dl>
+                {% if admin_role == "admin" %}
                 <div class="admin-status-control">
                     <h3>Set player status</h3>
                     <p>Overrides travel and any existing Jail or Hospital status. Maximum duration is three days.</p>
@@ -139,6 +145,7 @@
                     </form>
                     {% endif %}
                 </div>
+                {% endif %}
             </article>
         </section>
 
@@ -150,6 +157,7 @@
                     <div><strong>{{ item.item_key|replace("_", " ")|title }}</strong><span>× {{ item.quantity }}</span></div>
                     {% else %}<p>Inventory is empty.</p>{% endfor %}
                 </div>
+                {% if admin_role == "admin" %}
                 <div class="admin-inventory-control">
                     <h3>Manage items</h3>
                     <p>Grant an item or remove an existing quantity. Item stack and inventory limits still apply.</p>
@@ -170,6 +178,7 @@
                         </div>
                     </form>
                 </div>
+                {% endif %}
                 <h3 class="admin-subheading">Unlocked gyms</h3>
                 <div class="admin-chip-list">
                     {% for gym in details.unlocked_gyms %}<span>{{ gym|replace("_", " ")|title }}</span>{% else %}<span>None</span>{% endfor %}
@@ -192,6 +201,80 @@
             </article>
         </section>
         {% endif %}
+
+        <section class="admin-detail-grid">
+            <article class="admin-panel" id="admin-moderation">
+                <div class="section-heading"><div><p class="eyebrow">Moderation</p><h2>Account standing</h2></div>
+                    {% set state = details.account.account_state or "active" %}
+                    <span class="admin-state {{ 'admin-state--blocked' if state in ('suspended', 'banned') }}">{{ state|title }}</span>
+                </div>
+                <dl class="admin-detail-list">
+                    <div><dt>Role</dt><dd>{{ (details.account.role or "player")|title }}</dd></div>
+                    <div><dt>Account state</dt><dd>{{ state|title }}</dd></div>
+                    <div><dt>Suspended until</dt><dd>{{ details.account.suspended_until or ("Indefinite" if state == "suspended" else "—") }}</dd></div>
+                </dl>
+
+                <div class="admin-status-control">
+                    <h3>Take moderation action</h3>
+                    <p>Every action is recorded in the audit trail below with your name and reason. A reason is required.</p>
+                    <form method="post" action="{{ url_for('admin_user_moderation', user_id=details.account.user_id) }}">
+                        <label class="admin-status-reason">Reason
+                            <input name="reason" maxlength="200" placeholder="Why is this action being taken?" required>
+                        </label>
+                        <label>Suspension length in minutes <small>(leave blank for indefinite)</small>
+                            <input name="duration_minutes" type="number" min="1" inputmode="numeric" placeholder="Indefinite">
+                        </label>
+                        <div class="admin-inventory-actions">
+                            <button name="action" value="warn" type="submit">Issue warning</button>
+                            <button name="action" value="suspend" type="submit">Suspend</button>
+                            {% if admin_role == "admin" %}
+                            <button class="admin-action admin-action--danger" name="action" value="ban" type="submit">Ban</button>
+                            {% endif %}
+                            {% if state != "active" %}
+                            <button class="admin-action admin-action--restore" name="action" value="reverse" type="submit">Restore to active</button>
+                            {% endif %}
+                        </div>
+                    </form>
+                    {% if admin_role != "admin" %}
+                    <p class="admin-role-note">Banning and role changes require an administrator.</p>
+                    {% endif %}
+                </div>
+
+                {% if admin_role == "admin" %}
+                <div class="admin-status-control">
+                    <h3>Assign role</h3>
+                    <p>Moderators can warn, suspend and restore. Administrators can also ban and change roles.</p>
+                    <form method="post" action="{{ url_for('admin_user_role', user_id=details.account.user_id) }}">
+                        <label>Role
+                            <select name="role" required>
+                                {% for role in assignable_roles %}
+                                <option value="{{ role }}" {{ 'selected' if role == (details.account.role or 'player') }}>{{ role|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <button class="admin-status-submit" type="submit">Update role</button>
+                    </form>
+                </div>
+                {% endif %}
+            </article>
+
+            <article class="admin-panel" id="admin-moderation-history">
+                <div class="section-heading"><div><p class="eyebrow">Immutable record</p><h2>Moderation history</h2></div></div>
+                <div class="activity-list">
+                    {% for entry in moderation_history %}
+                    <article>
+                        <span class="activity-type">{{ entry[3]|replace("_", " ")|title }}</span>
+                        <div>
+                            <strong>{{ entry[9] or "Server operator" }}</strong>
+                            <p>{{ entry[4] }}</p>
+                            <small>{{ entry[5]|title }} → {{ entry[6]|title }}{% if entry[7] %} · until {{ entry[7] }}{% endif %}</small>
+                        </div>
+                        <time>{{ entry[8] }}</time>
+                    </article>
+                    {% else %}<p>No moderation actions recorded for this account.</p>{% endfor %}
+                </div>
+            </article>
+        </section>
 
         <section class="admin-panel" id="admin-activity">
             <div class="section-heading"><div><p class="eyebrow">Audit ledger</p><h2>Player activity</h2></div></div>

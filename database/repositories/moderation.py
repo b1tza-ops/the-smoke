@@ -134,18 +134,23 @@ def get_moderation_history(target_user_id):
             connection.execute(
                 """
                 SELECT
-                    id,
-                    actor_user_id,
-                    target_user_id,
-                    action_type,
-                    reason,
-                    previous_state,
-                    new_state,
-                    expires_at,
-                    created_at
+                    moderation_actions.id,
+                    moderation_actions.actor_user_id,
+                    moderation_actions.target_user_id,
+                    moderation_actions.action_type,
+                    moderation_actions.reason,
+                    moderation_actions.previous_state,
+                    moderation_actions.new_state,
+                    moderation_actions.expires_at,
+                    moderation_actions.created_at,
+                    actors.username
                 FROM moderation_actions
-                WHERE target_user_id = ?
-                ORDER BY created_at DESC, id DESC
+                LEFT JOIN users AS actors
+                    ON actors.id = moderation_actions.actor_user_id
+                WHERE moderation_actions.target_user_id = ?
+                ORDER BY
+                    moderation_actions.created_at DESC,
+                    moderation_actions.id DESC
                 """,
                 (target_user_id,),
             ).fetchall()
