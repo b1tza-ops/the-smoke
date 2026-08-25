@@ -92,6 +92,13 @@ from database.repositories.users import (
     is_email_verified,
 )
 from database.repositories.fence import FenceError, sell_to_fence
+from database.repositories.market import (
+    MarketError,
+    buy_listing,
+    cancel_listing,
+    create_listing,
+    get_open_listings,
+)
 from database.repositories.operations import (
     get_campaign,
     resolve_operation,
@@ -188,6 +195,7 @@ from game.economy.bank import (
     deposit_cash,
     withdraw_cash,
 )
+from game.economy.market import COMMISSION_RATE, minimum_price
 from game.economy.fence import (
     FENCE_RATE,
     SPECIALITY_RATE,
@@ -1330,6 +1338,90 @@ def black_market():
             and player.jail_until is None
             and player.hospital_until is None
         ),
+    )
+
+
+@app.route("/market", methods=["GET", "POST"])
+def item_market():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    message = None
+    error = None
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+
+        try:
+            if action == "list":
+                result = create_listing(
+                    session["user_id"],
+                    request.form.get("item_key", ""),
+                    int(request.form.get("quantity", "0")),
+                    int(request.form.get("price_each", "0")),
+                )
+                message = (
+                    f"Listed {result['quantity']} × {result['item'].name} "
+                    f"at £{result['price_each']:,} each."
+                )
+            elif action == "buy":
+                result = buy_listing(
+                    session["user_id"],
+                    int(request.form.get("listing_id", "0")),
+                )
+                message = (
+                    f"Bought {result['quantity']} × {result['item'].name} "
+                    f"for £{result['total']:,}."
+                )
+            elif action == "cancel":
+                result = cancel_listing(
+                    session["user_id"],
+                    int(request.form.get("listing_id", "0")),
+                )
+                message = (
+                    f"Delisted {result['quantity']} × {result['item'].name}."
+                )
+            else:
+                raise MarketError("Unknown market action.")
+
+            record_player_action(f"market_{action}", message)
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (ValueError, MarketError) as market_error:
+            error = str(market_error)
+
+    inventory = getattr(player, "inventory", {}) or {}
+
+    return render_template(
+        "market.html",
+        player=player,
+        listings=get_open_listings(session["user_id"]),
+        sellable=sorted(
+            (
+                {
+                    "item": ITEMS_BY_KEY[key],
+                    "quantity": quantity,
+                    "floor": minimum_price(ITEMS_BY_KEY[key]),
+                }
+                for key, quantity in inventory.items()
+                if key in ITEMS_BY_KEY
+            ),
+            key=lambda offer: offer["item"].name,
+        ),
+        commission_percent=int(COMMISSION_RATE * 100),
+        accessible=(
+            player.jail_until is None
+            and player.hospital_until is None
+        ),
+        message=message,
+        error=error,
     )
 
 

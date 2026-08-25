@@ -490,6 +490,31 @@ Failed crimes drop nothing. When there is nowhere to put a drop — the bag is
 full, or it is a second machete and only one may be carried — the fence price
 is paid in cash instead, so a drop is never silently lost.
 
+### The item market
+
+Alongside the fence, a **global market** where players list what they are
+selling at their own asking price, and anyone can buy from anywhere.
+
+The two are deliberately a floor and a ceiling. The fence is instant,
+guaranteed and poor value, and works with nobody else online. The market
+pays better but needs a buyer to turn up. With a small population the fence
+carries the economy; the market grows into relevance as the population does.
+
+- Listing **escrows** the items out of the seller's inventory onto the
+  listing. That is what makes selling the same machete twice impossible.
+- The seller pays **5% commission** on a sale, so money leaves the economy
+  on every trade. It also makes wash trading between two accounts a way to
+  *destroy* money rather than launder it, so it needs no separate guard.
+- Nothing may be listed below what the base fence rate would pay. Below
+  that a seller should just walk to the black market, and it stops
+  nominal-price listings being used to shuffle items between accounts.
+  Because the floor is the *base* rate, a speciality fence can still beat
+  a bottom-priced listing — the district fences stay worth walking to.
+- A buyer who cannot carry the goods is refused outright, unlike loot,
+  which pays cash instead. A purchase is deliberate and should fail
+  loudly.
+- Listings do not expire.
+
 Loot lifts the safe early crimes by roughly 30–40%: a Camden shoplift goes
 from about £188 to £241 an hour. It deliberately does **not** rescue the
 high-tier crimes whose multi-day jail sentences dominate their rate — Soho

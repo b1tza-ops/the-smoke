@@ -1261,3 +1261,5 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .fence-rates strong{color:var(--accent);font-size:1.45rem}
 .shop-line--premium{border-color:rgba(185,243,75,.38)!important;background:rgba(185,243,75,.05)}
 .crime-loot{margin-top:.35rem;color:var(--accent);font-size:.78rem}
+.market-list{gap:.4rem}
+.market-list input[type=number]{width:5.5rem}
