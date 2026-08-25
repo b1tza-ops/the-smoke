@@ -1372,6 +1372,70 @@ def migrate_031_raise_energy_capacity(cursor):
     )
 
 
+def migrate_032_operations_campaign(cursor):
+    """Give operations a table of their own.
+
+    The prologue could only ever hold one operation, because its state
+    lived in the single `player_prologue` row. The campaign needs one
+    record per operation, so the state moves to its own table and the
+    Camden Collection each existing player ran is carried across.
+
+    The outcome text and the paydown are stored on the record rather
+    than looked up from the definitions, so a completed operation still
+    describes itself even when its approach came from the retired V1
+    choices.
+    """
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS player_operations (
+            user_id INTEGER NOT NULL,
+            operation_key TEXT NOT NULL,
+            stage TEXT NOT NULL DEFAULT 'active'
+                CHECK (stage IN ('active', 'completed')),
+            approach TEXT,
+            started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            ready_at TEXT,
+            completed_at TEXT,
+            outcome_text TEXT,
+            paydown INTEGER NOT NULL DEFAULT 0,
+
+            PRIMARY KEY (user_id, operation_key),
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO player_operations (
+            user_id,
+            operation_key,
+            stage,
+            approach,
+            started_at,
+            ready_at,
+            completed_at,
+            outcome_text,
+            paydown
+        )
+        SELECT
+            user_id,
+            'camden_collection',
+            operation_stage,
+            COALESCE(operation_approach, opening_choice),
+            COALESCE(operation_started_at, created_at),
+            operation_ready_at,
+            completed_at,
+            outcome_text,
+            MAX(0, 2000 - debt_remaining)
+        FROM player_prologue
+        WHERE operation_stage IN ('active', 'completed')
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1527,6 +1591,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=31,
         name="raise_energy_capacity",
         apply=migrate_031_raise_energy_capacity,
+    ),
+    Migration(
+        version=32,
+        name="operations_campaign",
+        apply=migrate_032_operations_campaign,
     ),
 )
 

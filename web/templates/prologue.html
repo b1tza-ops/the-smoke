@@ -3,34 +3,43 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Operations · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='hud-forecast-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='operations-campaign-1') }}">
 </head>
 <body class="dashboard-page operations-page">
 <div class="app-shell">
 <header class="topbar">
 <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
-<span class="operations-channel">Encrypted channel · Camden</span>
+<span class="operations-channel">Encrypted channel · London</span>
 </header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main operations-main">
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 
 <section class="operations-header">
-<div><p class="eyebrow">Operations</p><h1>The Camden Collection</h1><p>Your first contact needs a debt ledger recovered from an office above Camden High Street. How you retrieve it will shape what London learns about you.</p></div>
-<div class="operation-debt"><span>Debt outstanding</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong><small>Due {{ state.debt_due_at }}</small></div>
+<div><p class="eyebrow">Operations</p><h1>The Debt Campaign</h1><p>Five jobs across London, each one paying down what you owe. Persuasion, stealth or force — the choice is yours every time, and every choice leaves a different trail.</p></div>
+<div class="operation-debt"><span>Debt outstanding</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong><small>{{ "Settled in full" if state.debt_remaining == 0 else "Due " ~ state.debt_due_at }}</small></div>
 </section>
 
-<nav class="operation-steps" aria-label="Operation progress">
-{% for key, label in (("dossier","Dossier"),("briefing","Approach"),("active","In progress"),("completed","Outcome")) %}
-{% set stages=("dossier","briefing","active","completed") %}
-{% set current=stages.index(state.operation_stage) %}
-<div class="{{ 'is-current' if state.operation_stage == key else 'is-done' if loop.index0 < current else '' }}"><span>0{{ loop.index }}</span><strong>{{ label }}</strong></div>
+{% if state.background %}
+<section class="campaign-progress" aria-label="Campaign progress">
+<div><span>Operations complete</span><strong>{{ completed_count }} of {{ campaign|length }}</strong></div>
+<ol class="campaign-track">
+{% for status in campaign %}
+<li class="is-{{ status.stage }}" title="{{ status.operation.name }}"><span>{{ loop.index }}</span></li>
 {% endfor %}
-</nav>
+</ol>
+</section>
+{% endif %}
 
-{% if state.operation_stage == "dossier" %}
+{% if operation_result %}
+<div class="game-notice game-notice--success" role="status">
+{{ operation_result.operation.name }} complete. £{{ "{:,}".format(operation_result.approach.cash) }} earned, {{ operation_result.approach.xp }} XP{% if operation_result.paydown %}, £{{ "{:,}".format(operation_result.paydown) }} off your debt{% endif %}.
+</div>
+{% endif %}
+
+{% if not state.background %}
 <section class="operation-section">
-<div class="section-heading"><div><p class="eyebrow">Step one</p><h2>Build your dossier</h2></div><span class="section-note">Permanent choice</span></div>
+<div class="section-heading"><div><p class="eyebrow">Before anything else</p><h2>Build your dossier</h2></div><span class="section-note">Permanent choice</span></div>
 <p class="operation-copy">Your history provides one permanent starting advantage. Choose the version of yourself your contact will meet.</p>
 <div class="approach-grid">
 {% for key, background in backgrounds.items() %}
@@ -44,80 +53,100 @@
 </div>
 </section>
 
-{% elif state.operation_stage == "briefing" %}
-<section class="operation-section">
-<div class="section-heading"><div><p class="eyebrow">Step two</p><h2>Choose your approach</h2></div><span class="section-note">{{ backgrounds[state.background].name }}</span></div>
-<p class="operation-copy">Each approach spends resources, takes real time and leaves a different trail. Requirements are checked before the operation begins.</p>
-<div class="approach-grid">
-{% for key, choice in choices.items() %}
-{% set stat_value=player|attr(choice.stat) %}
-{% set available=stat_value >= choice.required_stat and player.energy >= choice.energy and player.nerve >= choice.nerve %}
-<form method="post" class="operation-card {{ '' if available else 'is-locked' }}">
-<input type="hidden" name="action" value="start_operation"><input type="hidden" name="choice" value="{{ key }}">
-<header><span>{{ choice.style }}</span><strong class="risk risk--{{ choice.risk|lower }}">{{ choice.risk }} risk</strong></header>
-<h3>{{ choice.name }}</h3><p>{{ choice.description }}</p>
-<div class="operation-requirements">
-<span>{{ choice.stat|title }} <strong>{{ stat_value }}/{{ choice.required_stat }}</strong></span>
-<span>Energy <strong>{{ choice.energy }}</strong></span>
-<span>Nerve <strong>{{ choice.nerve }}</strong></span>
+{% else %}
+{% for status in campaign %}
+{% set operation = status.operation %}
+<section class="operation-chapter operation-chapter--{{ status.stage }}" id="operation-{{ operation.key }}" aria-labelledby="operation-title-{{ operation.key }}">
+<header class="operation-chapter__header">
+<div>
+<p class="eyebrow">Operation 0{{ loop.index }} · {{ operation.district|title }} · Level {{ operation.required_level }}+</p>
+<h2 id="operation-title-{{ operation.key }}">{{ operation.name }}</h2>
+<p class="operation-copy">{{ operation.summary }}</p>
 </div>
-<div class="operation-rewards"><span>Potential reward</span><strong>£{{ choice.cash }} · {{ choice.xp }} XP · £{{ choice.paydown }} debt</strong></div>
-<button type="submit" {% if not available %}disabled{% endif %}>{{ "Begin operation" if available else "Requirements not met" }} <span>→</span></button>
-</form>
-{% endfor %}
-</div>
-</section>
+<span class="operation-stamp operation-stamp--{{ status.stage }}">
+{%- if status.stage == "completed" %}Complete{% elif status.stage == "active" %}In progress{% elif status.stage == "available" %}Available{% else %}Locked{% endif -%}
+</span>
+</header>
 
-{% elif state.operation_stage == "active" %}
-{% set active=choices[state.operation_approach] %}
-<section class="active-operation">
+{% if status.stage == "completed" %}
+<div class="operation-record">
+<blockquote>{{ status.outcome_text }}</blockquote>
+<dl><div><dt>Approach</dt><dd>{{ operation.approach_for(status.approach_key).name if operation.approach_for(status.approach_key) else status.approach_key|replace("_", " ")|title }}</dd></div><div><dt>Debt repaid</dt><dd>£{{ "{:,}".format(status.paydown) }}</dd></div></dl>
+</div>
+
+{% elif status.stage == "active" %}
+{% set approach = operation.approach_for(status.approach_key) %}
+<div class="active-operation">
 <div class="active-operation__signal"><span></span>Operation live</div>
-<p class="eyebrow">{{ active.style }} approach</p><h2>{{ active.name }}</h2>
-<p>{{ active.description }}</p>
-<div class="operation-timer" data-operation-timer="{{ state.remaining_seconds }}">
+<p class="eyebrow">{{ approach.style }} approach</p><h3>{{ approach.name }}</h3>
+<p>{{ approach.description }}</p>
+<div class="operation-timer" data-operation-timer="{{ status.remaining_seconds }}">
 <span>Time remaining</span><strong>--:--</strong><small>Closing the browser will not interrupt progress.</small>
 </div>
 <div class="operation-requirements operation-requirements--active">
-<span>Energy spent <strong>{{ active.energy }}</strong></span><span>Nerve spent <strong>{{ active.nerve }}</strong></span><span>Risk <strong>{{ active.risk }}</strong></span>
+<span>Energy spent <strong>{{ approach.energy }}</strong></span><span>Nerve spent <strong>{{ approach.nerve }}</strong></span><span>Risk <strong>{{ approach.risk }}</strong></span>
 </div>
-<form method="post" id="resolve-operation"><input type="hidden" name="action" value="resolve_operation"><button class="operation-resolve" type="submit" disabled>Operation in progress</button></form>
-</section>
+<form method="post" class="resolve-operation"><input type="hidden" name="action" value="resolve_operation"><input type="hidden" name="operation" value="{{ operation.key }}"><button class="operation-resolve" type="submit" disabled>Operation in progress</button></form>
+</div>
+
+{% elif status.stage == "available" %}
+<p class="operation-briefing">{{ operation.briefing }}</p>
+<div class="approach-grid">
+{% for approach in operation.approaches %}
+{% set shortfalls = operation_shortfalls(player, approach) %}
+<form method="post" class="operation-card {{ '' if not shortfalls else 'is-locked' }}">
+<input type="hidden" name="action" value="start_operation"><input type="hidden" name="operation" value="{{ operation.key }}"><input type="hidden" name="choice" value="{{ approach.key }}">
+<header><span>{{ approach.style }}</span><strong class="risk risk--{{ approach.risk|lower }}">{{ approach.risk }} risk</strong></header>
+<h3>{{ approach.name }}</h3><p>{{ approach.description }}</p>
+<div class="operation-requirements">
+<span>{{ approach.stat|title }} <strong>{{ player|attr(approach.stat)|round(1) }}/{{ approach.required_stat }}</strong></span>
+<span>Energy <strong>{{ approach.energy }}</strong></span>
+<span>Nerve <strong>{{ approach.nerve }}</strong></span>
+<span>Takes <strong>{{ hud_duration(approach.duration_seconds) }}</strong></span>
+</div>
+<div class="operation-rewards"><span>Reward</span><strong>£{{ "{:,}".format(approach.cash) }} · {{ approach.xp }} XP{% if approach.paydown %} · £{{ approach.paydown }} debt{% elif operation.clears_debt %} · debt cleared{% endif %}</strong></div>
+<button type="submit" {% if shortfalls %}disabled{% endif %}>{{ "Begin operation" if not shortfalls else "Needs " ~ shortfalls|join(", ") }} <span>→</span></button>
+</form>
+{% endfor %}
+</div>
 
 {% else %}
-{% set completed=choices.get(state.operation_approach) %}
-{% set debt_repaid=completed.paydown if completed else 2000 - state.debt_remaining %}
+<div class="operation-locked"><strong>{{ status.lock_reason }}</strong><p>{{ operation.briefing }}</p></div>
+{% endif %}
+</section>
+{% endfor %}
+
+{% if completed_count == campaign|length %}
 <section class="operation-outcome">
-<p class="eyebrow">Operation complete</p><h2>£{{ "{:,}".format(debt_repaid) }} debt repaid.</h2>
-<p class="operation-copy">The Camden Collection succeeded. Your operation is finished, but the wider debt campaign continues.</p>
-<blockquote>{{ state.outcome_text }}</blockquote>
-<div class="outcome-grid">
-<div><span>This operation</span><strong>£{{ "{:,}".format(debt_repaid) }} repaid</strong></div>
-<div><span>Total debt remaining</span><strong>£{{ "{:,}".format(state.debt_remaining) }}</strong></div>
-<div><span>Next operation</span><strong>Unlocks at level 3</strong></div>
-</div>
+<p class="eyebrow">Campaign complete</p><h2>You owe nothing to anyone.</h2>
+<p class="operation-copy">Five operations, one ledger closed. Whatever you build in London from here is yours.</p>
 <a class="operation-resolve" href="{{ url_for('home') }}">Return to London <span>→</span></a>
 </section>
-<section class="operation-section operation-section--locked">
-<div class="section-heading"><div><p class="eyebrow">Next operation</p><h2>A favour in Soho</h2></div><span class="section-note">Coming next</span></div>
-<p class="operation-copy">Your contact knows you can deliver. Reach level 3 and build your reputation to unlock the next chapter.</p>
-</section>
+{% endif %}
 {% endif %}
 </main>
 </div>
 <script>
-(() => {
- const timer=document.querySelector("[data-operation-timer]");
- if(!timer)return;
- let seconds=Number(timer.dataset.operationTimer);
- const value=timer.querySelector("strong");
- const button=document.querySelector("#resolve-operation button");
- const draw=()=>{
-   const mins=Math.floor(seconds/60),secs=seconds%60;
-   value.textContent=String(mins).padStart(2,"0")+":"+String(secs).padStart(2,"0");
-   if(seconds<=0){value.textContent="READY";button.disabled=false;button.textContent="Claim outcome →";return}
-   seconds-=1;
- };
- draw();window.setInterval(draw,1000);
-})();
+document.querySelectorAll("[data-operation-timer]").forEach(timer => {
+    let seconds = Number(timer.dataset.operationTimer);
+    const value = timer.querySelector("strong");
+    const button = timer.closest(".active-operation").querySelector(".resolve-operation button");
+    const draw = () => {
+        if (seconds <= 0) {
+            value.textContent = "READY";
+            button.disabled = false;
+            button.textContent = "Claim outcome →";
+            return;
+        }
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        value.textContent = (hours ? String(hours).padStart(2, "0") + ":" : "")
+            + String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+        seconds -= 1;
+    };
+    draw();
+    window.setInterval(draw, 1000);
+});
 </script>
 </body></html>

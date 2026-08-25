@@ -89,13 +89,15 @@ from database.repositories.users import (
     get_user_by_username,
     is_email_verified,
 )
+from database.repositories.operations import (
+    get_campaign,
+    resolve_operation,
+    start_operation,
+)
 from database.repositories.prologue import (
     BACKGROUNDS,
-    OPENING_CHOICES,
     choose_background,
     get_or_create_prologue,
-    resolve_opening_operation,
-    start_opening_operation,
 )
 from database.repositories.presence import (
     get_online_player_count,
@@ -208,6 +210,10 @@ from game.jobs import (
     join_career,
     start_shift,
 )
+from game.operations import (
+    COMPLETED as OPERATION_COMPLETED,
+    approach_shortfalls,
+)
 from game.player import Player
 from game.player.progression import xp_required_for_level
 from game.player.regeneration import player_regeneration_forecast
@@ -257,6 +263,7 @@ app.jinja_env.globals.update(
     ),
     hud_forecast=player_regeneration_forecast,
     hud_duration=hud_duration,
+    operation_shortfalls=approach_shortfalls,
 )
 
 rate_limiter = FixedWindowRateLimiter()
@@ -1036,33 +1043,44 @@ def prologue():
                     ),
                 )
             elif action == "start_operation":
+                operation_key = request.form.get("operation", "")
                 choice = request.form.get("choice", "")
-                operation = start_opening_operation(
+                operation, approach = start_operation(
                     session["user_id"],
+                    operation_key,
                     choice,
                 )
                 record_player_action(
                     "operation_started",
                     (
-                        "Started The Camden Collection "
-                        f"using {operation['style'].lower()}."
+                        f"Started {operation.name} "
+                        f"using {approach.style.lower()}."
                     ),
-                    {"approach": choice},
+                    {
+                        "operation": operation_key,
+                        "approach": choice,
+                    },
                 )
             elif action == "resolve_operation":
-                operation_result = resolve_opening_operation(
-                    session["user_id"]
+                operation_key = request.form.get("operation", "")
+                operation, approach, paydown = resolve_operation(
+                    session["user_id"],
+                    operation_key,
                 )
+                operation_result = {
+                    "operation": operation,
+                    "approach": approach,
+                    "paydown": paydown,
+                }
                 record_player_action(
                     "operation_completed",
                     (
-                        "Completed The Camden Collection "
-                        f"using {operation_result['style'].lower()}."
+                        f"Completed {operation.name} "
+                        f"using {approach.style.lower()}."
                     ),
                     {
-                        "approach": state[
-                            "operation_approach"
-                        ],
+                        "operation": operation_key,
+                        "approach": approach.key,
                     },
                 )
             else:
@@ -1084,14 +1102,21 @@ def prologue():
     update_player_status(player)
     save_player(player)
 
+    campaign = get_campaign(session["user_id"])
+
     return render_template(
         "prologue.html",
         player=player,
         state=state,
         backgrounds=BACKGROUNDS,
-        choices=OPENING_CHOICES,
+        campaign=campaign,
+        completed_count=sum(
+            1
+            for status in campaign
+            if status.stage == OPERATION_COMPLETED
+        ),
         error=error,
-        mission_result=operation_result,
+        operation_result=operation_result,
     )
 
 
