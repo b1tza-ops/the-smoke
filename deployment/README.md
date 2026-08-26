@@ -80,6 +80,20 @@ a backup to a temporary path and running:
 sqlite3 /tmp/the-smoke-restore.db "PRAGMA integrity_check;"
 ```
 
+### Never copy `game.db` on its own
+
+The database runs in write-ahead logging mode, so a committed write
+lives in `game.db-wal` until SQLite folds it into the main file. Copying
+`game.db` alone — with `cp`, `rsync`, or a filesystem snapshot taken
+mid-write — silently loses the most recent play, and you only find out
+on the day you restore.
+
+`scripts/backup_database.py` is safe: it uses SQLite's online backup
+API, which reads through a connection and so includes the WAL. Use it,
+or `sqlite3 game.db ".backup out.db"`, for every copy. If you must move
+the files by hand, stop the service first and take `game.db`,
+`game.db-wal` and `game.db-shm` together.
+
 ## Deploy
 
 ```bash
