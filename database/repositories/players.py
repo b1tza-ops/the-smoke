@@ -116,7 +116,8 @@ def get_player_by_user_id(user_id):
             max_happiness,
             last_happiness_update,
             max_health,
-            last_health_update
+            last_health_update,
+            travel_mode
         FROM players
         WHERE user_id = ?
         """,
@@ -308,6 +309,7 @@ def save_player(player):
             current_district = ?,
             travel_destination = ?,
             travel_until = ?,
+            travel_mode = ?,
             residence_key = ?,
             career_key = ?,
             job_role_key = ?,
@@ -347,6 +349,7 @@ def save_player(player):
             player.current_district,
             player.travel_destination,
             player.travel_until,
+            player.travel_mode,
             player.residence_key,
             player.career_key,
             player.job_role_key,

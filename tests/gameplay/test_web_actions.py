@@ -259,6 +259,7 @@ class WebGameplayTests(unittest.TestCase):
         start_travel.return_value = Mock(
             destination_key="brixton",
             cost=35,
+            mode_name="Bus",
         )
 
         response = self.client.post(
@@ -267,9 +268,11 @@ class WebGameplayTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+        # No mode posted, so the bus is what departs.
         start_travel.assert_called_once_with(
             player,
             "brixton",
+            "bus",
         )
         save_player.assert_called_once_with(player)
 

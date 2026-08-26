@@ -6,6 +6,11 @@ from game.world.districts import (
     get_district,
     get_travel_route,
 )
+from game.world.transport import (
+    DEFAULT_TRANSPORT_KEY,
+    get_transport_mode,
+    serves,
+)
 
 from game.player.regeneration import (
     format_timestamp,
@@ -49,6 +54,14 @@ class TravelRestrictedError(TravelError):
     """Raised when jail or hospital prevents travel."""
 
 
+class UnknownTransportError(TravelError):
+    """Raised when a transport mode does not exist."""
+
+
+class TransportUnavailableError(TravelError):
+    """Raised when a mode does not serve a route."""
+
+
 @dataclass(frozen=True)
 class TravelResult:
     origin_key: str
@@ -56,6 +69,8 @@ class TravelResult:
     cost: int
     departed_at: str
     arrives_at: str
+    mode_key: str = DEFAULT_TRANSPORT_KEY
+    mode_name: str = "Bus"
 
 
 @dataclass(frozen=True)
@@ -64,6 +79,8 @@ class ActiveTravel:
     destination_key: str
     arrives_at: str
     remaining_seconds: int
+    mode_key: str = DEFAULT_TRANSPORT_KEY
+    mode_name: str = "Bus"
 
 
 def update_travel(player, now=None):
@@ -75,6 +92,7 @@ def update_travel(player, now=None):
     ):
         player.travel_destination = None
         player.travel_until = None
+        player.travel_mode = None
         return False
 
     arrival_time = parse_timestamp(
@@ -91,6 +109,7 @@ def update_travel(player, now=None):
     player.current_district = destination.key
     player.travel_destination = None
     player.travel_until = None
+    player.travel_mode = None
 
     return True
 
@@ -112,17 +131,25 @@ def get_active_travel(player, now=None):
         ),
     )
 
+    mode = get_transport_mode(
+        getattr(player, "travel_mode", None)
+        or DEFAULT_TRANSPORT_KEY
+    )
+
     return ActiveTravel(
         origin_key=player.current_district,
         destination_key=player.travel_destination,
         arrives_at=player.travel_until,
         remaining_seconds=remaining_seconds,
+        mode_key=mode.key if mode else DEFAULT_TRANSPORT_KEY,
+        mode_name=mode.name if mode else "Bus",
     )
 
 
 def start_travel(
     player,
     destination_key,
+    mode_key=DEFAULT_TRANSPORT_KEY,
     now=None,
 ):
     now = normalise_now(now)
@@ -174,7 +201,21 @@ def start_travel(
             "No travel route is available."
         ) from error
 
-    if player.money < route.cost:
+    mode = get_transport_mode(mode_key)
+
+    if mode is None:
+        raise UnknownTransportError(
+            "That is not a way of getting there."
+        )
+
+    if not serves(mode, player.current_district, destination.key):
+        raise TransportUnavailableError(
+            f"The {mode.name} does not run to {destination.name}."
+        )
+
+    fare = mode.fare(route)
+
+    if player.money < fare:
         raise InsufficientTravelFundsError(
             "Not enough carried cash for travel."
         )
@@ -183,20 +224,23 @@ def start_travel(
     arrives_at = format_timestamp(
         now
         + timedelta(
-            seconds=route.duration_seconds
+            seconds=mode.duration_seconds(route)
         )
     )
 
-    player.money -= route.cost
+    player.money -= fare
     player.travel_destination = destination.key
     player.travel_until = arrives_at
+    player.travel_mode = mode.key
 
     return TravelResult(
         origin_key=player.current_district,
         destination_key=destination.key,
-        cost=route.cost,
+        cost=fare,
         departed_at=departed_at,
         arrives_at=arrives_at,
+        mode_key=mode.key,
+        mode_name=mode.name,
     )
 
 def travel_menu(player):

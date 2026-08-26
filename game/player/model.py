@@ -42,6 +42,7 @@ class Player:
         last_happiness_update,
         max_health,
         last_health_update,
+        travel_mode=None,
         crime_progress=None,
         district_reputation=None,
         unlocked_gyms=None,
@@ -57,6 +58,7 @@ class Player:
         self.current_district = current_district
         self.travel_destination = travel_destination
         self.travel_until = travel_until
+        self.travel_mode = travel_mode
         self.residence_key = residence_key
         self.career_key = career_key
         self.job_role_key = job_role_key

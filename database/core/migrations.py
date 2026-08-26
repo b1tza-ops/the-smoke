@@ -1520,6 +1520,27 @@ def migrate_034_item_market(cursor):
     )
 
 
+def migrate_035_transport_modes(cursor):
+    """Remember which way a player is travelling.
+
+    The arrival time already decides when they get there; this is so
+    the page can say whether they are walking, on the bus or on the
+    Underground while they are still in transit.
+    """
+    columns = {
+        row[1]
+        for row in cursor.execute("PRAGMA table_info(players)")
+    }
+
+    if "travel_mode" not in columns:
+        cursor.execute(
+            """
+            ALTER TABLE players
+            ADD COLUMN travel_mode TEXT
+            """
+        )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1690,6 +1711,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=34,
         name="item_market",
         apply=migrate_034_item_market,
+    ),
+    Migration(
+        version=35,
+        name="transport_modes",
+        apply=migrate_035_transport_modes,
     ),
 )
 

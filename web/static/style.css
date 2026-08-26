@@ -1263,3 +1263,12 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .crime-loot{margin-top:.35rem;color:var(--accent);font-size:.78rem}
 .market-list{gap:.4rem}
 .market-list input[type=number]{width:5.5rem}
+
+.transport-options{display:grid;gap:.4rem;margin-top:auto}
+.transport-option{display:contents}
+.travel-button--walk{background:#2b3239;color:#c1c7c5}
+.travel-button--bus{background:#376613;color:#c4ff68}
+.travel-button--underground{background:#164e66;color:#70dfff}
+.transport-option__name{font-weight:900}
+.transport-option__detail{opacity:.85;font-size:.72rem;font-variant-numeric:tabular-nums}
+.transport-note{margin:.4rem 0 .6rem;color:var(--muted);font-size:.74rem;font-style:italic}
