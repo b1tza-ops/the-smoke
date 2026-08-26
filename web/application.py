@@ -6,6 +6,7 @@ import sqlite3
 from datetime import timedelta
 from functools import wraps
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from types import SimpleNamespace
 from game.world.city import directory as city_directory
 from game.economy.loans import (
@@ -1627,6 +1628,17 @@ def _collect_overdue_loan():
         pass
 
 
+# Ronnie's portrait is dropped in as a file rather than declared, so the
+# page falls back to his initials until the artwork exists. Resolved once
+# at import: a stat per request would buy nothing.
+LOAN_SHARK_PORTRAIT = "npc/ronnie-dell.webp"
+_LOAN_SHARK_PORTRAIT = (
+    LOAN_SHARK_PORTRAIT
+    if (Path(app.static_folder) / LOAN_SHARK_PORTRAIT).exists()
+    else None
+)
+
+
 def _read_loan_amount(raw):
     try:
         return int(raw)
@@ -1680,6 +1692,7 @@ def loan_shark():
     return render_template(
         "loanshark.html",
         player=player,
+        portrait=_LOAN_SHARK_PORTRAIT,
         message=message,
         error=error,
         loan=state.get("loan"),

@@ -8,6 +8,7 @@ interest, and the guarantee that every movement of money is exact and
 happens once.
 """
 
+import pathlib
 import sqlite3
 import tempfile
 import unittest
@@ -414,6 +415,72 @@ class LoanBookTests(unittest.TestCase):
         self.assertEqual(
             repo.collect_if_overdue(self.user_id),
             HOSPITAL_MINUTES[1],
+        )
+
+
+class LoanSharkPortraitTests(unittest.TestCase):
+    """His face is a file, not a declaration.
+
+    The page has to read correctly both before the artwork exists and
+    after, so the portrait is resolved once at import and falls back to
+    his initials. These hold both halves of that.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.database_patch = patch(
+            "database.core.connection.DB_PATH",
+            pathlib.Path(self.temp_dir.name) / "portrait.db",
+        )
+        self.database_patch.start()
+        self.addCleanup(self.database_patch.stop)
+        create_tables()
+
+        from web.application import app
+
+        self.app = app
+        app.config["SECRET_KEY"] = "portrait-test"
+        self.user_id = create_user("looker", "looker@example.com", "hash")
+        create_player(self.user_id, "Looker")
+        self.client = app.test_client()
+        with self.client.session_transaction() as session:
+            session["user_id"] = self.user_id
+
+    def page(self):
+        return self.client.get("/loanshark").get_data(as_text=True)
+
+    def test_initials_stand_in_until_the_artwork_lands(self):
+        with patch("web.application._LOAN_SHARK_PORTRAIT", None):
+            rendered = self.page()
+
+        self.assertIn(">RD<", rendered)
+        self.assertNotIn("ronnie-dell", rendered)
+
+    def test_the_artwork_is_shown_once_it_exists(self):
+        from web.application import LOAN_SHARK_PORTRAIT
+
+        with patch(
+            "web.application._LOAN_SHARK_PORTRAIT",
+            LOAN_SHARK_PORTRAIT,
+        ):
+            rendered = self.page()
+
+        self.assertIn(LOAN_SHARK_PORTRAIT, rendered)
+        self.assertIn('alt="Ronnie Dell"', rendered)
+
+    def test_the_portrait_folder_is_where_it_is_looked_for(self):
+        from web.application import LOAN_SHARK_PORTRAIT
+
+        # The fallback is silent, so a renamed folder would never be
+        # noticed. Pin the directory the file is expected to land in.
+        folder = (
+            pathlib.Path(self.app.static_folder) / LOAN_SHARK_PORTRAIT
+        ).parent
+
+        self.assertTrue(
+            folder.is_dir(),
+            f"{folder} does not exist, so the portrait can never load",
         )
 
 

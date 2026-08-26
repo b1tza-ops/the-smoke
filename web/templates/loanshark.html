@@ -29,7 +29,13 @@
         </section>
 
         <section class="shark-quote">
-            <div class="shark-portrait" aria-hidden="true"><span>RD</span></div>
+            <div class="shark-portrait">
+                {% if portrait %}
+                <img src="{{ url_for('static', filename=portrait) }}" alt="Ronnie Dell" width="128" height="128">
+                {% else %}
+                <span aria-hidden="true">RD</span>
+                {% endif %}
+            </div>
             <blockquote>
                 {% if not loan or not loan.principal %}
                 <p>“Short, are you? Everyone’s short. I’ll go to <strong>£{{ "{:,}".format(headroom) }}</strong> on a face I don’t know, and that’s me being generous.”</p>
