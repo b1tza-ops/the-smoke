@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Crimes · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-5') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='crime-hub-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -28,16 +28,33 @@
         {% if crime_block_reason %}<div class="game-notice game-notice--error" role="status">{{ crime_block_reason }}</div>{% endif %}
         {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 
+        <section class="crime-hub-heading" aria-label="Crime list heading">
+            <div><span class="crime-hub-heading__mark">◆</span><strong>Crime opportunities</strong></div>
+            <span>Tap a row for details</span>
+        </section>
+
         <section class="crime-list">
             {% for crime in crimes %}
                 {% set progression = crime_progression[crime.key] %}
-                <article class="crime-card" id="crime-{{ crime.key }}">
+                <details class="crime-card" id="crime-{{ crime.key }}" {% if result and attempted_crime_key == crime.key %}open{% endif %}>
+                    <summary class="crime-card__summary">
+                        <span class="crime-card__scene" aria-hidden="true"><b>{{ "%02d"|format(loop.index) }}</b><i>{{ player.current_district[:2]|upper }}</i></span>
+                        <span class="crime-card__identity">
+                            <strong>{{ crime.name }}</strong>
+                            <small>{{ progression.mastery_name }} · {{ progression.effective_success_chance }}% success</small>
+                            <span class="crime-mastery-track" aria-label="{{ progression.mastery_progress_percent }}% progress through {{ progression.mastery_name }} mastery"><i style="width:{{ progression.mastery_progress_percent }}%"></i></span>
+                        </span>
+                        <span class="crime-card__signals">
+                            <span class="crime-mastery-rank" title="Mastery rank">{{ progression.mastery_rank }}</span>
+                            <span class="crime-nerve"><strong>{{ crime.nerve_cost }}</strong><small>nerve</small></span>
+                            <span class="crime-card__chevron" aria-hidden="true">⌄</span>
+                        </span>
+                    </summary>
+
+                    <div class="crime-card__body">
                     <header class="crime-card__header">
-                        <div>
-                            <p class="eyebrow">{{ progression.effective_success_chance }}% chance · {{ progression.mastery_name }}</p>
-                            <h2>{{ crime.name }}</h2>
-                        </div>
-                        <span class="crime-nerve"><strong>{{ crime.nerve_cost }}</strong><small>nerve</small></span>
+                        <div><p class="eyebrow">Street opportunity</p><h2>{{ crime.name }}</h2></div>
+                        <strong class="crime-chance">{{ progression.effective_success_chance }}% <small>chance</small></strong>
                     </header>
 
                     <dl class="crime-rewards">
@@ -96,7 +113,8 @@
                             {% endif %}
                         </section>
                     {% endif %}
-                </article>
+                    </div>
+                </details>
             {% else %}
                 <article class="crime-card"><h2>No crimes available here</h2><p>Travel to another district to find opportunities.</p></article>
             {% endfor %}
