@@ -1,0 +1,14 @@
+{#
+  One playing card. Suits are drawn with the Unicode pips rather than
+  images: they scale cleanly, colour themselves, and there is nothing to
+  load. `card` is the engine's code -- rank plus a suit letter, e.g.
+  "10H" -- so the rank is everything but the last character.
+#}
+{% set suit = card[-1] %}
+{% set rank = card[:-1] %}
+{% set pip = {"S": "♠", "H": "♥", "D": "♦", "C": "♣"}[suit] %}
+<span class="playing-card playing-card--{{ 'red' if suit in ('H', 'D') else 'black' }}"
+      aria-label="{{ rank }} of {{ {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'}[suit] }}">
+    <span class="playing-card__index" aria-hidden="true"><b>{{ rank }}</b><i>{{ pip }}</i></span>
+    <span class="playing-card__pip" aria-hidden="true">{{ pip }}</span>
+</span>

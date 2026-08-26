@@ -555,7 +555,7 @@ for keno, and by simulation for blackjack.
 | --- | ---: | ---: |
 | Fruit machines | 91.73% | 8.27% |
 | Keno | 90.2–91.9% | 8.1–9.8% |
-| Blackjack | ~99.2% | ~0.8% |
+| Blackjack | ~99.8% | ~0.24% |
 
 Slots and keno are the sink; blackjack is close to a wash. That is the
 honest shape of a real casino floor and it is deliberate — the player who
@@ -574,12 +574,24 @@ one-in-eight-million payouts a real keno board advertises would mint
 money this economy cannot absorb.
 
 **Blackjack** is dealt from a six-deck shoe with the player-friendly
-rules: dealer stands on all 17s, blackjack pays 3:2, doubling allowed on
-any opening two. No splits and no insurance. It is the only game that
-spans more than one request, so the hand — shoe included — is persisted
-server-side; the client never learns the order of the undealt cards. A
-hand in progress can always be finished, even from another district,
-because the stake has already left the player's pocket.
+rules throughout: dealer stands on all 17s, blackjack pays 3:2, doubling
+on any two cards including after a split, splitting up to four hands with
+split aces taking one card each, insurance on a dealer ace paying 2:1,
+and late surrender before any other action. Under basic strategy that is
+a **0.24% house edge** — thin, and deliberately so.
+
+A fresh shoe is built for every table, which means counting cards gets a
+player nowhere. That is what makes a thin edge safe to offer.
+
+Because a split turns one hand into several, the **table** rather than the
+hand is the unit of state. It is the only game spanning more than one
+request, so the whole table — shoe included — is persisted server-side as
+JSON; the client never learns the order of the undealt cards. A table in
+progress can always be finished, even from another district, because the
+stake has already left the player's pocket.
+
+Every extra stake — a double, a split, an insurance bet — is taken from
+the player the moment it is put down, not when the table settles.
 
 Two economic guards sit above the paytables: the stake ceiling, and a
 **table maximum of £500,000** on any single payout. A jackpot mints money
@@ -587,6 +599,32 @@ from nothing, and a small server cannot absorb an unbounded one.
 
 Every settled round is written to `casino_rounds`, so the house edge can
 be audited against real play rather than only against the arithmetic.
+
+#### The artwork
+
+The reels carry six drawn symbols — a pint, a black cab, a bell, a crown,
+a diamond and a lucky seven — in `web/static/icons/casino-symbols.svg`.
+That is a separate sprite from the UI icons: those are stroked line
+icons that take their colour from the text around them, whereas a reel
+symbol has to read the same wherever it lands, so these are filled and
+carry their own palette.
+
+Playing cards are not images. A card is a rank and one of the four
+Unicode pips, styled in CSS, which scales cleanly at any size, colours
+itself red or black, costs nothing to load, and needs no artwork for
+fifty-two faces. The face-down card is a striped back in the same shape.
+
+#### The floor
+
+The casino is an index of tables rather than one long page: `/casino`
+lists them, and each game has its own page at `/casino/<game>`. Stakes are
+picked from a rail of chips (£10 up to £50,000) rather than typed, with
+everything above the player's table limit shown struck through — so the
+ceiling is visible rather than a surprise on submit.
+
+Keno cards can be played for up to ten rounds at once, each round drawn
+separately and staked separately, with the whole card checked against the
+player's cash before any of it is drawn.
 
 ### The City
 

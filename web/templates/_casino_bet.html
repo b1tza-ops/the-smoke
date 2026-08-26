@@ -1,0 +1,14 @@
+{#
+  The chip rail. A player picks a denomination rather than typing a
+  number; chips above their table limit are shown but dead, so the
+  ceiling is visible rather than a surprise on submit.
+#}
+<div class="chip-rail" role="group" aria-label="Stake">
+    <span class="chip-rail__label">Stake</span>
+    {% for amount, allowed in denominations %}
+    <label class="chip {{ 'is-dead' if not allowed }}">
+        <input type="radio" name="bet" value="{{ amount }}" {{ 'checked' if loop.first }} {{ 'disabled' if not allowed or not accessible }}>
+        <span>{% if amount >= 1000 %}{{ (amount // 1000) }}K{% else %}{{ amount }}{% endif %}</span>
+    </label>
+    {% endfor %}
+</div>

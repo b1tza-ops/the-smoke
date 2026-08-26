@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Fruit Machines · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-3') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    {% include "_casino_head.html" %}
+    <main class="dashboard-main casino-page casino-game">
+        <nav class="casino-crumb"><a href="{{ url_for('casino') }}">← The Golden Square</a></nav>
+        <section class="machine machine--slots">
+            <div class="machine__marquee">
+                <span>Min £{{ minimum_bet }} bet</span>
+                <strong>Fruit Machines</strong>
+                <span>Max £{{ "{:,}".format(maximum_bet) }}</span>
+            </div>
+
+            {% include "_casino_notices.html" %}
+
+            {#
+              Three reels are shown as a 3x3 window with the payline
+              across the middle. The rows above and below are decoration
+              only -- the game is decided on the centre line, and the
+              markup says so with aria-hidden.
+            #}
+            <div class="reel-window">
+                <span class="reel-window__payline" aria-hidden="true"></span>
+                <div class="reel-grid">
+                {% for row in (0, 1, 2) %}
+                    {% for column in (0, 1, 2) %}
+                    {% if row == 1 %}
+                        {% set symbol = spin.reels[column] if spin else None %}
+                        <span class="reel-cell is-payline">
+                            {% if symbol %}
+                            <svg class="reel-symbol" role="img" aria-label="{{ names[symbol] }}"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
+                            <small>{{ names[symbol] }}</small>
+                            {% else %}
+                            <span class="reel-cell__idle" aria-hidden="true">?</span>
+                            {% endif %}
+                        </span>
+                    {% else %}
+                        <span class="reel-cell is-blur" aria-hidden="true"></span>
+                    {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                </div>
+            </div>
+
+            {% if spin %}
+            <p class="casino-outcome {{ 'is-win' if payout else 'is-loss' }}">
+                {{ spin.line }}{% if payout %} — £{{ "{:,}".format(payout) }}{% endif %}
+            </p>
+            {% endif %}
+
+            <form method="post" class="machine__controls">
+                {% include "_casino_bet.html" %}
+                <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Spin</span><span>→</span></button>
+            </form>
+        </section>
+
+        <section class="casino-table">
+            <div class="casino-table__head">
+                <h2>Paytable</h2>
+                <span>Multiples of your stake · 91.7% returned</span>
+            </div>
+            <table class="paytable">
+                <thead><tr><th>Symbol</th><th>Three</th><th>Two</th></tr></thead>
+                <tbody>
+                {% for symbol, pays in paytable.items() %}
+                    <tr>
+                        <td class="paytable__symbol">
+                            <svg class="reel-symbol reel-symbol--small" aria-hidden="true"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
+                            {{ names[symbol] }}
+                        </td>
+                        <td>{{ pays }}×</td>
+                        <td>{{ (pairs[symbol] ~ '×') if symbol in pairs else '—' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -99,20 +99,32 @@ def play_slots(user_id, bet, rng=None):
         connection.close()
 
 
-def play_keno(user_id, bet, picks, rng=None):
+def play_keno(user_id, bet, picks, rounds=1, rng=None):
+    """Play the same card for one or more rounds, each drawn separately."""
     connection = get_connection()
     try:
         connection.execute("BEGIN IMMEDIATE")
         player_id, level, money = _load_player(connection, user_id)
+        rounds = keno.validate_rounds(rounds)
+        picks = keno.validate_picks(picks)
         validate_bet(level, bet, money)
 
-        result = keno.play(bet, picks, rng)
-        payout = _settle(
-            connection, player_id, "keno", bet, result.payout,
-            f"{len(result.hits)}/{len(result.picks)}",
-        )
+        # Each round is its own wager, so the whole card has to be
+        # affordable before any of it is drawn.
+        if bet * rounds > money:
+            raise CasinoError(
+                f"£{bet * rounds:,} for {rounds} rounds is more than you have."
+            )
+
+        results = [keno.play(bet, picks, rng) for _ in range(rounds)]
+        payout = 0
+        for result in results:
+            payout += _settle(
+                connection, player_id, "keno", bet, result.payout,
+                f"{len(result.hits)}/{len(result.picks)}",
+            )
         connection.commit()
-        return result, payout
+        return tuple(results), payout
     except (CasinoError, keno.KenoError, sqlite3.Error):
         connection.rollback()
         raise
@@ -122,66 +134,84 @@ def play_keno(user_id, bet, picks, rng=None):
 
 # ------------------------------------------------------------ blackjack
 
-def _store_hand(connection, player_id, state):
+def _encode(state):
+    return json.dumps({
+        "shoe": list(state.shoe),
+        "cursor": state.cursor,
+        "active": state.active,
+        "dealer": list(state.dealer),
+        "state": state.state,
+        "insurance": state.insurance,
+        "hands": [
+            {
+                "cards": list(hand.cards),
+                "bet": hand.bet,
+                "doubled": hand.doubled,
+                "from_split": hand.from_split,
+                "split_aces": hand.split_aces,
+                "finished": hand.finished,
+                "outcome": hand.outcome,
+                "payout": hand.payout,
+            }
+            for hand in state.hands
+        ],
+    })
+
+
+def _decode(blob):
+    raw = json.loads(blob)
+    return blackjack.TableState(
+        shoe=tuple(raw["shoe"]),
+        cursor=raw["cursor"],
+        hands=tuple(
+            blackjack.Hand(
+                cards=tuple(hand["cards"]),
+                bet=hand["bet"],
+                doubled=hand["doubled"],
+                from_split=hand["from_split"],
+                split_aces=hand["split_aces"],
+                finished=hand["finished"],
+                outcome=hand["outcome"],
+                payout=hand["payout"],
+            )
+            for hand in raw["hands"]
+        ),
+        active=raw["active"],
+        dealer=tuple(raw["dealer"]),
+        state=raw["state"],
+        insurance=raw["insurance"],
+    )
+
+
+def _store_table(connection, player_id, state):
     connection.execute(
         """
-        INSERT INTO casino_hands
-            (player_id, bet, shoe, cursor, player_cards, dealer_cards, doubled)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO casino_hands (player_id, staked, table_state)
+        VALUES (?, ?, ?)
         ON CONFLICT(player_id) DO UPDATE SET
-            bet = excluded.bet,
-            shoe = excluded.shoe,
-            cursor = excluded.cursor,
-            player_cards = excluded.player_cards,
-            dealer_cards = excluded.dealer_cards,
-            doubled = excluded.doubled,
-            opened_at = CURRENT_TIMESTAMP
+            staked = excluded.staked,
+            table_state = excluded.table_state
         """,
-        (
-            player_id,
-            state.bet,
-            json.dumps(list(state.shoe)),
-            state.cursor,
-            json.dumps(list(state.player)),
-            json.dumps(list(state.dealer)),
-            int(state.doubled),
-        ),
+        (player_id, state.staked, _encode(state)),
     )
 
 
-def _read_hand(connection, player_id):
+def _read_table(connection, player_id):
     row = connection.execute(
-        """
-        SELECT bet, shoe, cursor, player_cards, dealer_cards, doubled
-        FROM casino_hands
-        WHERE player_id = ?
-        """,
+        "SELECT table_state FROM casino_hands WHERE player_id = ?",
         (player_id,),
     ).fetchone()
-
-    if row is None:
-        return None
-
-    bet, shoe, cursor, player_cards, dealer_cards, doubled = row
-    return blackjack.HandState(
-        shoe=tuple(json.loads(shoe)),
-        cursor=cursor,
-        player=tuple(json.loads(player_cards)),
-        dealer=tuple(json.loads(dealer_cards)),
-        bet=bet,
-        state=blackjack.PLAYER_TURN,
-        doubled=bool(doubled),
-    )
+    return _decode(row[0]) if row else None
 
 
-def _clear_hand(connection, player_id):
+def _clear_table(connection, player_id):
     connection.execute(
         "DELETE FROM casino_hands WHERE player_id = ?", (player_id,)
     )
 
 
-def get_open_hand(user_id):
-    """The hand in progress, if there is one. No transaction needed."""
+def get_open_table(user_id):
+    """The table in progress, if there is one."""
     connection = get_connection()
     try:
         row = connection.execute(
@@ -189,39 +219,55 @@ def get_open_hand(user_id):
         ).fetchone()
         if row is None:
             return None
-        return _read_hand(connection, row[0])
+        return _read_table(connection, row[0])
     finally:
         connection.close()
 
 
+def _settle_table(connection, player_id, state, already_staked):
+    """Pay the table out and log it. Returns what was returned."""
+    payout = capped_payout(state.payout)
+    outstanding = state.staked - already_staked
+    connection.execute(
+        "UPDATE players SET money = money + ? WHERE id = ?",
+        (payout - outstanding, player_id),
+    )
+    connection.execute(
+        """
+        INSERT INTO casino_rounds (player_id, game, bet, payout, detail)
+        VALUES (?, 'blackjack', ?, ?, ?)
+        """,
+        (player_id, state.staked, payout, blackjack.describe(state)),
+    )
+    _clear_table(connection, player_id)
+    return payout
+
+
 def deal_blackjack(user_id, bet, rng=None):
-    """Take the stake and deal. A natural settles immediately."""
+    """Take the opening stake and deal."""
     connection = get_connection()
     try:
         connection.execute("BEGIN IMMEDIATE")
         player_id, level, money = _load_player(connection, user_id)
         validate_bet(level, bet, money)
 
-        if _read_hand(connection, player_id) is not None:
+        if _read_table(connection, player_id) is not None:
             raise CasinoError("Finish the hand you are playing.")
 
-        state = blackjack.open_hand(bet, rng)
+        state = blackjack.open_table(bet, rng)
+
+        # The opening stake leaves now, and comes back inside the payout.
+        connection.execute(
+            "UPDATE players SET money = money - ? WHERE id = ?",
+            (bet, player_id),
+        )
 
         if state.state == blackjack.SETTLED:
-            payout = _settle(
-                connection, player_id, "blackjack", state.bet, state.payout,
-                state.outcome,
-            )
+            payout = _settle_table(connection, player_id, state, bet)
             connection.commit()
             return state, payout
 
-        # The stake is taken now, and returned as part of the payout when
-        # the hand settles, so an abandoned hand cannot be a free option.
-        connection.execute(
-            "UPDATE players SET money = money - ? WHERE id = ?",
-            (state.bet, player_id),
-        )
-        _store_hand(connection, player_id, state)
+        _store_table(connection, player_id, state)
         connection.commit()
         return state, None
     except (CasinoError, blackjack.BlackjackError, sqlite3.Error):
@@ -231,55 +277,57 @@ def deal_blackjack(user_id, bet, rng=None):
         connection.close()
 
 
-def act_on_hand(user_id, action):
-    """Hit, stand or double the hand in progress."""
-    if action not in ("hit", "stand", "double"):
+ACTIONS = {
+    "hit": blackjack.hit,
+    "stand": blackjack.stand,
+    "double": blackjack.double_down,
+    "split": blackjack.split,
+    "surrender": blackjack.surrender,
+    "insurance": blackjack.take_insurance,
+    "decline_insurance": blackjack.decline_insurance,
+}
+
+
+def act_on_table(user_id, action):
+    """Play the table in progress."""
+    handler = ACTIONS.get(action)
+    if handler is None:
         raise CasinoError("That is not a move.")
 
     connection = get_connection()
     try:
         connection.execute("BEGIN IMMEDIATE")
+        # A table already paid for can always be finished, wherever the
+        # player has ended up since.
         player_id, level, money = _load_player(
             connection, user_id, at_the_table=False
         )
 
-        state = _read_hand(connection, player_id)
+        state = _read_table(connection, player_id)
         if state is None:
             raise CasinoError("You have no hand in play.")
 
-        if action == "double":
-            # The extra stake is taken now; the original already left.
-            if state.bet > money:
-                raise CasinoError("You cannot cover the double.")
-            state = blackjack.double_down(state)
+        before = state.staked
+        state = handler(state)
+        extra = state.staked - before
+
+        # Doubling, splitting and insurance each put more on the table.
+        if extra > 0:
+            if extra > money:
+                raise CasinoError("You cannot cover that.")
             connection.execute(
                 "UPDATE players SET money = money - ? WHERE id = ?",
-                (state.bet // 2, player_id),
+                (extra, player_id),
             )
-        elif action == "hit":
-            state = blackjack.hit(state)
-        else:
-            state = blackjack.stand(state)
 
         if state.state == blackjack.SETTLED:
-            _clear_hand(connection, player_id)
-            payout = capped_payout(state.payout)
-            connection.execute(
-                "UPDATE players SET money = money + ? WHERE id = ?",
-                (payout, player_id),
-            )
-            connection.execute(
-                """
-                INSERT INTO casino_rounds
-                    (player_id, game, bet, payout, detail)
-                VALUES (?, 'blackjack', ?, ?, ?)
-                """,
-                (player_id, state.bet, payout, state.outcome),
+            payout = _settle_table(
+                connection, player_id, state, state.staked
             )
             connection.commit()
             return state, payout
 
-        _store_hand(connection, player_id, state)
+        _store_table(connection, player_id, state)
         connection.commit()
         return state, None
     except (CasinoError, blackjack.BlackjackError, sqlite3.Error):

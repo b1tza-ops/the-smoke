@@ -1654,6 +1654,48 @@ def migrate_038_casino(cursor):
     """)
 
 
+def migrate_039_blackjack_splits(cursor):
+    """Widen a persisted hand into a whole table.
+
+    Splitting turns one hand into several, so the old row-per-hand shape
+    cannot hold the state any more. The table is rebuilt to store the
+    whole thing as JSON.
+
+    Any hand open at the moment of the upgrade is refunded first. The
+    stake left the player's pocket when the cards were dealt, and
+    dropping the row without giving it back would quietly take their
+    money.
+    """
+    open_hands = cursor.execute(
+        "SELECT player_id, bet FROM casino_hands"
+    ).fetchall()
+
+    for player_id, bet in open_hands:
+        cursor.execute(
+            "UPDATE players SET money = money + ? WHERE id = ?",
+            (bet, player_id),
+        )
+        cursor.execute(
+            """
+            INSERT INTO casino_rounds
+                (player_id, game, bet, payout, detail)
+            VALUES (?, 'blackjack', ?, ?, 'refunded on upgrade')
+            """,
+            (player_id, bet, bet),
+        )
+
+    cursor.execute("DROP TABLE IF EXISTS casino_hands")
+    cursor.execute("""
+        CREATE TABLE casino_hands (
+            player_id INTEGER PRIMARY KEY,
+            staked INTEGER NOT NULL CHECK (staked > 0),
+            table_state TEXT NOT NULL,
+            opened_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1844,6 +1886,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=38,
         name="casino",
         apply=migrate_038_casino,
+    ),
+    Migration(
+        version=39,
+        name="blackjack_splits",
+        apply=migrate_039_blackjack_splits,
     ),
 )
 
