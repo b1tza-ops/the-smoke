@@ -539,6 +539,55 @@ venue rather than by district. `DISTRICT_SHOPS` still maps a district to its
 general store; `VENUES` is the full index and is what catalogue-wide
 invariants iterate.
 
+### The casino
+
+**The Golden Square**, Soho. Three tables, admitting players from level 3
+with a stake ceiling of £250 × level, so a new player cannot lose their
+starting stake in one tap and a wealthy one still finds the tables
+relevant.
+
+Every game is a pure module with an injectable rng. The outcome maths is
+therefore recomputed exactly in the tests rather than trusted:
+exhaustively over all 216 reel combinations for slots, hypergeometrically
+for keno, and by simulation for blackjack.
+
+| Game | Return to player | House edge |
+| --- | ---: | ---: |
+| Fruit machines | 91.73% | 8.27% |
+| Keno | 90.2–91.9% | 8.1–9.8% |
+| Blackjack | ~99.2% | ~0.8% |
+
+Slots and keno are the sink; blackjack is close to a wash. That is the
+honest shape of a real casino floor and it is deliberate — the player who
+learns basic strategy is rewarded, and the player who pulls a lever is
+the one funding the room.
+
+**Slots** are three reels sharing one 42-stop strip. Three of a kind pays
+by symbol; a pair pays only on the top four, which lifts the hit rate to
+roughly one spin in five without giving the game back.
+
+**Keno** offers two to six spots. Picking a single number is not offered:
+at one in four there is no whole-number multiplier between a 75% return
+and a 100% one, and a 100% return is a grind with no edge at all. The top
+prize is capped at 1000× rather than following the true odds — the
+one-in-eight-million payouts a real keno board advertises would mint
+money this economy cannot absorb.
+
+**Blackjack** is dealt from a six-deck shoe with the player-friendly
+rules: dealer stands on all 17s, blackjack pays 3:2, doubling allowed on
+any opening two. No splits and no insurance. It is the only game that
+spans more than one request, so the hand — shoe included — is persisted
+server-side; the client never learns the order of the undealt cards. A
+hand in progress can always be finished, even from another district,
+because the stake has already left the player's pocket.
+
+Two economic guards sit above the paytables: the stake ceiling, and a
+**table maximum of £500,000** on any single payout. A jackpot mints money
+from nothing, and a small server cannot absorb an unbounded one.
+
+Every settled round is written to `casino_rounds`, so the house edge can
+be audited against real play rather than only against the arithmetic.
+
 ### The City
 
 Every place in London a player can walk into is listed on the **City** page,

@@ -8,6 +8,37 @@ from functools import wraps
 from logging.handlers import RotatingFileHandler
 from types import SimpleNamespace
 from game.world.city import directory as city_directory
+from game.casino import (
+    MINIMUM_BET as CASINO_MINIMUM_BET,
+    MINIMUM_LEVEL as CASINO_MINIMUM_LEVEL,
+    CasinoError,
+    maximum_bet as casino_maximum_bet,
+)
+from game.casino.blackjack import (
+    BlackjackError,
+    describe as describe_hand,
+    hand_value as blackjack_hand_value,
+)
+from game.casino.keno import (
+    MAXIMUM_SPOTS as KENO_MAXIMUM_SPOTS,
+    MINIMUM_SPOTS as KENO_MINIMUM_SPOTS,
+    PAYTABLE as KENO_PAYTABLE,
+    POOL_SIZE as KENO_POOL_SIZE,
+    KenoError,
+)
+from game.casino.slots import (
+    PAIR as SLOTS_PAIR,
+    SYMBOL_NAMES as SLOTS_SYMBOL_NAMES,
+    THREE_OF_A_KIND as SLOTS_THREE_OF_A_KIND,
+)
+from database.repositories.casino import (
+    act_on_hand,
+    deal_blackjack,
+    get_open_hand,
+    play_keno,
+    play_slots,
+    recent_rounds as recent_casino_rounds,
+)
 from game.world.districts import (
     DISTRICTS,
     DISTRICTS_BY_KEY,
@@ -1275,6 +1306,126 @@ def district_shop():
             and player.hospital_until is None
         ),
     )
+
+CASINO_DISTRICT = "soho"
+
+
+def _casino_context(user_id, player):
+    hand = get_open_hand(user_id)
+    return {
+        "player": player,
+        "hand": hand,
+        "hand_value": blackjack_hand_value,
+        "describe_hand": describe_hand,
+        "minimum_bet": CASINO_MINIMUM_BET,
+        "maximum_bet": casino_maximum_bet(player.level),
+        "minimum_level": CASINO_MINIMUM_LEVEL,
+        "slots_paytable": SLOTS_THREE_OF_A_KIND,
+        "slots_pairs": SLOTS_PAIR,
+        "slots_names": SLOTS_SYMBOL_NAMES,
+        "keno_paytable": KENO_PAYTABLE,
+        "keno_pool": KENO_POOL_SIZE,
+        "keno_minimum": KENO_MINIMUM_SPOTS,
+        "keno_maximum": KENO_MAXIMUM_SPOTS,
+        "history": recent_casino_rounds(user_id),
+        "accessible": (
+            player.level >= CASINO_MINIMUM_LEVEL
+            and player.current_district == CASINO_DISTRICT
+            and player.travel_destination is None
+            and player.jail_until is None
+            and player.hospital_until is None
+        ),
+    }
+
+
+@app.route("/casino", methods=["GET", "POST"])
+def casino():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+
+    message = None
+    error = None
+    result = None
+    game = request.form.get("game", "")
+
+    if request.method == "POST":
+        try:
+            action = request.form.get("action", "")
+
+            if game == "slots":
+                bet = _read_bet(request.form.get("bet"))
+                spin, payout = play_slots(session["user_id"], bet)
+                result = {"game": "slots", "spin": spin, "payout": payout}
+                message = _casino_message(spin.line, bet, payout)
+
+            elif game == "keno":
+                bet = _read_bet(request.form.get("bet"))
+                picks = request.form.getlist("picks")
+                card, payout = play_keno(session["user_id"], bet, picks)
+                result = {"game": "keno", "card": card, "payout": payout}
+                message = _casino_message(card.line, bet, payout)
+
+            elif game == "blackjack" and action == "deal":
+                bet = _read_bet(request.form.get("bet"))
+                state, payout = deal_blackjack(session["user_id"], bet)
+                if payout is not None:
+                    message = _casino_message(
+                        describe_hand(state), state.bet, payout
+                    )
+
+            elif game == "blackjack":
+                state, payout = act_on_hand(session["user_id"], action)
+                if payout is not None:
+                    message = _casino_message(
+                        describe_hand(state), state.bet, payout
+                    )
+            else:
+                raise CasinoError("That table is not open.")
+
+            if message:
+                record_player_action(
+                    "casino_round",
+                    message,
+                    {"game": game},
+                )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (CasinoError, KenoError, BlackjackError) as casino_error:
+            error = str(casino_error)
+
+    return render_template(
+        "casino.html",
+        message=message,
+        error=error,
+        result=result,
+        **_casino_context(session["user_id"], player),
+    )
+
+
+def _read_bet(raw):
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        raise CasinoError("Choose a stake.")
+
+
+def _casino_message(line, bet, payout):
+    net = payout - bet
+    if net > 0:
+        return f"{line}. You win £{net:,}."
+    if net == 0:
+        # A push already says what happened to the stake.
+        return f"{line}."
+    return f"{line}. You lose £{-net:,}."
+
 
 @app.route("/city")
 def city():
