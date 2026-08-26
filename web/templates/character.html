@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#090b0d"><title>{{ player.name }} · The Smoke</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-5') }}">
 </head><body class="dashboard-page"><div class="app-shell">
-<header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
+<header class="topbar">{% include "_topbar_menu.html" %}<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page character-page">
 <section class="character-hero"><div><p class="eyebrow">Character profile</p><h1>{{ player.name }}</h1><div class="identity-meta"><span class="level-badge">Level {{ player.level }}</span>{% if growth and growth.is_founding_player %}<span class="founder-badge">Founding Player</span>{% endif %}<span>{{ status }}</span></div></div><div class="character-money"><span>Net funds</span><strong>£{{ "{:,}".format(player.money + player.bank_balance) }}</strong><small>Cash £{{ "{:,}".format(player.money) }} · Bank £{{ "{:,}".format(player.bank_balance) }}</small></div></section>

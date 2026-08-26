@@ -1,0 +1,45 @@
+{#
+  The burger beside the brand. Everything in here is a page you can read
+  without being signed in, so it renders the same on every surface --
+  the game, the admin pages, and the logged-out ones.
+
+  It is a <details> rather than a scripted dropdown so it opens, closes
+  and takes focus correctly with no JavaScript at all. The script at the
+  bottom only adds closing on Escape and on a click elsewhere.
+#}
+<details class="site-menu" data-site-menu>
+    <summary aria-label="Site menu" title="Menu">
+        <span class="site-menu__bars" aria-hidden="true"></span>
+    </summary>
+    <nav class="site-menu__panel" aria-label="Site">
+        <a href="{{ url_for('forum') }}">
+            <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#operations"></use></svg>
+            <span><strong>Guides</strong><small>How the game works</small></span>
+        </a>
+        <a href="{{ url_for('rules') }}">
+            <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#wanted"></use></svg>
+            <span><strong>Rules</strong><small>And what breaking them costs</small></span>
+        </a>
+        <a href="{{ url_for('feedback') }}">
+            <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#character"></use></svg>
+            <span><strong>Feedback</strong><small>Report a bug or an idea</small></span>
+        </a>
+    </nav>
+</details>
+<script>
+(() => {
+    const menu = document.querySelector("[data-site-menu]");
+    if (!menu || menu.dataset.wired) return;
+    menu.dataset.wired = "1";
+
+    document.addEventListener("click", event => {
+        if (menu.open && !menu.contains(event.target)) menu.open = false;
+    });
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && menu.open) {
+            menu.open = false;
+            menu.querySelector("summary").focus();
+        }
+    });
+})();
+</script>
