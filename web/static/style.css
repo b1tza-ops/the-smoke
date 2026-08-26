@@ -1436,10 +1436,12 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .machine__controls .work-button{width:auto;min-width:10rem;flex:0 0 auto}
 
 /* reels: a 3x3 window with the payline across the middle */
-.reel-window{position:relative;max-width:30rem;margin:1rem auto 0;border:1px solid var(--border);border-radius:12px;background:#0a0e10;padding:.5rem}
+.reel-window{--reel-cell:4.2rem;position:relative;max-width:30rem;margin:1rem auto 0;border:1px solid var(--border);border-radius:12px;background:#0a0e10;padding:.5rem}
 .reel-window__payline{position:absolute;left:0;right:0;top:50%;height:2px;background:linear-gradient(90deg,transparent,rgba(255,189,74,.85),transparent);transform:translateY(-1px);pointer-events:none}
-.reel-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:.3rem}
-.reel-cell{display:grid;place-content:center;min-height:4.2rem;border-radius:.55rem;background:#11161a;font-size:.82rem;font-weight:800;text-align:center;padding:.3rem;line-height:1.15}
+.reel-set{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem}
+.reel{overflow:hidden;height:calc(3 * var(--reel-cell) + 2 * .3rem);border-radius:.55rem}
+.reel__strip{display:grid;grid-auto-rows:var(--reel-cell);row-gap:.3rem;will-change:transform}
+.reel-cell{display:grid;place-content:center;height:var(--reel-cell);border-radius:.55rem;background:#11161a;font-size:.82rem;font-weight:800;text-align:center;padding:.3rem;line-height:1.15}
 .reel-cell.is-blur{background:repeating-linear-gradient(180deg,#0f1418 0 4px,#141a1f 4px 8px);opacity:.55}
 .reel-cell.is-payline{border:1px solid rgba(255,189,74,.35);background:#161d22}
 .reel-cell--diamond{color:#7fe3ff}
@@ -1554,3 +1556,30 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .tile-card i{font-style:normal;font-size:.8rem}
 .tile-card--red{color:#c62828;transform:rotate(-8deg)}
 .tile-card:last-child{transform:rotate(7deg)}
+/* spinning reels */
+.reel-window.is-spinning .reel-cell{filter:blur(1px)}
+.reel-window.is-spinning .reel-cell small{opacity:0}
+.reel-window .reel-cell.is-payline{border:1px solid rgba(255,189,74,.35);background:#161d22}
+.reel-window__payline{z-index:2}
+.reel{position:relative;z-index:1}
+@media(prefers-reduced-motion:reduce){
+  .reel__strip{transition:none !important}
+  .reel-window.is-spinning .reel-cell{filter:none}
+}
+/* keno balls drop in as they are drawn */
+@keyframes keno-drop{from{opacity:0;transform:translateY(-.5rem) scale(.7)}to{opacity:1;transform:none}}
+.keno-ball.is-dropping{animation:keno-drop .22s ease-out both}
+@media(prefers-reduced-motion:reduce){.keno-ball.is-dropping{animation:none}}
+/* cards deal onto the felt rather than appearing */
+@keyframes card-deal{from{opacity:0;transform:translate(-2.2rem,-1.4rem) rotate(-14deg)}to{opacity:1;transform:none}}
+.card-row .playing-card{animation:card-deal .3s cubic-bezier(.2,.7,.3,1) both}
+.card-row .playing-card:nth-child(2){animation-delay:.1s}
+.card-row .playing-card:nth-child(3){animation-delay:.2s}
+.card-row .playing-card:nth-child(4){animation-delay:.28s}
+.card-row .playing-card:nth-child(n+5){animation-delay:.34s}
+/* the felt itself fades up so a settled table does not flash */
+@keyframes felt-settle{from{opacity:.4}to{opacity:1}}
+.felt__hands,.felt__side{animation:felt-settle .25s ease-out both}
+@media(prefers-reduced-motion:reduce){
+  .card-row .playing-card,.felt__hands,.felt__side{animation:none}
+}

@@ -57,7 +57,7 @@
             {% endfor %}
         </div>
         <div class="compact-hud__status">
-            <div><span class="hud-status-icon hud-status-icon--cash"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#cash"></use></svg></span><small>Cash</small><strong>£{{ "{:,}".format(player.money) }}</strong></div>
+            <div><span class="hud-status-icon hud-status-icon--cash"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#cash"></use></svg></span><small>Cash</small><strong data-hud-cash>£{{ "{:,}".format(player.money) }}</strong></div>
             <div><span class="hud-status-icon hud-status-icon--bank"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#bank"></use></svg></span><small>Bank</small><strong>£{{ "{:,}".format(player.bank_balance) }}</strong></div>
             <div><span class="hud-status-icon hud-status-icon--wanted"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#wanted"></use></svg></span><small>Wanted</small><strong>{{ player.wanted_level }}/100</strong></div>
             <div><span class="hud-status-icon hud-status-icon--level"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#level"></use></svg></span><small>Level</small><strong>{{ player.level }}</strong></div>

@@ -600,6 +600,26 @@ from nothing, and a small server cannot absorb an unbounded one.
 Every settled round is written to `casino_rounds`, so the house edge can
 be audited against real play rather than only against the arithmetic.
 
+#### Playing a round
+
+The reels spin, the keno balls drop one at a time, and the cards deal
+onto the felt. **None of it decides anything.** The outcome is settled on
+the server before a single pixel moves; the animation only paces the
+reveal of a result that already exists.
+
+Slots and keno play their round without reloading: the page posts to the
+same route with an `X-Requested-With: casino` header and gets JSON back
+instead of HTML. The plain form POST is untouched, so both games work
+with JavaScript switched off — the result simply appears rather than
+arriving. Blackjack needs none of this: every action is a real state
+change, so its cards animate on load.
+
+A reel is a tall strip inside a three-cell window. Spinning replaces the
+strip with a run-up of random symbols ending in the real one and scrolls
+to it, with a longer run-up on each reel so they stop left to right.
+Every animation is dropped under `prefers-reduced-motion`, where the
+result lands immediately instead.
+
 #### The artwork
 
 The reels carry six drawn symbols — a pint, a black cab, a bell, a crown,

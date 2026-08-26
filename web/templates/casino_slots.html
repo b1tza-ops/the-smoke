@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Fruit Machines · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-4') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -19,7 +19,7 @@
                 <span>Max £{{ "{:,}".format(maximum_bet) }}</span>
             </div>
 
-            {% include "_casino_notices.html" %}
+            <div data-notices>{% include "_casino_notices.html" %}</div>
 
             {#
               Three reels are shown as a 3x3 window with the payline
@@ -27,36 +27,44 @@
               only -- the game is decided on the centre line, and the
               markup says so with aria-hidden.
             #}
-            <div class="reel-window">
+            {#
+              Three reels, each a tall strip inside a three-cell window.
+              Without JavaScript the strip holds only the result and sits
+              still; the spin script rebuilds it with a run-up of random
+              symbols and scrolls to the same result, so the animation
+              never decides anything.
+            #}
+            <div class="reel-window" data-reels
+                 data-symbols='{{ names.keys()|list|tojson }}'
+                 data-labels='{{ names|tojson }}'>
                 <span class="reel-window__payline" aria-hidden="true"></span>
-                <div class="reel-grid">
-                {% for row in (0, 1, 2) %}
-                    {% for column in (0, 1, 2) %}
-                    {% if row == 1 %}
-                        {% set symbol = spin.reels[column] if spin else None %}
-                        <span class="reel-cell is-payline">
-                            {% if symbol %}
-                            <svg class="reel-symbol" role="img" aria-label="{{ names[symbol] }}"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
-                            <small>{{ names[symbol] }}</small>
-                            {% else %}
-                            <span class="reel-cell__idle" aria-hidden="true">?</span>
-                            {% endif %}
-                        </span>
-                    {% else %}
-                        <span class="reel-cell is-blur" aria-hidden="true"></span>
-                    {% endif %}
-                    {% endfor %}
+                <div class="reel-set">
+                {% for column in (0, 1, 2) %}
+                    {% set symbol = spin.reels[column] if spin else None %}
+                    <div class="reel">
+                        <div class="reel__strip" data-strip>
+                            <span class="reel-cell is-blur" aria-hidden="true"></span>
+                            <span class="reel-cell is-payline" data-final="{{ symbol or '' }}">
+                                {% if symbol %}
+                                <svg class="reel-symbol" role="img" aria-label="{{ names[symbol] }}"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
+                                <small>{{ names[symbol] }}</small>
+                                {% else %}
+                                <span class="reel-cell__idle" aria-hidden="true">?</span>
+                                {% endif %}
+                            </span>
+                            <span class="reel-cell is-blur" aria-hidden="true"></span>
+                        </div>
+                    </div>
                 {% endfor %}
                 </div>
             </div>
 
-            {% if spin %}
-            <p class="casino-outcome {{ 'is-win' if payout else 'is-loss' }}">
-                {{ spin.line }}{% if payout %} — £{{ "{:,}".format(payout) }}{% endif %}
+            <p class="casino-outcome {{ 'is-win' if payout else 'is-loss' }}"
+               data-outcome {{ '' if spin else 'hidden' }}>
+                {% if spin %}{{ spin.line }}{% if payout %} — £{{ "{:,}".format(payout) }}{% endif %}{% endif %}
             </p>
-            {% endif %}
 
-            <form method="post" class="machine__controls">
+            <form method="post" class="machine__controls" data-spin-form>
                 {% include "_casino_bet.html" %}
                 <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Spin</span><span>→</span></button>
             </form>
@@ -85,5 +93,152 @@
         </section>
     </main>
 </div>
+<script>
+(() => {
+    const machine = document.querySelector("[data-reels]");
+    const form = document.querySelector("[data-spin-form]");
+    if (!machine || !form) return;
+
+    const symbols = JSON.parse(machine.dataset.symbols);
+    const labels = JSON.parse(machine.dataset.labels);
+    const sprite = "{{ url_for('static', filename='icons/casino-symbols.svg') }}";
+    const strips = Array.from(machine.querySelectorAll("[data-strip]"));
+    const outcome = document.querySelector("[data-outcome]");
+    const notices = document.querySelector("[data-notices]");
+    const cash = document.querySelector("[data-hud-cash]");
+    const button = form.querySelector("button[type=submit]");
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // The run-up before each reel settles. Longer strips on later reels
+    // are what makes them stop one after another.
+    const RUN_UP = [18, 26, 34];
+    const DURATION = [900, 1250, 1600];
+
+    const cell = (symbol, onLine) => {
+        const span = document.createElement("span");
+        span.className = "reel-cell" + (onLine ? " is-payline" : "");
+        if (symbol) {
+            span.innerHTML =
+                '<svg class="reel-symbol" aria-hidden="true"><use href="' +
+                sprite + '#sym-' + symbol + '"></use></svg>' +
+                "<small>" + labels[symbol] + "</small>";
+        }
+        return span;
+    };
+
+    const blur = () => {
+        const span = document.createElement("span");
+        span.className = "reel-cell is-blur";
+        span.setAttribute("aria-hidden", "true");
+        return span;
+    };
+
+    const random = () => symbols[Math.floor(Math.random() * symbols.length)];
+
+    const settle = (strip, symbol, index) => new Promise(resolve => {
+        const runUp = RUN_UP[index];
+        strip.style.transition = "none";
+        strip.style.transform = "translateY(0)";
+        strip.replaceChildren();
+
+        strip.append(blur());
+        for (let i = 0; i < runUp; i += 1) strip.append(cell(random()));
+        strip.append(cell(symbol, true));
+        strip.append(cell(random()));
+
+        const height = strip.firstElementChild.getBoundingClientRect().height
+            + parseFloat(getComputedStyle(strip).rowGap || 0);
+        const distance = height * runUp;
+
+        // Force the browser to accept the reset before transitioning.
+        void strip.offsetHeight;
+        strip.style.transition =
+            "transform " + DURATION[index] + "ms cubic-bezier(.15,.72,.25,1)";
+        strip.style.transform = "translateY(-" + distance + "px)";
+
+        const done = () => {
+            strip.removeEventListener("transitionend", done);
+            resolve();
+        };
+        strip.addEventListener("transitionend", done);
+        // A missed transitionend must not leave the reels stuck spinning.
+        window.setTimeout(done, DURATION[index] + 250);
+    });
+
+    const land = (strip, symbol) => {
+        strip.style.transition = "none";
+        strip.style.transform = "translateY(0)";
+        strip.replaceChildren(cell(random()), cell(symbol, true), cell(random()));
+    };
+
+    const notice = (text, kind) => {
+        if (!notices) return;
+        notices.replaceChildren();
+        if (!text) return;
+        const box = document.createElement("div");
+        box.className = "game-notice game-notice--" + kind;
+        box.setAttribute("role", kind === "error" ? "alert" : "status");
+        box.textContent = text;
+        notices.append(box);
+    };
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (button.disabled) return;
+
+        button.disabled = true;
+        machine.classList.add("is-spinning");
+        if (outcome) outcome.hidden = true;
+
+        let data;
+        try {
+            const response = await fetch(form.action || window.location.pathname, {
+                method: "POST",
+                headers: {"X-Requested-With": "casino"},
+                body: new FormData(form),
+            });
+            data = await response.json();
+        } catch (failure) {
+            // The round may or may not have been taken, so send the player
+            // to a fresh page rather than guessing.
+            window.location.reload();
+            return;
+        }
+
+        if (!data.ok) {
+            machine.classList.remove("is-spinning");
+            button.disabled = false;
+            notice(data.error, "error");
+            return;
+        }
+
+        notice(data.message, "success");
+        if (cash) cash.textContent = "£" + data.money.toLocaleString();
+
+        if (still) {
+            data.reels.forEach((symbol, index) => land(strips[index], symbol));
+        } else {
+            await Promise.all(data.reels.map((symbol, index) =>
+                new Promise(resolve => {
+                    window.setTimeout(
+                        () => settle(strips[index], symbol, index).then(resolve),
+                        index * 90,
+                    );
+                })
+            ));
+        }
+
+        machine.classList.remove("is-spinning");
+        if (outcome) {
+            outcome.textContent = data.line + (
+                data.payout ? " — £" + data.payout.toLocaleString() : ""
+            );
+            outcome.className = "casino-outcome " + (data.payout ? "is-win" : "is-loss");
+            outcome.hidden = false;
+        }
+        button.disabled = false;
+    });
+})();
+</script>
 </body>
 </html>
