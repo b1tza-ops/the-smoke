@@ -1591,3 +1591,66 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 @media(prefers-reduced-motion:reduce){
   .casino-game--blackjack .game-notice--success{animation:none}
 }
+
+/* ---------------------------------------------------------- handbook */
+.handbook-page{max-width:60rem}
+.handbook-hero{margin:1rem 0 1.4rem}
+.handbook-hero h1{margin:.2rem 0 .4rem;font-size:clamp(1.9rem,4.2vw,2.9rem)}
+.handbook-hero p{max-width:52ch;color:var(--muted)}
+.handbook-crumb{margin:.6rem 0 .9rem}
+.handbook-crumb a{color:var(--muted);font-size:.82rem;text-decoration:none}
+.handbook-crumb a:hover{color:var(--accent)}
+
+.handbook-section{margin-bottom:1.6rem}
+.handbook-section__head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding-bottom:.5rem;margin-bottom:.6rem;border-bottom:1px solid var(--border)}
+.handbook-section__head h2{margin:0;font-size:1.05rem}
+.handbook-section__head span{color:var(--muted);font-size:.78rem}
+.handbook-rows{display:flex;flex-direction:column;gap:.4rem}
+.handbook-row{display:flex;align-items:center;gap:.8rem;padding:.75rem .9rem;border:1px solid var(--border);border-radius:12px;background:rgba(17,22,26,.82);color:inherit;text-decoration:none;transition:border-color .15s,background .15s}
+.handbook-row:hover,.handbook-row:focus-visible{border-color:var(--accent);background:rgba(185,243,75,.06)}
+.handbook-row .game-icon{width:22px;height:22px;flex:0 0 auto;color:var(--accent)}
+.handbook-row__body{display:flex;flex-direction:column;min-width:0}
+.handbook-row__body strong{font-size:.95rem}
+.handbook-row__body small{color:var(--muted);font-size:.8rem}
+.handbook-row__go{margin-left:auto;color:var(--muted)}
+
+/* an article */
+.handbook-article{max-width:44rem}
+.handbook-article header{margin-bottom:1.1rem}
+.handbook-article h1{margin:.2rem 0 .4rem;font-size:clamp(1.7rem,3.6vw,2.4rem)}
+.handbook-summary{color:var(--muted);font-size:1rem}
+.handbook-article p{margin:0 0 .85rem;line-height:1.65;color:#d5dbde}
+.handbook-heading{margin:1.6rem 0 .6rem;font-size:1.02rem;color:#fff}
+.handbook-list{margin:0 0 1rem;padding-left:1.2rem;line-height:1.65;color:#d5dbde}
+.handbook-list li{margin-bottom:.4rem}
+.handbook-list--steps li{padding-left:.2rem}
+.handbook-article code{padding:.08rem .3rem;border-radius:.3rem;background:#0a0e10;font-size:.88em}
+.handbook-article a{color:var(--accent)}
+
+.handbook-table-wrap{overflow-x:auto;margin:0 0 1.2rem}
+.handbook-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:26rem}
+.handbook-table caption{margin-bottom:.4rem;color:var(--muted);font-size:.74rem;text-align:left}
+.handbook-table th,.handbook-table td{padding:.42rem .6rem;border-bottom:1px solid var(--border);text-align:left}
+.handbook-table th{color:var(--muted);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+.handbook-table td{font-variant-numeric:tabular-nums;color:#d5dbde}
+.handbook-table tbody tr:hover td{background:rgba(255,255,255,.02)}
+
+.handbook-note{margin:0 0 1.2rem;padding:.75rem .95rem;border-left:3px solid var(--border);border-radius:0 10px 10px 0;background:rgba(17,22,26,.82);font-size:.86rem;line-height:1.6}
+.handbook-note--tip{border-left-color:var(--accent);color:#d2ff79}
+.handbook-note--warning{border-left-color:#ffbd4a;color:#ffd591}
+.handbook-note--info{border-left-color:#48cce3;color:#a9e8f5}
+
+/* the rules */
+.rule{margin-bottom:1.6rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+.rule:last-of-type{border-bottom:0}
+.rule__head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.7rem}
+.rule__head h2{margin:0;font-size:1.15rem}
+.rule__penalty{padding:.22rem .7rem;border-radius:999px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.rule__penalty--permanent-ban{background:rgba(255,100,105,.16);color:#ffb1b4;border:1px solid rgba(255,100,105,.4)}
+.rule__penalty--ban{background:rgba(255,189,74,.16);color:#ffd591;border:1px solid rgba(255,189,74,.4)}
+.rule__penalty--warning-then-ban{background:rgba(148,163,184,.14);color:#c3ccd2;border:1px solid var(--border)}
+
+@media(max-width:520px){
+  .handbook-row__go{display:none}
+  .rule__head{align-items:flex-start;flex-direction:column;gap:.4rem}
+}

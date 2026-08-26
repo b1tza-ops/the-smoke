@@ -654,6 +654,36 @@ Keno cards can be played for up to ten rounds at once, each round drawn
 separately and staked separately, with the whole card checked against the
 player's cash before any of it is drawn.
 
+### The handbook
+
+Guides live at **/forum**, grouped the way a new player meets them
+rather than alphabetically, and the rules at **/rules**. Both are
+readable **logged out** — someone deciding whether to play should be
+able to read the rules first.
+
+Pages are **staff-published**: content is structured Python in
+`game/handbook/`, the same way items, shops, districts and gyms are
+stored. That keeps the dependency list at two, puts every edit through
+the same review as any other change, and means a page cannot inject
+markup. Adding a guide is adding an entry to `guides.py`.
+
+Prose carries a deliberately small inline vocabulary — `**bold**`,
+`` `code` `` and `[label](/path)`. The formatter **escapes first and
+applies markup second**, so by the time any tag is inserted every
+character from the source is inert. Only in-site paths are linkable, so
+a guide cannot point somewhere unexpected.
+
+The figures quoted in the guides are checked against the constants they
+describe. `tests/gameplay/test_handbook.py` asserts the regeneration
+rates, every crime's success chance, the fight energy cost, every
+pistol and round's price, the whole gym ladder, the casino gate and the
+district unlock levels — and that every internal link resolves to a real
+route. Prose cannot be tested; the numbers can.
+
+Nothing here is player-writable. If player posting is ever wanted, it
+belongs in a new module beside this one, with the moderation that
+implies.
+
 ### The City
 
 Every place in London a player can walk into is listed on the **City** page,

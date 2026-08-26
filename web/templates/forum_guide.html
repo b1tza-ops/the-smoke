@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>{{ guide.title }} · The Smoke</title>
+    <meta name="description" content="{{ guide.summary }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='handbook-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('forum') }}">Guides</a>
+    </header>
+    {% if player %}{% include "_player_hud.html" %}{% endif %}
+    <main class="dashboard-main handbook-page handbook-page--article">
+        <nav class="handbook-crumb"><a href="{{ url_for('forum') }}">← All guides</a></nav>
+        <article class="handbook-article">
+            <header>
+                <p class="eyebrow">{{ guide.section }}</p>
+                <h1>{{ guide.title }}</h1>
+                <p class="handbook-summary">{{ guide.summary }}</p>
+            </header>
+            {% include "_handbook_blocks.html" %}
+        </article>
+
+        {% if siblings %}
+        <section class="handbook-section">
+            <div class="handbook-section__head">
+                <h2>More in {{ guide.section }}</h2>
+            </div>
+            <div class="handbook-rows">
+            {% for other in siblings %}
+                <a class="handbook-row" href="{{ url_for('forum_guide', slug=other.slug) }}">
+                    <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#{{ other.icon }}"></use></svg>
+                    <span class="handbook-row__body">
+                        <strong>{{ other.title }}</strong>
+                        <small>{{ other.summary }}</small>
+                    </span>
+                    <span class="handbook-row__go" aria-hidden="true">→</span>
+                </a>
+            {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </main>
+</div>
+</body>
+</html>

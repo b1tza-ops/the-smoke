@@ -1,0 +1,37 @@
+{#
+  Renders one handbook page's blocks. Every string goes through
+  `inline`, which escapes first and only then applies the small
+  bold/code/link vocabulary, so nothing in a guide can inject markup.
+#}
+{% for block in blocks %}
+    {% set kind = block.__class__.__name__ %}
+    {% if kind == "Heading" %}
+        <h3 class="handbook-heading">{{ inline(block.text) }}</h3>
+    {% elif kind == "Text" %}
+        <p>{{ inline(block.text) }}</p>
+    {% elif kind == "Bullets" %}
+        <ul class="handbook-list">
+            {% for item in block.items %}<li>{{ inline(item) }}</li>{% endfor %}
+        </ul>
+    {% elif kind == "Steps" %}
+        <ol class="handbook-list handbook-list--steps">
+            {% for item in block.items %}<li>{{ inline(item) }}</li>{% endfor %}
+        </ol>
+    {% elif kind == "Table" %}
+        <div class="handbook-table-wrap">
+            <table class="handbook-table">
+                {% if block.caption %}<caption>{{ inline(block.caption) }}</caption>{% endif %}
+                <thead><tr>{% for header in block.headers %}<th>{{ inline(header) }}</th>{% endfor %}</tr></thead>
+                <tbody>
+                {% for row in block.rows %}
+                    <tr>{% for cell in row %}<td>{{ inline(cell) }}</td>{% endfor %}</tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% elif kind == "Note" %}
+        <aside class="handbook-note handbook-note--{{ block.tone }}">
+            {{ inline(block.text) }}
+        </aside>
+    {% endif %}
+{% endfor %}
