@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Blackjack · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-4') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-5') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
     {% include "_casino_head.html" %}
-    <main class="dashboard-main casino-page casino-game">
+    <main class="dashboard-main casino-page casino-game casino-game--blackjack">
         <nav class="casino-crumb"><a href="{{ url_for('casino') }}">← The Golden Square</a></nav>
 
         {% set shown = table or finished %}
