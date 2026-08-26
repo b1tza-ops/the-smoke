@@ -1418,14 +1418,10 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .casino-floor{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.7rem;margin-bottom:1.5rem}
 .casino-tile{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;background:rgba(17,22,26,.82);overflow:hidden;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
 .casino-tile:hover,.casino-tile:focus-visible{border-color:var(--accent);transform:translateY(-2px)}
-.casino-tile__art{display:block;height:104px;background:#0a0e10;position:relative}
-.casino-tile__art::after{position:absolute;inset:0;display:grid;place-content:center;font-size:2.4rem;line-height:1}
+.casino-tile__art{display:flex;align-items:center;justify-content:center;gap:.5rem;height:104px;background:#0a0e10;position:relative}
 .casino-tile--slots .casino-tile__art{background:linear-gradient(145deg,#2a1420,#0a0e10)}
-.casino-tile--slots .casino-tile__art::after{content:"777";letter-spacing:.1em;color:#ff646a;font-weight:900;font-size:2rem}
 .casino-tile--keno .casino-tile__art{background:linear-gradient(145deg,#14222a,#0a0e10)}
-.casino-tile--keno .casino-tile__art::after{content:"80";color:#48cce3;font-weight:900}
 .casino-tile--blackjack .casino-tile__art{background:linear-gradient(145deg,#12291b,#0a0e10)}
-.casino-tile--blackjack .casino-tile__art::after{content:"21";color:#b9f34b;font-weight:900}
 .casino-tile__body{display:flex;flex-direction:column;gap:.2rem;padding:.75rem .9rem}
 .casino-tile__body strong{font-size:.98rem}
 .casino-tile__body small{color:var(--muted);font-size:.78rem}
@@ -1491,8 +1487,14 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .felt__side{margin-top:1rem}
 .felt__side small,.felt__hand small{display:block;margin-bottom:.3rem;color:#9fc4ae;font-size:.75rem}
 .card-row{display:flex;gap:.35rem;flex-wrap:wrap}
-.playing-card{display:grid;place-content:center;min-width:2.9rem;min-height:3.9rem;border-radius:.5rem;background:#f6f5ef;color:#11161a;font-weight:800;font-size:.85rem;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-.playing-card--back{background:repeating-linear-gradient(45deg,#3d5c48 0 6px,#2f4a39 6px 12px);color:#9fc4ae}
+.playing-card{position:relative;display:block;width:3.1rem;height:4.3rem;border-radius:.45rem;background:linear-gradient(160deg,#fffefa,#eceae0);box-shadow:0 2px 6px rgba(0,0,0,.4);overflow:hidden}
+.playing-card--red{color:#c62828}
+.playing-card--black{color:#16191c}
+.playing-card__index{position:absolute;top:.22rem;left:.3rem;display:flex;flex-direction:column;align-items:center;line-height:1}
+.playing-card__index b{font-size:.78rem;font-weight:900;letter-spacing:-.02em}
+.playing-card__index i{font-style:normal;font-size:.66rem;margin-top:.04rem}
+.playing-card__pip{position:absolute;right:.16rem;bottom:.02rem;font-size:1.9rem;line-height:1;opacity:.9}
+.playing-card--back{background:repeating-linear-gradient(45deg,#3d5c48 0 6px,#2f4a39 6px 12px);box-shadow:inset 0 0 0 3px #eceae0,0 2px 6px rgba(0,0,0,.4)}
 .felt__hands{display:flex;flex-direction:column;gap:.8rem;margin-top:1rem}
 .felt__hands.is-split{flex-direction:row;flex-wrap:wrap}
 .felt__hand{padding:.55rem .7rem;border:1px solid transparent;border-radius:.7rem;flex:0 0 auto}
@@ -1535,3 +1537,20 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
    cells sit above it and hide it wherever a symbol is showing. */
 .reel-cell{position:relative;z-index:1}
 .machine .reel-window{margin-left:auto;margin-right:auto}
+/* reel symbols */
+.reel-symbol{display:block;width:2.1rem;height:2.1rem;margin:0 auto}
+.reel-symbol--small{display:inline-block;width:1.15rem;height:1.15rem;margin:0 .4rem -.25rem 0}
+.reel-cell.is-payline small{display:block;margin-top:.2rem;font-size:.62rem;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.reel-cell__idle{font-size:1.5rem;color:#39434a}
+.paytable__symbol{white-space:nowrap}
+/* tile art */
+.tile-symbol{width:2.6rem;height:2.6rem}
+.casino-tile:hover .tile-symbol{transform:translateY(-2px)}
+.tile-symbol{transition:transform .15s}
+.tile-symbol:nth-child(2){width:3.1rem;height:3.1rem}
+.tile-ball{display:grid;place-content:center;width:1.9rem;height:1.9rem;border-radius:999px;border:1px solid rgba(72,204,227,.4);background:rgba(72,204,227,.1);color:#7fe0f7;font-size:.68rem;font-weight:800;font-variant-numeric:tabular-nums}
+.tile-ball:nth-child(2),.tile-ball:nth-child(4){background:rgba(72,204,227,.22);color:#cdf4ff}
+.tile-card{position:relative;display:grid;place-content:center;width:2.5rem;height:3.5rem;border-radius:.35rem;background:linear-gradient(160deg,#fffefa,#eceae0);color:#16191c;font-size:1rem;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+.tile-card i{font-style:normal;font-size:.8rem}
+.tile-card--red{color:#c62828;transform:rotate(-8deg)}
+.tile-card:last-child{transform:rotate(7deg)}

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>The Golden Square · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-3') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -35,7 +35,18 @@
         <div class="casino-floor">
         {% for table in tables %}
             <a class="casino-tile casino-tile--{{ table.key }}" href="{{ url_for(table.endpoint) }}">
-                <span class="casino-tile__art" aria-hidden="true"></span>
+                <span class="casino-tile__art" aria-hidden="true">
+                    {% if table.key == "slots" %}
+                        {% for symbol in ("seven", "diamond", "bell") %}
+                        <svg class="tile-symbol"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
+                        {% endfor %}
+                    {% elif table.key == "keno" %}
+                        {% for number in (7, 19, 44, 61, 80) %}<span class="tile-ball">{{ number }}</span>{% endfor %}
+                    {% else %}
+                        <span class="tile-card tile-card--red">A<i>♥</i></span>
+                        <span class="tile-card">K<i>♠</i></span>
+                    {% endif %}
+                </span>
                 <span class="casino-tile__body">
                     <strong>{{ table.name }}</strong>
                     <small>{{ table.blurb }}</small>

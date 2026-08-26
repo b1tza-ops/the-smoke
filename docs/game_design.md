@@ -600,6 +600,20 @@ from nothing, and a small server cannot absorb an unbounded one.
 Every settled round is written to `casino_rounds`, so the house edge can
 be audited against real play rather than only against the arithmetic.
 
+#### The artwork
+
+The reels carry six drawn symbols — a pint, a black cab, a bell, a crown,
+a diamond and a lucky seven — in `web/static/icons/casino-symbols.svg`.
+That is a separate sprite from the UI icons: those are stroked line
+icons that take their colour from the text around them, whereas a reel
+symbol has to read the same wherever it lands, so these are filled and
+carry their own palette.
+
+Playing cards are not images. A card is a rank and one of the four
+Unicode pips, styled in CSS, which scales cleanly at any size, colours
+itself red or black, costs nothing to load, and needs no artwork for
+fifty-two faces. The face-down card is a striped back in the same shape.
+
 #### The floor
 
 The casino is an index of tables rather than one long page: `/casino`

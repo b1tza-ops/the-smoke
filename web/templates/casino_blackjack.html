@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Blackjack · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-3') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -29,10 +29,10 @@
                 <small>Dealer{% if settled %} — {{ hand_value(shown.dealer)[0] }}{% endif %}</small>
                 <div class="card-row">
                     {% if settled %}
-                        {% for card in shown.dealer %}<span class="playing-card">{{ card }}</span>{% endfor %}
+                        {% for card in shown.dealer %}{% include "_playing_card.html" %}{% endfor %}
                     {% else %}
-                        <span class="playing-card">{{ shown.dealer[0] }}</span>
-                        <span class="playing-card playing-card--back" aria-label="Face down">?</span>
+                        {% with card = shown.dealer[0] %}{% include "_playing_card.html" %}{% endwith %}
+                        <span class="playing-card playing-card--back" aria-label="Face down"></span>
                     {% endif %}
                 </div>
             </div>
@@ -48,7 +48,7 @@
                         · £{{ "{:,}".format(hand.bet) }}
                     </small>
                     <div class="card-row">
-                        {% for card in hand.cards %}<span class="playing-card">{{ card }}</span>{% endfor %}
+                        {% for card in hand.cards %}{% include "_playing_card.html" %}{% endfor %}
                     </div>
                     {% if hand.outcome %}
                     <em class="{{ 'is-win' if hand.payout > hand.bet else ('is-push' if hand.payout == hand.bet else 'is-loss') }}">

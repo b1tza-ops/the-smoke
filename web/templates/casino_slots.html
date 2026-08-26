@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Fruit Machines · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-3') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -33,8 +33,14 @@
                 {% for row in (0, 1, 2) %}
                     {% for column in (0, 1, 2) %}
                     {% if row == 1 %}
-                        <span class="reel-cell is-payline reel-cell--{{ spin.reels[column] if spin else 'blank' }}">
-                            {{ names[spin.reels[column]] if spin else '—' }}
+                        {% set symbol = spin.reels[column] if spin else None %}
+                        <span class="reel-cell is-payline">
+                            {% if symbol %}
+                            <svg class="reel-symbol" role="img" aria-label="{{ names[symbol] }}"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
+                            <small>{{ names[symbol] }}</small>
+                            {% else %}
+                            <span class="reel-cell__idle" aria-hidden="true">?</span>
+                            {% endif %}
                         </span>
                     {% else %}
                         <span class="reel-cell is-blur" aria-hidden="true"></span>
@@ -65,7 +71,14 @@
                 <thead><tr><th>Symbol</th><th>Three</th><th>Two</th></tr></thead>
                 <tbody>
                 {% for symbol, pays in paytable.items() %}
-                    <tr><td>{{ names[symbol] }}</td><td>{{ pays }}×</td><td>{{ (pairs[symbol] ~ '×') if symbol in pairs else '—' }}</td></tr>
+                    <tr>
+                        <td class="paytable__symbol">
+                            <svg class="reel-symbol reel-symbol--small" aria-hidden="true"><use href="{{ url_for('static', filename='icons/casino-symbols.svg') }}#sym-{{ symbol }}"></use></svg>
+                            {{ names[symbol] }}
+                        </td>
+                        <td>{{ pays }}×</td>
+                        <td>{{ (pairs[symbol] ~ '×') if symbol in pairs else '—' }}</td>
+                    </tr>
                 {% endfor %}
                 </tbody>
             </table>
