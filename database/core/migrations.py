@@ -1771,6 +1771,32 @@ def migrate_041_loan_shark(cursor):
     """)
 
 
+def migrate_042_operations_controls(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS operations_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            maintenance_enabled INTEGER NOT NULL DEFAULT 0
+                CHECK (maintenance_enabled IN (0, 1)),
+            maintenance_starts_at TEXT,
+            maintenance_ends_at TEXT,
+            maintenance_title TEXT NOT NULL DEFAULT 'Maintenance in progress',
+            maintenance_message TEXT NOT NULL DEFAULT
+                'We are making The Smoke safer and more reliable. Please check back shortly.',
+            registration_open INTEGER NOT NULL DEFAULT 1
+                CHECK (registration_open IN (0, 1)),
+            announcement_enabled INTEGER NOT NULL DEFAULT 0
+                CHECK (announcement_enabled IN (0, 1)),
+            announcement_message TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        "INSERT OR IGNORE INTO operations_settings (id) VALUES (1)"
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1976,6 +2002,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=41,
         name="loan_shark",
         apply=migrate_041_loan_shark,
+    ),
+    Migration(
+        version=42,
+        name="operations_controls",
+        apply=migrate_042_operations_controls,
     ),
 )
 

@@ -3,7 +3,7 @@ import logging
 import os
 import secrets
 import sqlite3
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -134,6 +134,12 @@ from database.core.setup import create_tables
 from database.repositories.activity import (
     get_recent_activity,
     record_activity,
+)
+from database.repositories.site_controls import (
+    DEFAULT_MESSAGE as DEFAULT_MAINTENANCE_MESSAGE,
+    DEFAULT_TITLE as DEFAULT_MAINTENANCE_TITLE,
+    get_operations_settings,
+    update_operations_settings,
 )
 from database.repositories.growth import (
     apply_referral,
@@ -400,12 +406,34 @@ def enforce_maintenance_and_rate_limits():
     if request.path == "/healthz":
         return None
 
-    if (
-        os.environ.get("THE_SMOKE_MAINTENANCE", "0")
-        == "1"
-        and not request.path.startswith("/static/")
-    ):
-        return render_template("maintenance.html"), 503
+    public_request = not (
+        request.path.startswith("/static/")
+        or request.path.startswith("/admin")
+    )
+    if public_request:
+        settings = get_operations_settings()
+        environment_override = (
+            os.environ.get("THE_SMOKE_MAINTENANCE", "0") == "1"
+        )
+        if environment_override or settings.maintenance_active():
+            return render_template(
+                "maintenance.html",
+                maintenance_title=(
+                    settings.maintenance_title
+                    if not environment_override
+                    else DEFAULT_MAINTENANCE_TITLE
+                ),
+                maintenance_message=(
+                    settings.maintenance_message
+                    if not environment_override
+                    else DEFAULT_MAINTENANCE_MESSAGE
+                ),
+                maintenance_ends_at=(
+                    settings.maintenance_ends_at
+                    if not environment_override
+                    else None
+                ),
+            ), 503
 
     if (
         not app.config.get("TESTING", False)
@@ -439,6 +467,22 @@ def enforce_maintenance_and_rate_limits():
             ), 429
 
     return None
+
+
+@app.context_processor
+def inject_operations_announcement():
+    try:
+        settings = get_operations_settings()
+    except sqlite3.Error:
+        return {"site_announcement": None}
+    return {
+        "site_announcement": (
+            settings.announcement_message
+            if settings.announcement_enabled
+            and settings.announcement_message.strip()
+            else None
+        ),
+    }
 
 
 @app.before_request
@@ -722,6 +766,7 @@ def admin_login():
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
+    operations = get_operations_settings()
     return render_template(
         "admin_dashboard.html",
         players=get_admin_player_overview(),
@@ -732,7 +777,112 @@ def admin_dashboard():
             "admin_display_name",
             "Operations",
         ),
+        operations=operations,
+        operations_notice=session.pop("operations_notice", None),
     )
+
+
+@app.route("/admin/maintenance-preview")
+@admin_required
+def maintenance_preview():
+    settings = get_operations_settings()
+    return render_template(
+        "maintenance.html",
+        maintenance_title=settings.maintenance_title,
+        maintenance_message=settings.maintenance_message,
+        maintenance_ends_at=settings.maintenance_ends_at,
+    )
+
+
+def _admin_utc_datetime(raw_value):
+    if not raw_value:
+        return None
+    parsed = datetime.fromisoformat(raw_value)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+@app.route("/admin/operations", methods=["POST"])
+@admin_role_required
+def admin_operations():
+    current = get_operations_settings()
+    action = request.form.get("action", "save")
+
+    if action == "cancel_maintenance":
+        update_operations_settings(
+            maintenance_enabled=False,
+            maintenance_starts_at=None,
+            maintenance_ends_at=None,
+            maintenance_title=current.maintenance_title,
+            maintenance_message=current.maintenance_message,
+            registration_open=current.registration_open,
+            announcement_enabled=current.announcement_enabled,
+            announcement_message=current.announcement_message,
+        )
+        record_activity(
+            current_admin_actor(),
+            "operations_update",
+            "Scheduled maintenance cancelled.",
+        )
+        session["operations_notice"] = "Maintenance schedule cancelled."
+        return redirect("/admin#operations-controls")
+
+    try:
+        enabled = request.form.get("maintenance_enabled") == "1"
+        starts = _admin_utc_datetime(
+            request.form.get("maintenance_starts_at", "")
+        )
+        ends = _admin_utc_datetime(
+            request.form.get("maintenance_ends_at", "")
+        )
+        title = request.form.get("maintenance_title", "").strip()
+        message = request.form.get("maintenance_message", "").strip()
+        announcement = request.form.get(
+            "announcement_message", ""
+        ).strip()
+
+        if enabled and (starts is None or ends is None):
+            raise ValueError("Choose both a maintenance start and end time.")
+        if enabled and ends <= starts:
+            raise ValueError("Maintenance must end after it starts.")
+        if enabled and not title:
+            raise ValueError("Add a maintenance page title.")
+        if enabled and not message:
+            raise ValueError("Add a maintenance page message.")
+        if len(title) > 80 or len(message) > 600 or len(announcement) > 240:
+            raise ValueError("One of the messages is too long.")
+
+        update_operations_settings(
+            maintenance_enabled=enabled,
+            maintenance_starts_at=(starts.isoformat() if starts else None),
+            maintenance_ends_at=(ends.isoformat() if ends else None),
+            maintenance_title=title or DEFAULT_MAINTENANCE_TITLE,
+            maintenance_message=message or DEFAULT_MAINTENANCE_MESSAGE,
+            registration_open=(
+                request.form.get("registration_open") == "1"
+            ),
+            announcement_enabled=(
+                request.form.get("announcement_enabled") == "1"
+            ),
+            announcement_message=announcement,
+        )
+    except (TypeError, ValueError) as error:
+        session["operations_notice"] = str(error)
+        return redirect("/admin#operations-controls")
+
+    record_activity(
+        current_admin_actor(),
+        "operations_update",
+        "Global game controls updated.",
+        metadata={
+            "maintenance_enabled": enabled,
+            "registration_open": request.form.get("registration_open") == "1",
+            "announcement_enabled": request.form.get("announcement_enabled") == "1",
+        },
+    )
+    session["operations_notice"] = "Operations settings saved."
+    return redirect("/admin#operations-controls")
 
 
 @app.route("/admin/users/<int:user_id>")
@@ -3185,6 +3335,16 @@ def feedback():
 def register():
     if "user_id" in session:
         return redirect("/")
+
+    if not get_operations_settings().registration_open:
+        return render_template(
+            "error.html",
+            title="Registrations temporarily paused",
+            message=(
+                "New accounts are not being accepted right now. "
+                "Please check back soon."
+            ),
+        ), 403
 
     error = None
     form_data = {

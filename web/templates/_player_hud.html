@@ -2,6 +2,9 @@
      data-nerve-last="{{ player.last_nerve_update }}"
      data-energy-full="{{ 1 if player.energy >= player.max_energy else 0 }}"
      data-nerve-full="{{ 1 if player.nerve >= player.max_nerve else 0 }}">
+    {% if site_announcement %}
+    <aside class="site-announcement" role="status"><strong>City notice</strong><span>{{ site_announcement }}</span></aside>
+    {% endif %}
     <nav class="game-nav" aria-label="Game sections">
         <a href="{{ url_for('home') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#home"></use></svg><strong>Home</strong></a>
         <a href="{{ url_for('city') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#city"></use></svg><strong>City</strong></a>
