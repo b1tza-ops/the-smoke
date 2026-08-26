@@ -1604,6 +1604,56 @@ def migrate_037_ammunition(cursor):
     )
 
 
+def migrate_038_casino(cursor):
+    """The Golden Square: a round log, and hands left mid-play.
+
+    Every settled round is written to `casino_rounds` so the house edge
+    can be audited against real play rather than only against the
+    arithmetic in the tests.
+
+    Blackjack is the only game that spans more than one request, so a
+    hand in progress is persisted whole -- shoe included -- in
+    `casino_hands`. Keeping the shoe server-side is the point: the client
+    never learns the order of the undealt cards.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS casino_rounds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            game TEXT NOT NULL
+                CHECK (game IN ('slots', 'keno', 'blackjack')),
+            bet INTEGER NOT NULL CHECK (bet > 0),
+            payout INTEGER NOT NULL CHECK (payout >= 0),
+            detail TEXT NOT NULL DEFAULT '',
+            played_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_casino_rounds_player
+        ON casino_rounds (player_id, played_at)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_casino_rounds_game
+        ON casino_rounds (game, played_at)
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS casino_hands (
+            player_id INTEGER PRIMARY KEY,
+            bet INTEGER NOT NULL CHECK (bet > 0),
+            shoe TEXT NOT NULL,
+            cursor INTEGER NOT NULL CHECK (cursor >= 0),
+            player_cards TEXT NOT NULL,
+            dealer_cards TEXT NOT NULL,
+            doubled INTEGER NOT NULL DEFAULT 0
+                CHECK (doubled IN (0, 1)),
+            opened_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1789,6 +1839,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=37,
         name="ammunition",
         apply=migrate_037_ammunition,
+    ),
+    Migration(
+        version=38,
+        name="casino",
+        apply=migrate_038_casino,
     ),
 )
 

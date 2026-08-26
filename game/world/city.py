@@ -62,6 +62,13 @@ FIXED = (
         "Pistols and rounds. The only firearms in London.",
         district="hackney",
     ),
+    Destination(
+        "casino",
+        "The Golden Square",
+        "casino",
+        "Slots, keno and blackjack. The house wins slowly.",
+        district="soho",
+    ),
 )
 
 

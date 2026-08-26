@@ -1399,3 +1399,63 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .bazaar-page .shop-row{grid-template-columns:8.5rem minmax(0,1fr) 6.2rem}
 .bazaar-page .shop-hero h1{font-size:clamp(1.9rem,4.2vw,2.9rem)}
 @media(max-width:520px){.bazaar-page .shop-row{grid-template-columns:6.3rem minmax(0,1fr) 5.2rem}}
+
+/* ------------------------------------------------------------ casino */
+.casino-hero{display:flex;justify-content:space-between;align-items:end;gap:1rem;margin:1rem 0 1.2rem;flex-wrap:wrap}
+.casino-hero h1{margin:.15rem 0;font-size:clamp(1.9rem,4.2vw,2.9rem)}
+.casino-hero p{max-width:44ch;color:var(--muted)}
+.casino-limit{border:1px solid var(--border);border-radius:.8rem;padding:.55rem .9rem;background:rgba(17,22,26,.82);text-align:right}
+.casino-limit small{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
+.casino-limit strong{font-size:1.15rem;color:#ffd591}
+.casino-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.casino-tabs a{padding:.4rem .85rem;border:1px solid var(--border);border-radius:999px;font-size:.8rem;text-decoration:none;color:inherit;background:rgba(17,22,26,.82)}
+.casino-tabs a:hover{border-color:var(--accent)}
+.casino-table{margin-bottom:1.4rem;border:1px solid var(--border);border-radius:14px;background:rgba(17,22,26,.82);padding:1rem 1.1rem}
+.casino-table__head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;padding-bottom:.5rem;margin-bottom:.85rem;border-bottom:1px solid var(--border)}
+.casino-table__head h2{margin:0;font-size:1.05rem}
+.casino-table__head span{color:var(--muted);font-size:.78rem}
+.casino-bet{display:flex;align-items:end;gap:.6rem;flex-wrap:wrap;margin:.6rem 0}
+.casino-bet label{display:flex;flex-direction:column;gap:.25rem;font-size:.75rem;color:var(--muted)}
+.casino-bet input{min-height:2.6rem;width:9rem;padding:.4rem .6rem;border:1px solid rgba(148,163,184,.25);border-radius:.6rem;background:#0a0e10;color:#fff;text-align:center;font-variant-numeric:tabular-nums}
+.casino-outcome{margin:.5rem 0;font-weight:800}
+.casino-outcome.is-win{color:#d2ff79}
+.casino-outcome.is-loss{color:#ffb1b4}
+
+.slot-reels{display:flex;gap:.5rem;flex-wrap:wrap;margin:.4rem 0 .2rem}
+.slot-reel{flex:1 1 6rem;min-width:6rem;padding:1.1rem .5rem;border:1px solid var(--border);border-radius:.7rem;background:#0a0e10;text-align:center;font-weight:800;font-size:.85rem}
+.slot-reel--diamond{color:#7fe3ff;border-color:rgba(127,227,255,.4)}
+.slot-reel--seven{color:#ffd591;border-color:rgba(255,189,74,.5)}
+.slot-reel--crown{color:#d2ff79}
+
+.keno-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(2.4rem,1fr));gap:.25rem;margin:.5rem 0}
+.keno-pick{position:relative}
+.keno-pick input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.keno-pick span{display:grid;place-content:center;min-height:2.4rem;border:1px solid var(--border);border-radius:.5rem;background:#0a0e10;font-size:.78rem;font-variant-numeric:tabular-nums}
+.keno-pick input:checked+span{border-color:var(--accent);background:rgba(185,243,75,.14);color:#d2ff79;font-weight:800}
+.keno-pick input:disabled+span{opacity:.35}
+.keno-pick input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.keno-count{margin:.3rem 0 .2rem;color:var(--muted);font-size:.78rem}
+.keno-drawn{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;margin:.4rem 0}
+.keno-drawn strong{margin-right:.35rem;font-size:.78rem;color:var(--muted)}
+.keno-ball{display:grid;place-content:center;min-width:2rem;min-height:2rem;border:1px solid var(--border);border-radius:999px;background:#0a0e10;font-size:.75rem;font-variant-numeric:tabular-nums}
+.keno-ball.is-hit{border-color:var(--accent);background:rgba(185,243,75,.16);color:#d2ff79;font-weight:800}
+
+.bj-table{display:grid;gap:.8rem;margin:.4rem 0 .8rem}
+.bj-side small{display:block;margin-bottom:.3rem;color:var(--muted);font-size:.75rem}
+.bj-cards{display:flex;gap:.35rem;flex-wrap:wrap}
+.bj-card{display:grid;place-content:center;min-width:2.9rem;min-height:3.9rem;border:1px solid var(--border);border-radius:.5rem;background:#f4f4ef;color:#11161a;font-weight:800;font-size:.85rem}
+.bj-card--hidden{background:#1d252a;color:#6f797e;border-style:dashed}
+.bj-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.bj-actions .work-button{width:auto;min-width:7rem}
+.bj-stake{margin:.6rem 0 0;color:var(--muted);font-size:.78rem}
+
+.paytable{width:100%;border-collapse:collapse;margin-top:.8rem;font-size:.78rem}
+.paytable caption{margin-bottom:.4rem;color:var(--muted);font-size:.72rem;text-align:left}
+.paytable th,.paytable td{padding:.35rem .5rem;border-bottom:1px solid var(--border);text-align:left}
+.paytable th{color:var(--muted);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+.paytable td{font-variant-numeric:tabular-nums}
+.casino-history tr.is-win td{color:#d2ff79}
+.casino-history tr.is-loss td{color:#ffb1b4}
+/* The shared work-button is a full-width block; at a betting counter it
+   should sit beside the stake box, not span the table. */
+.casino-bet .work-button{width:auto;min-width:10rem;flex:0 0 auto}

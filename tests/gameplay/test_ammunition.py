@@ -224,8 +224,8 @@ class CityDirectoryTests(unittest.TestCase):
         away = [section for section in sections if not section.reachable]
 
         self.assertEqual(len(away), 1)
-        self.assertEqual(
-            {place.endpoint for place in away[0].destinations}, {"gun_bazaar"}
+        self.assertIn(
+            "gun_bazaar", {place.endpoint for place in away[0].destinations}
         )
 
     def test_every_district_gets_a_directory_with_no_duplicates(self):
