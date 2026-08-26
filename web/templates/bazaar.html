@@ -14,42 +14,51 @@
         <a class="logout-link" href="{{ url_for('inventory') }}">Inventory</a>
     </header>
     {% include "_player_hud.html" %}
-    <main class="dashboard-main shop-page">
+    <main class="dashboard-main shop-page bazaar-page">
         <section class="shop-hero">
-            <div><p class="eyebrow">{{ shop.district|title }} · Local retailer</p><h1>{{ shop.name }}</h1><p>{{ shop.strapline }} What is gone stays gone until the next delivery.</p></div>
+            <div><p class="eyebrow">{{ shop.district|title }} · Firearms</p><h1>{{ shop.name }}</h1><p>{{ shop.strapline }} Nothing here is sold anywhere else in London.</p></div>
             <div class="shop-restock"><small>Next delivery</small><strong data-restock="{{ shop.restock_at }}">Calculating…</strong></div>
         </section>
         {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
         {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
-        {% if not accessible %}<div class="game-notice game-notice--error">You must be free and physically present in {{ shop.district|title }} to shop.</div>{% endif %}
-        <section class="shop-counter" aria-label="Available stock">
+        {% if not accessible %}<div class="game-notice game-notice--error">You must be free and physically present in {{ shop.district|title }} to trade here.</div>{% endif %}
+        {% if equipment and equipment.unloaded %}<div class="game-notice game-notice--warning" role="alert"><strong>{% for gun in equipment.unloaded %}{{ gun.name }}{{ ", " if not loop.last }}{% endfor %}{{ " has" if equipment.unloaded|length == 1 else " have" }} no rounds.</strong> An unloaded gun adds nothing to a fight.</div>{% endif %}
+
+        {% for group, heading, blurb in (("guns", "Firearms", "One primary slot, one gun. Every one of them needs feeding."), ("ammo", "Ammunition", "Sold by the round. A fight spends one.")) %}
+        {% set lines = shop["items"]|selectattr("group", "equalto", group)|list %}
+        {% if lines %}
+        <section class="shop-counter" aria-label="{{ heading }}">
             <div class="shop-counter__heading">
-                <strong>Items for sale</strong>
-                <span>Fixed local prices</span>
+                <strong>{{ heading }}</strong>
+                <span>{{ blurb }}</span>
             </div>
-        {% for item in shop["items"] %}
-            {% set category = item.category|title %}
-            {% set image = item.image_filename if '/' in item.image_filename else 'icons/' + item.image_filename %}
+        {% for item in lines %}
             <article class="shop-row {{ 'shop-row--sold' if item.stock == 0 }}">
-                <img class="shop-row__image" src="{{ url_for('static', filename=image) }}" alt="">
+                <img class="shop-row__image" src="{{ url_for('static', filename=item.image_filename) }}" alt="">
                 <div class="shop-row__details">
                     <h2>{{ item.name }}</h2>
-                    <strong>£{{ item.price }}</strong>
-                    <p>{{ category }} · {{ item.stock }} in stock</p>
+                    <strong>£{{ "{:,}".format(item.price) }}</strong>
+                    <p>
+                        {% if item.strength_bonus %}+{{ item.strength_bonus }} Strength · feeds on {{ item.ammo_name }}{% else %}Ammunition · you hold {{ item.owned }}{% endif %}
+                        · {{ item.stock }} in stock
+                    </p>
                 </div>
                 <form method="post" class="shop-buy" data-price="{{ item.price }}">
                     <input type="hidden" name="item_key" value="{{ item.key }}">
                     <label><span class="sr-only">{{ item.name }} quantity</span>
-                        <input name="quantity" type="number" min="1" max="{{ item.stock }}" value="1" inputmode="numeric" aria-label="{{ item.name }} quantity">
+                        <input name="quantity" type="number" min="1" max="{{ item.stock }}" value="{{ item.default_quantity }}" inputmode="numeric" aria-label="{{ item.name }} quantity">
                     </label>
                     <button class="shop-buy__submit" type="submit" {{ 'disabled' if item.stock == 0 or not accessible }}>
                         <span>{{ "Sold out" if item.stock == 0 else "Buy" }}</span>
-                        {% if item.stock > 0 %}<small>£<span data-total>{{ item.price }}</span></small>{% endif %}
+                        {% if item.stock > 0 %}<small>£<span data-total>{{ "{:,}".format(item.price * item.default_quantity) }}</span></small>{% endif %}
                     </button>
                 </form>
             </article>
         {% endfor %}
-        </section>    </main>
+        </section>
+        {% endif %}
+        {% endfor %}
+    </main>
 </div>
 <script>
 document.querySelectorAll(".shop-buy").forEach(form => {

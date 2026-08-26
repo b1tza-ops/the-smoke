@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Street fights · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='transport-modes-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gun-bazaar-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('home') }}">Dashboard</a></header>
 {% include "_player_hud.html" %}
@@ -10,10 +10,12 @@
 <nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('fight') }}">Street NPCs</a><a href="{{ url_for('pvp') }}">Player fights</a></nav>
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} underground</p><h1>Street encounters</h1><p>Choose your target carefully. Health loss persists and stronger opponents impose longer Hospital stays.</p></div><div class="combat-cost"><span>Each attempt</span><strong>{{ energy_cost }} energy</strong></div></section>
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if equipment and equipment.unloaded %}<div class="game-notice game-notice--warning" role="alert"><strong>{% for gun in equipment.unloaded %}{{ gun.name }}{{ ", " if not loop.last }}{% endfor %}{{ " has" if equipment.unloaded|length == 1 else " have" }} no rounds.</strong> An unloaded gun adds nothing to a fight. <a href="{{ url_for('gun_bazaar') }}">Buy ammunition at the bazaar</a>.</div>{% endif %}
 {% if result %}
 <section id="fight-result" class="combat-result {{ 'is-victory' if result.victory else 'is-defeat' }}">
 <p class="eyebrow">{{ 'Victory' if result.victory else 'Defeat' }}</p><h2>{{ fought_opponent.name }}</h2>
 <div class="combat-result__rewards"><span>Health <strong>{{ result.player_health }}/100</strong></span><span>Cash <strong>+£{{ result.cash_reward }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span></div>
+{% if rounds_spent %}<p class="combat-warning ammo-spend">Spent {% for round in rounds_spent %}1 × {{ round.name }} ({{ round.remaining }} left){{ ", " if not loop.last }}{% endfor %}.</p>{% endif %}
 </section>
 <section class="combat-log"><div class="section-heading"><div><p class="eyebrow">Fight report</p><h2>Round-by-round</h2></div></div><ol>{% for entry in result.rounds %}<li>{{ entry }}</li>{% endfor %}</ol></section>
 <a class="character-link" href="{{ url_for('fight') }}">Return to encounter board →</a>

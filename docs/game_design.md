@@ -501,6 +501,53 @@ is a small step in power for a large step in price. All four occupy the
 primary weapon slot and none of them drop as crime loot: a free pistol would
 undercut the whole ladder.
 
+#### Ammunition
+
+**A gun with no rounds of its calibre in the player's inventory contributes
+nothing.** It stays in the primary slot and still shows on the character
+sheet, marked inert, but its strength bonus is dropped from every fight. The
+player is not blocked from fighting — they simply fight as though unarmed.
+
+Every fight with a loaded gun **spends one round**. In a player attack only
+the attacker pays; the defender did not choose to be there.
+
+| Round | Price | Feeds |
+| --- | ---: | --- |
+| .22 Rounds | £10 | Derringer .22 |
+| 9mm Rounds | £16 | Converted Blank Pistol, Compact 9mm |
+| .38 Rounds | £20 | Snub-Nose .38 |
+
+The 9mm deliberately feeds two guns, so upgrading from the Converted Blank
+Pistol to the Compact 9mm does not strand a stock of rounds. Against the
+weakest street opponent's £30–55 purse a round is a small tax; against the
+Soho Door Enforcer's £250–400 it is noise. That is the intent: ammunition
+should be a running cost, not a barrier.
+
+Rounds stack to 200 and are sold by the hundred. They are filed under the
+`utility` category because the items table's category check is closed, and
+widening it would mean rebuilding a table that seven foreign keys point at.
+
+#### The bazaar
+
+All firearms and ammunition are sold at the **Kingsland Arms Bazaar** in
+Hackney, and nowhere else in London. The Hackney Lock-Up keeps its melee
+weapons and armour but no longer shelves guns. Hackney needs level 7 to
+reach, so that is the gate on owning a firearm at all.
+
+This is the first district to hold two venues, so shops are now indexed by
+venue rather than by district. `DISTRICT_SHOPS` still maps a district to its
+general store; `VENUES` is the full index and is what catalogue-wide
+invariants iterate.
+
+### The City
+
+Every place in London a player can walk into is listed on the **City** page,
+grouped three ways: the district they are standing in, the places that would
+need a journey, and the ones that follow them around. The navigation bar had
+grown a link per feature and stopped being a navigation bar; it now carries
+only what a player taps every few minutes, and the City page carries the
+rest.
+
 ### The black market
 
 Legitimate shops sell but never buy — they do not take stolen goods. Selling

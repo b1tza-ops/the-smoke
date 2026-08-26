@@ -13,7 +13,7 @@ from game.economy.fence import (
     get_fence,
 )
 from game.inventory import INVENTORY_SLOT_CAPACITY, ITEMS, ITEMS_BY_KEY
-from game.shop import DISTRICT_SHOPS
+from game.shop import DISTRICT_SHOPS, VENUES
 from game.world.districts import DISTRICTS
 
 
@@ -26,8 +26,8 @@ class ItemValueTests(unittest.TestCase):
     def test_value_is_the_cheapest_shop_price(self):
         cheapest = {}
 
-        for shop in DISTRICT_SHOPS.values():
-            for line in shop["items"]:
+        for venue in VENUES.values():
+            for line in venue["items"]:
                 cheapest[line.item_key] = min(
                     cheapest.get(line.item_key, line.price),
                     line.price,
@@ -69,8 +69,8 @@ class FenceTests(unittest.TestCase):
         Value is the cheapest shop price, and the best fence rate is
         below 1, so the round trip can never turn a profit.
         """
-        for shop in DISTRICT_SHOPS.values():
-            for line in shop["items"]:
+        for venue in VENUES.values():
+            for line in venue["items"]:
                 item = ITEMS_BY_KEY[line.item_key]
 
                 for district in DISTRICT_SHOPS:

@@ -1574,6 +1574,36 @@ def migrate_036_guns_v1(cursor):
     )
 
 
+def migrate_037_ammunition(cursor):
+    """Register the three pistol calibres.
+
+    Rounds are ordinary stackable inventory items, so like every other
+    item they need a row here before a shop can sell one or a player can
+    carry one. They are filed under `utility` because the items table's
+    category check is closed and widening it would mean rebuilding a
+    table that seven foreign keys point at.
+    """
+    from game.inventory.items import ITEMS_BY_KEY
+
+    item_keys = ("ammo_22", "ammo_9mm", "ammo_38")
+    cursor.executemany(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key, name, category, description, stackable,
+            max_quantity, effect_key, effect_amount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            (
+                item.key, item.name, item.category, item.description,
+                int(item.stackable), item.max_quantity,
+                item.effect_key, item.effect_amount,
+            )
+            for item in (ITEMS_BY_KEY[key] for key in item_keys)
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1754,6 +1784,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=36,
         name="guns_v1",
         apply=migrate_036_guns_v1,
+    ),
+    Migration(
+        version=37,
+        name="ammunition",
+        apply=migrate_037_ammunition,
     ),
 )
 

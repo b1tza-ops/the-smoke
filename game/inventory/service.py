@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from game.inventory.items import (
     ITEMS,
+    ITEMS_BY_KEY,
     ItemDefinition,
     get_item,
 )
@@ -47,6 +48,13 @@ class InventoryChangeResult:
     item_key: str
     quantity_changed: int
     quantity_after: int
+
+
+@dataclass(frozen=True)
+class SpentAmmo:
+    item_key: str
+    name: str
+    remaining: int
 
 
 @dataclass(frozen=True)
@@ -116,6 +124,30 @@ def remove_item(player, item_key, quantity=1):
         quantity_changed=-quantity,
         quantity_after=new_quantity,
     )
+
+
+def spend_ammo(player, equipment):
+    """Spend one round for every firearm that actually fired.
+
+    `equipment.ammo_in_use` already excludes unloaded weapons, so this
+    only ever charges for a gun that contributed to the fight. Returns
+    what was spent and what is left, for the fight report.
+    """
+    spent = []
+    for ammo_key in equipment.ammo_in_use:
+        try:
+            change = remove_item(player, ammo_key, 1)
+        except InsufficientItemError:
+            # The stock ran out between the summary and the fight.
+            continue
+        spent.append(
+            SpentAmmo(
+                item_key=ammo_key,
+                name=ITEMS_BY_KEY[ammo_key].name,
+                remaining=change.quantity_after,
+            )
+        )
+    return tuple(spent)
 
 
 def use_item(player, item_key):

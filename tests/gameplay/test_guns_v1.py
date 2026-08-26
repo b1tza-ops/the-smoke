@@ -10,8 +10,8 @@ import pathlib
 import unittest
 
 from game.economy.fence import FENCE_RATE, SPECIALITY_RATE, fence_price
-from game.inventory.items import ITEMS, ITEMS_BY_KEY
-from game.shop import DISTRICT_SHOPS
+from game.inventory.items import AMMO_KEYS, ITEMS, ITEMS_BY_KEY, weapons_using
+from game.shop import DISTRICT_SHOPS, VENUES
 
 
 PISTOL_KEYS = (
@@ -22,6 +22,8 @@ PISTOL_KEYS = (
 )
 
 STATIC_ROOT = pathlib.Path(__file__).resolve().parents[2] / "web" / "static"
+
+BAZAAR_KEY = "kingsland_arms"
 
 
 class GunCatalogueTests(unittest.TestCase):
@@ -61,21 +63,35 @@ class GunCatalogueTests(unittest.TestCase):
 
 
 class GunSupplyTests(unittest.TestCase):
-    def test_pistols_are_sold_only_at_the_hackney_lock_up(self):
-        for district, shop in DISTRICT_SHOPS.items():
-            stocked = {offer.item_key for offer in shop["items"]}
+    def test_pistols_are_sold_only_at_the_bazaar(self):
+        for key, venue in VENUES.items():
+            stocked = {offer.item_key for offer in venue["items"]}
             sold = stocked & set(PISTOL_KEYS)
-            if district == "hackney":
+            if key == BAZAAR_KEY:
                 self.assertEqual(sold, set(PISTOL_KEYS))
             else:
-                self.assertEqual(sold, set(), f"{district} should not sell guns")
+                self.assertEqual(sold, set(), f"{key} should not sell guns")
+
+    def test_the_bazaar_is_the_only_source_of_ammunition(self):
+        for key, venue in VENUES.items():
+            stocked = {offer.item_key for offer in venue["items"]}
+            sold = stocked & AMMO_KEYS
+            if key == BAZAAR_KEY:
+                self.assertEqual(sold, set(AMMO_KEYS))
+            else:
+                self.assertEqual(sold, set(), f"{key} should not sell ammo")
+
+    def test_the_bazaar_stands_in_hackney(self):
+        self.assertEqual(VENUES[BAZAAR_KEY]["district"], "hackney")
+        # The Lock-Up is still there, and still sells no firearms.
+        self.assertIn("hackney", DISTRICT_SHOPS)
 
     def test_shop_price_matches_the_catalogue_value(self):
         offers = {
             offer.item_key: offer
-            for offer in DISTRICT_SHOPS["hackney"]["items"]
+            for offer in VENUES[BAZAAR_KEY]["items"]
         }
-        for key in PISTOL_KEYS:
+        for key in PISTOL_KEYS + tuple(sorted(AMMO_KEYS)):
             self.assertEqual(offers[key].price, ITEMS_BY_KEY[key].value)
 
     def test_fencing_a_pistol_never_beats_buying_one(self):
@@ -92,6 +108,50 @@ class GunSupplyTests(unittest.TestCase):
                 fence_price(item, "camden"),
                 int(item.value * FENCE_RATE),
             )
+
+
+class AmmunitionTests(unittest.TestCase):
+    def test_every_pistol_is_chambered_for_something_that_exists(self):
+        for key in PISTOL_KEYS:
+            ammo_key = ITEMS_BY_KEY[key].ammo_key
+            self.assertIsNotNone(ammo_key, key)
+            self.assertIn(ammo_key, ITEMS_BY_KEY)
+            self.assertIn(ammo_key, AMMO_KEYS)
+
+    def test_ammunition_is_derived_from_the_weapons_that_use_it(self):
+        self.assertEqual(
+            AMMO_KEYS,
+            frozenset({"ammo_22", "ammo_9mm", "ammo_38"}),
+        )
+        for ammo_key in AMMO_KEYS:
+            self.assertTrue(weapons_using(ammo_key))
+
+    def test_ammunition_stacks_deep_and_carries_no_bonus(self):
+        for ammo_key in AMMO_KEYS:
+            item = ITEMS_BY_KEY[ammo_key]
+            self.assertTrue(item.stackable)
+            self.assertGreaterEqual(item.max_quantity, 100)
+            self.assertEqual(item.strength_bonus, 0)
+            self.assertEqual(item.defence_bonus, 0)
+            self.assertIsNone(item.equipment_slot)
+            self.assertIsNone(item.ammo_key)
+
+    def test_ammunition_art_is_installed(self):
+        for ammo_key in AMMO_KEYS:
+            path = STATIC_ROOT / ITEMS_BY_KEY[ammo_key].image_filename
+            self.assertTrue(path.is_file(), f"missing art for {ammo_key}")
+
+    def test_the_nine_mil_feeds_two_guns_so_an_upgrade_keeps_the_calibre(self):
+        # Buying the Compact 9mm should not strand a stock of rounds.
+        self.assertEqual(
+            {item.key for item in weapons_using("ammo_9mm")},
+            {"converted_blank_pistol", "compact_9mm"},
+        )
+
+    def test_a_round_costs_a_small_fraction_of_what_a_fight_pays(self):
+        # The weakest opponent pays 30-55, so a round must not eat the purse.
+        for ammo_key in AMMO_KEYS:
+            self.assertLess(ITEMS_BY_KEY[ammo_key].value, 30)
 
 
 if __name__ == "__main__":
