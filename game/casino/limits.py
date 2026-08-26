@@ -49,3 +49,18 @@ def validate_bet(level, bet, money):
 def capped_payout(payout):
     """Apply the table maximum."""
     return min(payout, MAXIMUM_PAYOUT)
+
+
+# The chips on the rail. A player picks a denomination rather than typing
+# a number, so the ones above their ceiling are shown but dead.
+DENOMINATIONS = (10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000)
+
+
+def denominations(level):
+    """Every chip, with whether this player may stake it."""
+    ceiling = maximum_bet(level)
+    return tuple(
+        (amount, amount <= ceiling)
+        for amount in DENOMINATIONS
+        if amount >= MINIMUM_BET
+    )

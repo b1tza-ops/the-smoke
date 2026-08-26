@@ -1,0 +1,7 @@
+{% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if player.level < minimum_level %}
+<div class="game-notice game-notice--warning">The door staff turn you away. The Golden Square admits players from level {{ minimum_level }}.</div>
+{% elif not accessible %}
+<div class="game-notice game-notice--error">You must be free and physically present in Soho to play.</div>
+{% endif %}

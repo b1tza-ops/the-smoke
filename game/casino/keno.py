@@ -85,6 +85,17 @@ def score(picks, drawn):
     return hits, multiplier
 
 
+MAXIMUM_ROUNDS = 10
+
+
+def validate_rounds(rounds):
+    if isinstance(rounds, bool) or not isinstance(rounds, int):
+        raise KenoError("Choose how many rounds to play.")
+    if not 1 <= rounds <= MAXIMUM_ROUNDS:
+        raise KenoError(f"Play between 1 and {MAXIMUM_ROUNDS} rounds.")
+    return rounds
+
+
 def play(bet, picks, rng=None):
     picks = validate_picks(picks)
     drawn = draw(rng)

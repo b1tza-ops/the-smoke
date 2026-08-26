@@ -5,21 +5,17 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>The Golden Square · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-2') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
-    <header class="topbar">
-        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
-        <a class="logout-link" href="{{ url_for('city') }}">City</a>
-    </header>
-    {% include "_player_hud.html" %}
+    {% include "_casino_head.html" %}
     <main class="dashboard-main casino-page">
         <section class="casino-hero">
             <div>
                 <p class="eyebrow">Soho · Members only</p>
                 <h1>The Golden Square</h1>
-                <p>Three tables, one house edge, and no credit. Stakes from £{{ minimum_bet }} to £{{ "{:,}".format(maximum_bet) }} at your level.</p>
+                <p>Three tables, one house edge, and no credit.</p>
             </div>
             <div class="casino-limit">
                 <small>Your table limit</small>
@@ -27,139 +23,32 @@
             </div>
         </section>
 
-        {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
-        {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
-        {% if player.level < minimum_level %}
-        <div class="game-notice game-notice--warning">The door staff turn you away. The Golden Square admits players from level {{ minimum_level }}.</div>
-        {% elif not accessible %}
-        <div class="game-notice game-notice--error">You must be free and physically present in Soho to play.</div>
+        {% include "_casino_notices.html" %}
+
+        {% if open_table %}
+        <a class="casino-resume" href="{{ url_for('casino_blackjack') }}">
+            <strong>You have a hand in play</strong>
+            <small>£{{ "{:,}".format(open_table.staked) }} on the table — finish it →</small>
+        </a>
         {% endif %}
 
-        <nav class="casino-tabs" aria-label="Tables">
-            <a href="#slots">Fruit Machines</a>
-            <a href="#keno">Keno</a>
-            <a href="#blackjack">Blackjack</a>
-        </nav>
-
-        <!-- ------------------------------------------------ slots -->
-        <section class="casino-table" id="slots" aria-labelledby="slots-heading">
-            <div class="casino-table__head">
-                <h2 id="slots-heading">Fruit Machines</h2>
-                <span>Three of a kind pays big. Two of the top four pays something.</span>
-            </div>
-            {% if result and result.game == "slots" %}
-            <div class="slot-reels" role="status">
-                {% for symbol in result.spin.reels %}<span class="slot-reel slot-reel--{{ symbol }}">{{ slots_names[symbol] }}</span>{% endfor %}
-            </div>
-            <p class="casino-outcome {{ 'is-win' if result.payout else 'is-loss' }}">{{ result.spin.line }}{% if result.payout %} — £{{ "{:,}".format(result.payout) }}{% endif %}</p>
-            {% endif %}
-            <form method="post" class="casino-bet">
-                <input type="hidden" name="game" value="slots">
-                <label>Stake
-                    <input name="bet" type="number" min="{{ minimum_bet }}" max="{{ maximum_bet }}" step="10" value="{{ minimum_bet }}" inputmode="numeric">
-                </label>
-                <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Spin</span><span>→</span></button>
-            </form>
-            <table class="paytable">
-                <caption>Paytable — multiples of your stake</caption>
-                <thead><tr><th>Symbol</th><th>Three</th><th>Two</th></tr></thead>
-                <tbody>
-                {% for symbol, pays in slots_paytable.items() %}
-                    <tr><td>{{ slots_names[symbol] }}</td><td>{{ pays }}×</td><td>{{ (slots_pairs[symbol] ~ '×') if symbol in slots_pairs else '—' }}</td></tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </section>
-
-        <!-- ------------------------------------------------- keno -->
-        <section class="casino-table" id="keno" aria-labelledby="keno-heading">
-            <div class="casino-table__head">
-                <h2 id="keno-heading">Keno</h2>
-                <span>Pick {{ keno_minimum }} to {{ keno_maximum }} numbers. The house draws twenty.</span>
-            </div>
-            {% if result and result.game == "keno" %}
-            <div class="keno-drawn" role="status">
-                <strong>Drawn</strong>
-                {% for number in result.card.drawn|sort %}<span class="keno-ball {{ 'is-hit' if number in result.card.hits }}">{{ number }}</span>{% endfor %}
-            </div>
-            <p class="casino-outcome {{ 'is-win' if result.payout else 'is-loss' }}">{{ result.card.line }}{% if result.payout %} — £{{ "{:,}".format(result.payout) }}{% endif %}</p>
-            {% endif %}
-            <form method="post" class="keno-form">
-                <input type="hidden" name="game" value="keno">
-                <div class="keno-grid" role="group" aria-label="Pick your numbers">
-                {% for number in range(1, keno_pool + 1) %}
-                    <label class="keno-pick">
-                        <input type="checkbox" name="picks" value="{{ number }}">
-                        <span>{{ number }}</span>
-                    </label>
-                {% endfor %}
-                </div>
-                <p class="keno-count"><span data-keno-count>0</span> picked — need {{ keno_minimum }} to {{ keno_maximum }}</p>
-                <div class="casino-bet">
-                    <label>Stake
-                        <input name="bet" type="number" min="{{ minimum_bet }}" max="{{ maximum_bet }}" step="10" value="{{ minimum_bet }}" inputmode="numeric">
-                    </label>
-                    <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Play card</span><span>→</span></button>
-                </div>
-            </form>
-            <table class="paytable">
-                <caption>Paytable — multiples of your stake</caption>
-                <thead><tr><th>Picked</th><th>Matches and payout</th></tr></thead>
-                <tbody>
-                {% for spots, tiers in keno_paytable.items() %}
-                    <tr><td>{{ spots }}</td><td>{% for hits, pays in tiers.items() %}{{ hits }} → {{ "{:,}".format(pays) }}×{{ "  ·  " if not loop.last }}{% endfor %}</td></tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </section>
-
-        <!-- -------------------------------------------- blackjack -->
-        <section class="casino-table" id="blackjack" aria-labelledby="bj-heading">
-            <div class="casino-table__head">
-                <h2 id="bj-heading">Blackjack</h2>
-                <span>Six decks. Dealer stands on all 17s. Blackjack pays 3:2.</span>
-            </div>
-            {% if hand %}
-            {% set player_total = hand_value(hand.player)[0] %}
-            <div class="bj-table">
-                <div class="bj-side">
-                    <small>Dealer</small>
-                    <div class="bj-cards">
-                        <span class="bj-card">{{ hand.dealer[0] }}</span>
-                        <span class="bj-card bj-card--hidden" aria-label="face down">?</span>
-                    </div>
-                </div>
-                <div class="bj-side">
-                    <small>You — {{ player_total }}{{ " (soft)" if hand_value(hand.player)[1] }}</small>
-                    <div class="bj-cards">
-                        {% for card in hand.player %}<span class="bj-card">{{ card }}</span>{% endfor %}
-                    </div>
-                </div>
-            </div>
-            <div class="bj-actions">
-                <form method="post"><input type="hidden" name="game" value="blackjack"><input type="hidden" name="action" value="hit"><button class="work-button" type="submit"><span>Hit</span></button></form>
-                <form method="post"><input type="hidden" name="game" value="blackjack"><input type="hidden" name="action" value="stand"><button class="work-button" type="submit"><span>Stand</span></button></form>
-                {% if hand.player|length == 2 %}
-                <form method="post"><input type="hidden" name="game" value="blackjack"><input type="hidden" name="action" value="double"><button class="work-button" type="submit"><span>Double £{{ "{:,}".format(hand.bet) }}</span></button></form>
-                {% endif %}
-            </div>
-            <p class="bj-stake">Staked £{{ "{:,}".format(hand.bet) }}</p>
-            {% else %}
-            <form method="post" class="casino-bet">
-                <input type="hidden" name="game" value="blackjack">
-                <input type="hidden" name="action" value="deal">
-                <label>Stake
-                    <input name="bet" type="number" min="{{ minimum_bet }}" max="{{ maximum_bet }}" step="10" value="{{ minimum_bet }}" inputmode="numeric">
-                </label>
-                <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Deal</span><span>→</span></button>
-            </form>
-            {% endif %}
-        </section>
+        <div class="casino-floor">
+        {% for table in tables %}
+            <a class="casino-tile casino-tile--{{ table.key }}" href="{{ url_for(table.endpoint) }}">
+                <span class="casino-tile__art" aria-hidden="true"></span>
+                <span class="casino-tile__body">
+                    <strong>{{ table.name }}</strong>
+                    <small>{{ table.blurb }}</small>
+                    <em>{{ table.edge }}</em>
+                </span>
+            </a>
+        {% endfor %}
+        </div>
 
         {% if history %}
-        <section class="casino-table" aria-labelledby="history-heading">
+        <section class="casino-table">
             <div class="casino-table__head">
-                <h2 id="history-heading">Your last rounds</h2>
+                <h2>Your last rounds</h2>
                 <span>The house keeps a book</span>
             </div>
             <table class="paytable casino-history">
@@ -170,7 +59,7 @@
                         <td>{{ game|title }}</td>
                         <td>£{{ "{:,}".format(bet) }}</td>
                         <td>£{{ "{:,}".format(payout) }}</td>
-                        <td>{{ detail|replace('_', ' ')|title }}</td>
+                        <td>{{ detail|replace('_', ' ')|capitalize }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -179,25 +68,5 @@
         {% endif %}
     </main>
 </div>
-<script>
-(() => {
-    const form = document.querySelector(".keno-form");
-    if (!form) return;
-    const boxes = Array.from(form.querySelectorAll("input[name=picks]"));
-    const count = form.querySelector("[data-keno-count]");
-    const max = Number({{ keno_maximum }});
-    const update = () => {
-        const picked = boxes.filter(box => box.checked);
-        count.textContent = String(picked.length);
-        // Stop the player checking a seventh box rather than letting the
-        // server reject the whole card after they have filled it in.
-        boxes.forEach(box => {
-            box.disabled = !box.checked && picked.length >= max;
-        });
-    };
-    boxes.forEach(box => box.addEventListener("change", update));
-    update();
-})();
-</script>
 </body>
 </html>

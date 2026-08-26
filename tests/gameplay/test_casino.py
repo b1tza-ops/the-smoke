@@ -175,6 +175,14 @@ class KenoMathsTests(unittest.TestCase):
 
 
 class BlackjackRuleTests(unittest.TestCase):
+    def table(self, player, dealer, bet=100, shoe=("5C",) * 40, insurance=0,
+              state=blackjack.PLAYER_TURN):
+        return blackjack.TableState(
+            shoe=shoe, cursor=0,
+            hands=(blackjack.Hand(cards=player, bet=bet),),
+            active=0, dealer=dealer, state=state, insurance=insurance,
+        )
+
     def test_a_six_deck_shoe_holds_every_card_six_times(self):
         shoe = blackjack.build_shoe(random.Random(2))
         self.assertEqual(len(shoe), 52 * blackjack.DECKS)
@@ -192,95 +200,194 @@ class BlackjackRuleTests(unittest.TestCase):
         self.assertTrue(blackjack.hand_value(("AS", "6H"))[1])
         self.assertFalse(blackjack.hand_value(("AS", "6H", "KC"))[1])
 
-    def test_only_two_cards_make_a_natural(self):
-        self.assertTrue(blackjack.is_blackjack(("AS", "KH")))
-        self.assertFalse(blackjack.is_blackjack(("AS", "5H", "5C")))
-
     def test_a_natural_pays_three_to_two(self):
-        state = blackjack.HandState(
-            shoe=("2C",) * 20, cursor=4, player=("AS", "KH"),
-            dealer=("9D", "7C"), bet=100, state=blackjack.PLAYER_TURN,
-        )
-        settled = blackjack.stand(state)
-        self.assertEqual(settled.outcome, blackjack.PLAYER_BLACKJACK)
-        self.assertEqual(settled.payout, 250)
+        state = blackjack.stand(self.table(("AS", "KH"), ("9D", "7C")))
+        hand = state.hands[0]
+        self.assertEqual(hand.outcome, blackjack.PLAYER_BLACKJACK)
+        self.assertEqual(hand.payout, 250)
+
+    def test_a_split_twenty_one_is_not_a_natural(self):
+        hand = blackjack.Hand(cards=("AS", "KH"), bet=100, from_split=True)
+        self.assertFalse(hand.natural)
 
     def test_a_push_returns_the_stake_only(self):
-        state = blackjack.HandState(
-            shoe=("2C",) * 20, cursor=4, player=("10S", "9H"),
-            dealer=("10D", "9C"), bet=100, state=blackjack.PLAYER_TURN,
-        )
-        settled = blackjack.stand(state)
-        self.assertEqual(settled.outcome, blackjack.PUSH)
-        self.assertEqual(settled.payout, 100)
+        state = blackjack.stand(self.table(("10S", "9H"), ("10D", "9C")))
+        self.assertEqual(state.hands[0].outcome, blackjack.PUSH)
+        self.assertEqual(state.hands[0].payout, 100)
 
     def test_a_bust_pays_nothing_even_against_a_worse_dealer(self):
-        state = blackjack.HandState(
-            shoe=("KC",) * 20, cursor=4, player=("10S", "9H"),
-            dealer=("4D", "3C"), bet=100, state=blackjack.PLAYER_TURN,
+        state = blackjack.hit(
+            self.table(("10S", "9H"), ("4D", "3C"), shoe=("KC",) * 40)
         )
-        settled = blackjack.hit(state)
-        self.assertEqual(settled.outcome, blackjack.PLAYER_BUST)
-        self.assertEqual(settled.payout, 0)
+        self.assertEqual(state.hands[0].outcome, blackjack.PLAYER_BUST)
+        self.assertEqual(state.hands[0].payout, 0)
 
     def test_the_dealer_stands_on_every_seventeen(self):
-        state = blackjack.HandState(
-            shoe=("5C",) * 20, cursor=4, player=("10S", "8H"),
-            dealer=("AD", "6C"), bet=100, state=blackjack.PLAYER_TURN,
-        )
-        settled = blackjack.stand(state)
-        # Soft 17 stands, so the dealer never draws the 5 and loses 17-18.
-        self.assertEqual(len(settled.dealer), 2)
-        self.assertEqual(settled.outcome, blackjack.PLAYER_WIN)
+        state = blackjack.stand(self.table(("10S", "8H"), ("AD", "6C")))
+        # Soft 17 stands, so the dealer never improves on it.
+        self.assertEqual(len(state.dealer), 2)
+        self.assertEqual(state.hands[0].outcome, blackjack.PLAYER_WIN)
 
     def test_doubling_takes_one_card_and_settles(self):
-        state = blackjack.HandState(
-            shoe=("5C",) * 20, cursor=4, player=("6S", "5H"),
-            dealer=("10D", "9C"), bet=100, state=blackjack.PLAYER_TURN,
-        )
-        settled = blackjack.double_down(state)
-        self.assertEqual(len(settled.player), 3)
-        self.assertEqual(settled.bet, 200)
-        self.assertEqual(settled.state, blackjack.SETTLED)
-        self.assertTrue(settled.doubled)
+        state = blackjack.double_down(self.table(("6S", "5H"), ("10D", "9C")))
+        self.assertEqual(len(state.hands[0].cards), 3)
+        self.assertEqual(state.hands[0].bet, 200)
+        self.assertEqual(state.state, blackjack.SETTLED)
+        self.assertTrue(state.hands[0].doubled)
 
     def test_doubling_is_refused_after_hitting(self):
-        state = blackjack.HandState(
-            shoe=("2C",) * 20, cursor=4, player=("6S", "5H", "2D"),
-            dealer=("10D", "9C"), bet=100, state=blackjack.PLAYER_TURN,
-        )
+        state = self.table(("6S", "5H", "2D"), ("10D", "9C"))
         with self.assertRaises(blackjack.BlackjackError):
             blackjack.double_down(state)
 
-    def test_a_settled_hand_cannot_be_played_on(self):
-        state = blackjack.HandState(
-            shoe=("2C",) * 20, cursor=4, player=("10S", "9H"),
-            dealer=("10D", "9C"), bet=100, state=blackjack.SETTLED,
+    def test_a_settled_table_cannot_be_played_on(self):
+        state = self.table(
+            ("10S", "9H"), ("10D", "9C"), state=blackjack.SETTLED
         )
         for action in (blackjack.hit, blackjack.stand, blackjack.double_down):
             with self.assertRaises(blackjack.BlackjackError):
                 action(state)
 
-    def test_a_naive_player_loses_slowly_rather_than_instantly(self):
-        """Never doubling and standing on 17 costs about 6%.
+    # ---------------------------------------------------------- surrender
 
-        That is the floor, not the headline: playing the doubles and the
-        soft hands properly brings it under 1%, which is measured
-        separately in the house-edge simulation in the pull request. This
-        test only pins that the game is neither beatable by accident nor
-        a mugging.
+    def test_surrender_returns_half_the_stake(self):
+        state = blackjack.surrender(self.table(("JS", "6H"), ("KD", "9C")))
+        self.assertEqual(state.hands[0].outcome, blackjack.SURRENDERED)
+        self.assertEqual(state.hands[0].payout, 50)
+        self.assertEqual(state.staked, 100)
+
+    def test_surrender_is_refused_once_a_hand_has_been_split(self):
+        state = self.table(
+            ("8S", "8H"), ("6D", "9C"), shoe=("2C", "3D") + ("KC",) * 40
+        )
+        state = blackjack.split(state)
+        self.assertNotIn("surrender", blackjack.available_actions(state))
+
+    def test_the_dealer_does_not_draw_against_a_surrendered_table(self):
+        state = blackjack.surrender(self.table(("JS", "6H"), ("5D", "4C")))
+        self.assertEqual(len(state.dealer), 2)
+
+    # -------------------------------------------------------------- split
+
+    def test_splitting_makes_two_hands_at_the_same_stake(self):
+        state = self.table(
+            ("8S", "8H"), ("6D", "9C"), shoe=("2C", "3D") + ("KC",) * 40
+        )
+        state = blackjack.split(state)
+        self.assertEqual(len(state.hands), 2)
+        self.assertEqual([hand.bet for hand in state.hands], [100, 100])
+        self.assertEqual(state.staked, 200)
+        self.assertTrue(all(hand.from_split for hand in state.hands))
+
+    def test_split_aces_take_one_card_each_and_stop(self):
+        state = self.table(
+            ("AS", "AH"), ("6D", "9C"), shoe=("2C", "3D") + ("KC",) * 40
+        )
+        state = blackjack.split(state)
+        self.assertEqual(state.state, blackjack.SETTLED)
+        for hand in state.hands:
+            self.assertEqual(len(hand.cards), 2)
+
+    def test_doubling_is_allowed_after_a_split(self):
+        state = self.table(
+            ("9S", "9H"), ("6D", "9C"), shoe=("2C", "3D", "7H") + ("KC",) * 40
+        )
+        state = blackjack.split(state)
+        self.assertIn("double", blackjack.available_actions(state))
+
+    def test_a_hand_cannot_be_split_beyond_four(self):
+        state = self.table(
+            ("8S", "8H"), ("6D", "9C"),
+            shoe=("8D", "8C", "8H", "8S", "8D", "8C") + ("KC",) * 40,
+        )
+        for _ in range(6):
+            if "split" not in blackjack.available_actions(state):
+                break
+            state = blackjack.split(state)
+        self.assertLessEqual(len(state.hands), blackjack.MAXIMUM_HANDS)
+        self.assertNotIn("split", blackjack.available_actions(state))
+
+    def test_unequal_cards_cannot_be_split(self):
+        state = self.table(("8S", "9H"), ("6D", "9C"))
+        self.assertNotIn("split", blackjack.available_actions(state))
+
+    def test_two_ten_valued_cards_can_be_split(self):
+        state = self.table(("KS", "QH"), ("6D", "9C"))
+        self.assertIn("split", blackjack.available_actions(state))
+
+    # ---------------------------------------------------------- insurance
+
+    def test_insurance_is_only_offered_against_an_ace(self):
+        offered = self.table(
+            ("10S", "9H"), ("AD", "7C"), state=blackjack.INSURANCE_OFFERED
+        )
+        self.assertEqual(
+            blackjack.available_actions(offered),
+            ("insurance", "decline_insurance"),
+        )
+        self.assertNotIn(
+            "insurance",
+            blackjack.available_actions(self.table(("10S", "9H"), ("5D", "7C"))),
+        )
+
+    def test_insurance_costs_half_and_pays_two_to_one(self):
+        state = self.table(
+            ("10S", "9H"), ("AD", "KC"), state=blackjack.INSURANCE_OFFERED
+        )
+        state = blackjack.take_insurance(state)
+        self.assertEqual(state.insurance, 50)
+        self.assertEqual(state.insurance_payout, 150)
+        # The hand itself loses to the natural, so the table breaks even.
+        self.assertEqual(state.staked, 150)
+        self.assertEqual(state.payout, 150)
+
+    def test_declining_insurance_against_a_natural_loses_the_hand(self):
+        state = self.table(
+            ("10S", "9H"), ("AD", "KC"), state=blackjack.INSURANCE_OFFERED
+        )
+        state = blackjack.decline_insurance(state)
+        self.assertEqual(state.state, blackjack.SETTLED)
+        self.assertEqual(state.payout, 0)
+
+    def test_insurance_is_lost_when_the_dealer_has_no_natural(self):
+        state = self.table(
+            ("10S", "9H"), ("AD", "5C"), state=blackjack.INSURANCE_OFFERED
+        )
+        state = blackjack.take_insurance(state)
+        self.assertEqual(state.state, blackjack.PLAYER_TURN)
+        state = blackjack.stand(state)
+        self.assertEqual(state.insurance_payout, 0)
+
+    def test_actions_are_refused_while_insurance_is_outstanding(self):
+        state = self.table(
+            ("10S", "9H"), ("AD", "5C"), state=blackjack.INSURANCE_OFFERED
+        )
+        with self.assertRaises(blackjack.BlackjackError):
+            blackjack.hit(state)
+
+    # ----------------------------------------------------------- the edge
+
+    def test_a_naive_player_loses_slowly_rather_than_instantly(self):
+        """Never doubling and standing on 17 costs a few percent.
+
+        That is the floor, not the headline: playing the doubles, splits
+        and surrenders properly brings it under half a percent. This test
+        only pins that the game is neither beatable by accident nor a
+        mugging.
         """
         rng = random.Random(99)
         staked = returned = 0
         for _ in range(4000):
-            state = blackjack.open_hand(100, rng)
+            state = blackjack.open_table(100, rng)
+            if state.state == blackjack.INSURANCE_OFFERED:
+                state = blackjack.decline_insurance(state)
             while state.state == blackjack.PLAYER_TURN:
-                total, _ = blackjack.hand_value(state.player)
+                total, _ = blackjack.hand_value(state.current.cards)
                 state = (
                     blackjack.stand(state) if total >= 17
                     else blackjack.hit(state)
                 )
-            staked += state.bet
+            staked += state.staked
             returned += state.payout
 
         edge = 1 - returned / staked
@@ -361,15 +468,57 @@ class CasinoMoneyTests(unittest.TestCase):
     def test_a_keno_card_moves_exactly_the_net(self):
         rng = random.Random(6)
         before = self.player().money
-        result, payout = repo.play_keno(self.user_id, 200, [4, 8, 15, 16], rng)
+        cards, payout = repo.play_keno(
+            self.user_id, 200, [4, 8, 15, 16], 1, rng
+        )
+        self.assertEqual(len(cards), 1)
         self.assertEqual(self.player().money, before - 200 + payout)
+
+    def test_keno_rounds_each_cost_the_stake(self):
+        rng = random.Random(6)
+        before = self.player().money
+        cards, payout = repo.play_keno(
+            self.user_id, 100, [4, 8, 15], 5, rng
+        )
+        self.assertEqual(len(cards), 5)
+        self.assertEqual(self.player().money, before - 500 + payout)
+
+    def test_every_keno_round_is_drawn_separately(self):
+        rng = random.Random(6)
+        cards, payout = repo.play_keno(
+            self.user_id, 100, [4, 8, 15], 8, rng
+        )
+        draws = {card.drawn for card in cards}
+        self.assertGreater(len(draws), 1, "every round drew the same numbers")
+
+    def test_too_many_rounds_is_refused(self):
+        with self.assertRaises(keno.KenoError):
+            repo.play_keno(self.user_id, 100, [1, 2, 3], 99, random.Random(1))
+
+    def test_rounds_the_player_cannot_afford_are_refused(self):
+        self.set(money=450)
+        before = self.player().money
+        with self.assertRaises(CasinoError):
+            repo.play_keno(self.user_id, 100, [1, 2, 3], 10, random.Random(1))
+        self.assertEqual(self.player().money, before)
 
     def test_every_round_is_written_to_the_book(self):
         rng = random.Random(6)
         repo.play_slots(self.user_id, 100, rng)
-        repo.play_keno(self.user_id, 100, [1, 2, 3], rng)
+        repo.play_keno(self.user_id, 100, [1, 2, 3], 1, rng)
         games = [row[0] for row in repo.recent_rounds(self.user_id)]
         self.assertEqual(sorted(games), ["keno", "slots"])
+
+    def play_out(self, state, payout):
+        """Finish a table with legal moves, whatever phase it is in."""
+        while payout is None:
+            actions = blackjack.available_actions(state)
+            move = (
+                "decline_insurance" if "decline_insurance" in actions
+                else "stand"
+            )
+            state, payout = repo.act_on_table(self.user_id, move)
+        return state, payout
 
     def test_the_stake_leaves_when_the_hand_is_dealt(self):
         rng = random.Random(8)
@@ -380,44 +529,59 @@ class CasinoMoneyTests(unittest.TestCase):
         else:
             self.assertEqual(self.player().money, before - 500 + payout)
 
-    def test_a_hand_settles_back_to_the_right_balance(self):
+    def test_a_table_settles_back_to_the_right_balance(self):
         rng = random.Random(12)
         for _ in range(25):
             before = self.player().money
             state, payout = repo.deal_blackjack(self.user_id, 100, rng)
-            if payout is not None:
-                self.assertEqual(self.player().money, before - 100 + payout)
-                continue
-            state, payout = repo.act_on_hand(self.user_id, "stand")
-            self.assertEqual(self.player().money, before - 100 + payout)
+            state, payout = self.play_out(state, payout)
+            self.assertEqual(
+                self.player().money, before - state.staked + payout
+            )
 
-    def test_a_second_hand_is_refused_while_one_is_open(self):
+    def test_every_extra_stake_is_taken_when_it_is_put_down(self):
+        """Doubles, splits and insurance each move money the moment they
+        happen, not when the table settles."""
+        rng = random.Random(77)
+        seen = set()
+        wanted = {"split", "double", "insurance", "surrender"}
+        for _ in range(900):
+            before = self.player().money
+            state, payout = repo.deal_blackjack(self.user_id, 100, rng)
+            while payout is None:
+                actions = blackjack.available_actions(state)
+                move = next(
+                    (want for want in wanted if want in actions and want not in seen),
+                    None,
+                )
+                if move is None:
+                    move = (
+                        "decline_insurance" if "decline_insurance" in actions
+                        else "stand"
+                    )
+                seen.add(move)
+                state, payout = repo.act_on_table(self.user_id, move)
+            self.assertEqual(
+                self.player().money, before - state.staked + payout
+            )
+            if wanted <= seen:
+                return
+        self.skipTest("not every branch came up")
+
+    def test_a_second_table_is_refused_while_one_is_open(self):
         rng = random.Random(3)
         state, payout = repo.deal_blackjack(self.user_id, 100, rng)
         if payout is None:
             with self.assertRaises(CasinoError):
                 repo.deal_blackjack(self.user_id, 100, rng)
 
-    def test_doubling_takes_a_second_stake(self):
-        rng = random.Random(31)
-        for _ in range(40):
-            before = self.player().money
-            state, payout = repo.deal_blackjack(self.user_id, 100, rng)
-            if payout is not None:
-                continue
-            state, payout = repo.act_on_hand(self.user_id, "double")
-            self.assertEqual(state.bet, 200)
-            self.assertEqual(self.player().money, before - 200 + payout)
-            return
-        self.skipTest("no undealt hand came up in forty tries")
-
-    def test_acting_without_a_hand_is_refused(self):
+    def test_acting_without_a_table_is_refused(self):
         with self.assertRaises(CasinoError):
-            repo.act_on_hand(self.user_id, "stand")
+            repo.act_on_table(self.user_id, "stand")
 
     def test_an_unknown_move_is_refused(self):
         with self.assertRaises(CasinoError):
-            repo.act_on_hand(self.user_id, "fold")
+            repo.act_on_table(self.user_id, "fold")
 
     def test_the_casino_cannot_be_played_from_another_district(self):
         self.set(current_district="camden")
@@ -436,14 +600,14 @@ class CasinoMoneyTests(unittest.TestCase):
         self.assertEqual(self.player().money, before)
         self.assertEqual(repo.recent_rounds(self.user_id), [])
 
-    def test_a_hand_can_be_finished_after_leaving_soho(self):
+    def test_a_table_can_be_finished_after_leaving_soho(self):
         # The stake has already gone; getting on a bus must not strand it.
         rng = random.Random(17)
         state, payout = repo.deal_blackjack(self.user_id, 100, rng)
         if payout is not None:
-            self.skipTest("dealt a natural")
+            self.skipTest("settled on the deal")
         self.set(current_district="camden")
-        state, payout = repo.act_on_hand(self.user_id, "stand")
+        state, payout = self.play_out(state, payout)
         self.assertEqual(state.state, blackjack.SETTLED)
 
 

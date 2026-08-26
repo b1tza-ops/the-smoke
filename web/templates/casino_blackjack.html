@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Blackjack · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-2') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    {% include "_casino_head.html" %}
+    <main class="dashboard-main casino-page casino-game">
+        <nav class="casino-crumb"><a href="{{ url_for('casino') }}">← The Golden Square</a></nav>
+
+        {% set shown = table or finished %}
+        <section class="felt">
+            <div class="felt__marquee">
+                <span>{% if shown %}Bet £{{ "{:,}".format(shown.staked) }}{% else %}Min £{{ minimum_bet }} bet{% endif %}</span>
+                <strong>Blackjack</strong>
+                <span>Six decks · 3:2</span>
+            </div>
+
+            {% include "_casino_notices.html" %}
+
+            {% if shown %}
+            {% set settled = finished is not none %}
+            <div class="felt__side">
+                <small>Dealer{% if settled %} — {{ hand_value(shown.dealer)[0] }}{% endif %}</small>
+                <div class="card-row">
+                    {% if settled %}
+                        {% for card in shown.dealer %}<span class="playing-card">{{ card }}</span>{% endfor %}
+                    {% else %}
+                        <span class="playing-card">{{ shown.dealer[0] }}</span>
+                        <span class="playing-card playing-card--back" aria-label="Face down">?</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="felt__hands {{ 'is-split' if shown.hands|length > 1 }}">
+            {% for hand in shown.hands %}
+                {% set value = hand_value(hand.cards) %}
+                <div class="felt__hand {{ 'is-active' if not settled and loop.index0 == shown.active }} {{ 'is-done' if hand.finished }}">
+                    <small>
+                        {% if shown.hands|length > 1 %}Hand {{ loop.index }} · {% endif %}
+                        {{ value[0] }}{{ " soft" if value[1] }}
+                        {% if hand.doubled %} · doubled{% endif %}
+                        · £{{ "{:,}".format(hand.bet) }}
+                    </small>
+                    <div class="card-row">
+                        {% for card in hand.cards %}<span class="playing-card">{{ card }}</span>{% endfor %}
+                    </div>
+                    {% if hand.outcome %}
+                    <em class="{{ 'is-win' if hand.payout > hand.bet else ('is-push' if hand.payout == hand.bet else 'is-loss') }}">
+                        {{ outcome_lines.get(hand.outcome, hand.outcome) }}
+                    </em>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            </div>
+
+            {% if shown.insurance %}
+            <p class="felt__insurance">
+                Insurance £{{ "{:,}".format(shown.insurance) }} —
+                {% if settled %}{{ "paid £{:,}".format(shown.insurance_payout) if shown.insurance_payout else "lost" }}{% else %}in play{% endif %}
+            </p>
+            {% endif %}
+            {% endif %}
+
+            {% if table and actions %}
+            <div class="felt__actions">
+                {% for action, label in (
+                    ("insurance", "Insurance"), ("decline_insurance", "No insurance"),
+                    ("hit", "Hit me"), ("stand", "Stand"),
+                    ("double", "Double down"), ("split", "Split"),
+                    ("surrender", "Surrender")
+                ) %}
+                {% if action in actions %}
+                <form method="post">
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <button class="felt-button felt-button--{{ action }}" type="submit">{{ label }}</button>
+                </form>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <form method="post" class="machine__controls">
+                <input type="hidden" name="action" value="deal">
+                {% include "_casino_bet.html" %}
+                <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Deal</span><span>→</span></button>
+            </form>
+            {% endif %}
+        </section>
+
+        <section class="casino-table">
+            <div class="casino-table__head">
+                <h2>House rules</h2>
+                <span>0.2% house edge under basic strategy</span>
+            </div>
+            <ul class="rule-list">
+                <li>Dealer stands on every 17, soft ones included.</li>
+                <li>Blackjack pays 3:2.</li>
+                <li>Double on any two cards, including after a split.</li>
+                <li>Split up to four hands. Split aces take one card each.</li>
+                <li>Insurance offered on a dealer ace, paying 2:1.</li>
+                <li>Late surrender before any other action, forfeiting half.</li>
+                <li>A fresh shoe every hand, so counting cards gets you nowhere.</li>
+            </ul>
+        </section>
+    </main>
+</div>
+</body>
+</html>

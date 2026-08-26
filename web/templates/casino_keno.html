@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Keno · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-2') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    {% include "_casino_head.html" %}
+    <main class="dashboard-main casino-page casino-game">
+        <nav class="casino-crumb"><a href="{{ url_for('casino') }}">← The Golden Square</a></nav>
+        <section class="machine machine--keno">
+            <div class="machine__marquee">
+                <span>Pick {{ minimum_spots }}–{{ maximum_spots }}</span>
+                <strong>Smoke Keno</strong>
+                <span>Max £{{ "{:,}".format(maximum_bet) }}</span>
+            </div>
+
+            {% include "_casino_notices.html" %}
+
+            {% if cards %}
+            <div class="keno-results">
+            {% for card in cards %}
+                <div class="keno-round">
+                    {% if cards|length > 1 %}<small>Round {{ loop.index }}</small>{% endif %}
+                    <div class="keno-drawn">
+                    {% for number in card.drawn|sort %}<span class="keno-ball {{ 'is-hit' if number in card.hits }}">{{ number }}</span>{% endfor %}
+                    </div>
+                    <em class="{{ 'is-win' if card.payout else 'is-loss' }}">{{ card.line }}{% if card.payout %} — £{{ "{:,}".format(card.payout) }}{% endif %}</em>
+                </div>
+            {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="keno-form">
+                <div class="keno-card" role="group" aria-label="Mark your card">
+                {% for number in range(1, pool + 1) %}
+                    <label class="keno-pick">
+                        <input type="checkbox" name="picks" value="{{ number }}" {{ 'checked' if number in picks }} {{ 'disabled' if not accessible }}>
+                        <span>{{ number }}</span>
+                    </label>
+                {% endfor %}
+                </div>
+
+                <div class="keno-bar">
+                    <p class="keno-count"><span data-keno-count>0</span> marked — need {{ minimum_spots }} to {{ maximum_spots }}</p>
+                    <div class="keno-buttons">
+                        <button class="ghost-button" type="button" data-keno-clear>Clear</button>
+                        <button class="ghost-button" type="button" data-keno-repeat {{ 'hidden' if not picks }}>Repeat last</button>
+                    </div>
+                </div>
+
+                {% include "_casino_bet.html" %}
+
+                <div class="rounds-rail" role="group" aria-label="Rounds">
+                    <span class="chip-rail__label">Rounds</span>
+                    <button class="stepper" type="button" data-rounds-step="-1" aria-label="Fewer rounds">−</button>
+                    <input name="rounds" type="number" min="1" max="{{ maximum_rounds }}" value="1" inputmode="numeric" data-rounds aria-label="Rounds">
+                    <button class="stepper" type="button" data-rounds-step="1" aria-label="More rounds">+</button>
+                    <small data-rounds-cost></small>
+                </div>
+
+                <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Play card</span><span>→</span></button>
+            </form>
+        </section>
+
+        <section class="casino-table">
+            <div class="casino-table__head">
+                <h2>Paytable</h2>
+                <span>Multiples of your stake · 90–92% returned</span>
+            </div>
+            <table class="paytable">
+                <thead><tr><th>Marked</th><th>Matches and payout</th></tr></thead>
+                <tbody>
+                {% for spots, tiers in paytable.items() %}
+                    <tr><td>{{ spots }}</td><td>{% for hits, pays in tiers.items() %}{{ hits }} → {{ "{:,}".format(pays) }}×{{ "  ·  " if not loop.last }}{% endfor %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+<script>
+(() => {
+    const form = document.querySelector(".keno-form");
+    if (!form) return;
+    const boxes = Array.from(form.querySelectorAll("input[name=picks]"));
+    const count = form.querySelector("[data-keno-count]");
+    const rounds = form.querySelector("[data-rounds]");
+    const cost = form.querySelector("[data-rounds-cost]");
+    const max = Number({{ maximum_spots }});
+    const maxRounds = Number({{ maximum_rounds }});
+    const previous = {{ picks|tojson }};
+
+    const stake = () => {
+        const chosen = form.querySelector("input[name=bet]:checked");
+        return chosen ? Number(chosen.value) : 0;
+    };
+
+    const update = () => {
+        const picked = boxes.filter(box => box.checked);
+        count.textContent = String(picked.length);
+        // Stop a seventh box being marked rather than rejecting the whole
+        // card after the player has filled it in.
+        boxes.forEach(box => {
+            if (!box.disabled || !box.checked) {
+                box.disabled = !box.checked && picked.length >= max;
+            }
+        });
+        const total = stake() * Math.max(1, Number(rounds.value) || 1);
+        cost.textContent = "£" + total.toLocaleString() + " total";
+    };
+
+    boxes.forEach(box => box.addEventListener("change", update));
+    form.querySelectorAll("input[name=bet]").forEach(chip =>
+        chip.addEventListener("change", update));
+
+    rounds.addEventListener("input", () => {
+        rounds.value = Math.max(1, Math.min(maxRounds, Number(rounds.value) || 1));
+        update();
+    });
+    form.querySelectorAll("[data-rounds-step]").forEach(button =>
+        button.addEventListener("click", () => {
+            rounds.value = Math.max(1, Math.min(
+                maxRounds, Number(rounds.value) + Number(button.dataset.roundsStep)
+            ));
+            update();
+        }));
+
+    form.querySelector("[data-keno-clear]").addEventListener("click", () => {
+        boxes.forEach(box => { box.checked = false; });
+        update();
+    });
+    const repeat = form.querySelector("[data-keno-repeat]");
+    if (repeat) {
+        repeat.addEventListener("click", () => {
+            boxes.forEach(box => { box.checked = previous.includes(Number(box.value)); });
+            update();
+        });
+    }
+    update();
+})();
+</script>
+</body>
+</html>
