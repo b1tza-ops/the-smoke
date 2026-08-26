@@ -620,6 +620,14 @@ to it, with a longer run-up on each reel so they stop left to right.
 Every animation is dropped under `prefers-reduced-motion`, where the
 result lands immediately instead.
 
+**Nothing announces the result before the animation reaches it.** The
+banner, the outcome line and the cash readout all wait: for the third
+reel to stop, for the last keno ball to drop, for the cards to reach the
+felt. A balance that moves while the reels are still turning gives the
+game away as surely as the text does. The previous round's message is
+cleared the moment a new one starts, so nothing stale is left on screen
+during a spin. Errors are not held back — an error is not a reveal.
+
 #### The artwork
 
 The reels carry six drawn symbols — a pint, a black cab, a bell, a crown,

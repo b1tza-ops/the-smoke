@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Keno · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-4') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-5') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -202,6 +202,8 @@
         if (submit.disabled) return;
         submit.disabled = true;
         results.replaceChildren();
+        // Clear the last card before drawing this one.
+        notice(null);
 
         let data;
         try {
@@ -225,11 +227,14 @@
             return;
         }
 
-        if (cash) cash.textContent = "£" + data.money.toLocaleString();
         for (let index = 0; index < data.rounds.length; index += 1) {
             await drawRound(data.rounds[index], index, data.rounds.length);
         }
+
+        // Only once the last ball has dropped: a balance that moves while
+        // the draw is still running gives the result away.
         notice(data.message, "success");
+        if (cash) cash.textContent = "£" + data.money.toLocaleString();
         submit.disabled = false;
     });
 })();

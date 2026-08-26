@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Fruit Machines · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-4') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-5') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -188,7 +188,10 @@
 
         button.disabled = true;
         machine.classList.add("is-spinning");
+        // Nothing from the last round should still be on screen while
+        // these reels are turning.
         if (outcome) outcome.hidden = true;
+        notice(null);
 
         let data;
         try {
@@ -212,9 +215,6 @@
             return;
         }
 
-        notice(data.message, "success");
-        if (cash) cash.textContent = "£" + data.money.toLocaleString();
-
         if (still) {
             data.reels.forEach((symbol, index) => land(strips[index], symbol));
         } else {
@@ -229,6 +229,12 @@
         }
 
         machine.classList.remove("is-spinning");
+
+        // The reels have landed, so the result is no longer a spoiler.
+        // The balance waits too -- watching the cash rise before the
+        // third reel stops gives the game away.
+        notice(data.message, "success");
+        if (cash) cash.textContent = "£" + data.money.toLocaleString();
         if (outcome) {
             outcome.textContent = data.line + (
                 data.payout ? " — £" + data.payout.toLocaleString() : ""
