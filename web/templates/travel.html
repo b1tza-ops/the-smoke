@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>London Travel · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='item-market-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='transport-modes-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -26,7 +26,7 @@
 
         {% if active_travel %}
             <section class="journey-card">
-                <p class="eyebrow">Journey in progress</p>
+                <p class="eyebrow">{{ active_travel.mode_name }} · journey in progress</p>
                 <div class="journey-route">
                     <div><span>From</span><strong>{{ current.name }}</strong></div>
                     <span class="journey-line" aria-hidden="true">→</span>
@@ -47,17 +47,25 @@
                 {% for option in destinations %}
                     {% set district = option.district %}
                     <article class="district-card" id="district-{{ district.key }}">
-                        <header><div><p class="eyebrow">Level {{ district.minimum_level }}+</p><h2>{{ district.name }}</h2></div><span class="district-fare">£{{ option.cost }}</span></header>
+                        <header><div><p class="eyebrow">Level {{ district.minimum_level }}+</p><h2>{{ district.name }}</h2></div></header>
                         <p>{{ district.description }}</p>
-                        <dl><div><dt>Journey</dt><dd>{{ option.duration_minutes }} min</dd></div><div><dt>Fare</dt><dd>£{{ option.cost }}</dd></div></dl>
-                        <form method="post" action="{{ url_for('travel') }}#district-{{ district.key }}">
-                            <input type="hidden" name="destination_key" value="{{ district.key }}">
-                            <button class="travel-button" type="submit" {% if option.locked or not option.affordable %}disabled{% endif %}>
-                                {% if option.locked %}<span>Requires level {{ district.minimum_level }}</span>
-                                {% elif not option.affordable %}<span>Not enough cash</span>
-                                {% else %}<span>Travel to {{ district.name }}</span><span>→</span>{% endif %}
-                            </button>
-                        </form>
+                        {% if option.locked %}
+                            <p class="transport-note">Requires level {{ district.minimum_level }}.</p>
+                        {% else %}
+                            {% if option.no_underground %}<p class="transport-note">No Underground out here — bus or walk.</p>{% endif %}
+                            <div class="transport-options">
+                                {% for choice in option.options %}
+                                <form method="post" action="{{ url_for('travel') }}#district-{{ district.key }}" class="transport-option">
+                                    <input type="hidden" name="destination_key" value="{{ district.key }}">
+                                    <input type="hidden" name="mode_key" value="{{ choice.mode.key }}">
+                                    <button class="travel-button travel-button--{{ choice.mode.key }}" type="submit" {% if not choice.affordable %}disabled{% endif %}>
+                                        <span class="transport-option__name">{{ choice.mode.name }}</span>
+                                        <span class="transport-option__detail">{% if choice.fare %}£{{ "{:,}".format(choice.fare) }}{% else %}Free{% endif %} · {{ hud_duration(choice.duration_seconds) }}</span>
+                                    </button>
+                                </form>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </article>
                 {% endfor %}
             </section>

@@ -12,6 +12,7 @@ from game.world.districts import (
     get_district,
     get_travel_route,
 )
+from game.world.transport import DEFAULT_TRANSPORT_KEY, available_modes
 from game.world.travel import (
     TravelError,
     get_active_travel,
@@ -1895,13 +1896,21 @@ def travel():
             journey = start_travel(
                 player,
                 destination_key,
+                request.form.get(
+                    "mode_key",
+                    DEFAULT_TRANSPORT_KEY,
+                ),
             )
             destination = get_district(
                 journey.destination_key
             )
             message = (
-                f"Journey started for {destination.name}. "
-                f"£{journey.cost:,} fare paid."
+                f"{journey.mode_name} to {destination.name}. "
+                + (
+                    "No fare."
+                    if not journey.cost
+                    else f"£{journey.cost:,} fare paid."
+                )
             )
         except TravelError as travel_error:
             error = str(travel_error)
@@ -1932,19 +1941,24 @@ def travel():
                 current.key,
                 district.key,
             )
+            locked = player.level < district.minimum_level
+            modes = available_modes(current.key, district.key)
             destinations.append({
                 "district": district,
-                "cost": route.cost,
-                "duration_minutes": (
-                    route.duration_seconds + 59
-                ) // 60,
-                "locked": (
-                    player.level
-                    < district.minimum_level
-                ),
-                "affordable": (
-                    player.money >= route.cost
-                ),
+                "locked": locked,
+                # Cheapest first, so the free option leads.
+                "options": [
+                    {
+                        "mode": mode,
+                        "fare": mode.fare(route),
+                        "duration_seconds": mode.duration_seconds(route),
+                        "affordable": (
+                            player.money >= mode.fare(route)
+                        ),
+                    }
+                    for mode in modes
+                ],
+                "no_underground": len(modes) < 3,
             })
 
     active_destination = (

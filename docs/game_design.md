@@ -129,6 +129,28 @@ Initial planned districts:
 
 Districts contain their own crimes, jobs, gyms, shops, properties and reputation progression.
 
+### Getting around
+
+Every route can be travelled three ways, and what money buys is the time
+back:
+
+| Mode | Fare | Journey |
+| --- | --- | --- |
+| Walk | free | 3× the route time |
+| Bus | the route fare | the route time |
+| Underground | 2× the fare | half the time |
+
+Camden to Soho is free and 15 minutes on foot, £20 and 5 minutes on the
+bus, £40 and 2½ minutes on the tube.
+
+Walking free matters most at the bottom of the game: a player with
+nothing can always move, and pays in minutes they cannot spend on
+anything else, since travel blocks crimes, training and work.
+
+**The Underground does not reach Hackney** — it is Overground and buses
+out east — so the fastest way there is still the bus however rich you
+are. The travel page says so rather than silently hiding the option.
+
 The catalogue in `game/world/districts.py` is the single source of truth
 for districts and the routes between them, and it validates itself at
 import: keys must be unique, every route must name real districts, cost
