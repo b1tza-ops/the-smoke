@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 566 tests
+python3 -m unittest discover -s tests            # 571 tests
 ```
 
 **The suite is bigger than it looks.** `tests/auth/` has **no `__init__.py`**, so
@@ -159,10 +159,10 @@ Hackney — 44 items, 10 guides, 41 migrations.
 
 Worth reading before planning anything new.
 
-- **Nothing scales with level.** A level 20 player earns what a level 1 does from
-  a Camden shoplift. `crime_progress` and `district_reputation` are written on
-  every crime and **never read for payout**, while costs run to £2.5M. This is the
-  real structural gap in the economy.
+- **Crime progression is deliberately bounded.** Individual crime mastery adds
+  at most 8 percentage points to success and district reputation adds at most
+  15% cash. Level remains an unlock rather than a global payout multiplier, so
+  high-level players still need to move into harder districts for larger rewards.
 - **PvP daily contracts are worth £0 on a small server.** They pay £575–750/day
   but only count rated player-vs-player fights, and the population is tiny.
   Making NPC fights count would be a small fix.

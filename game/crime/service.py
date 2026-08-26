@@ -2,6 +2,10 @@ import random
 from dataclasses import dataclass
 
 from game.crime.loot import roll_loot
+from game.crime.progression import (
+    apply_reputation_bonus,
+    crime_progression_for,
+)
 from game.economy.fence import fence_price
 from game.inventory import (
     ITEMS_BY_KEY,
@@ -52,6 +56,11 @@ class CrimeResult:
     reason: str | None = None
     nerve_spent: int = 0
     cash_reward: int = 0
+    base_cash_reward: int = 0
+    cash_bonus: int = 0
+    effective_success_chance: int = 0
+    mastery_bonus: int = 0
+    reputation_bonus_percent: int = 0
     xp_reward: int = 0
     crime_xp_reward: int = 0
     reputation_reward: int = 0
@@ -303,16 +312,21 @@ def commit_crime(player, crime, rng=None, now=None):
         now=now,
     )
 
-    success_roll = rng.randint(1, 100)
-    effective_chance = max(
-        1,
-        crime.success_chance - crime_success_penalty(player),
+    progression = crime_progression_for(
+        player,
+        crime,
+        happiness_penalty=crime_success_penalty(player),
     )
+    success_roll = rng.randint(1, 100)
 
-    if success_roll <= effective_chance:
-        reward = rng.randint(
+    if success_roll <= progression.effective_success_chance:
+        base_reward = rng.randint(
             crime.min_reward,
             crime.max_reward,
+        )
+        reward, cash_bonus = apply_reputation_bonus(
+            base_reward,
+            progression.reputation_bonus_percent,
         )
 
         player.money += reward
@@ -346,6 +360,11 @@ def commit_crime(player, crime, rng=None, now=None):
             success=True,
             nerve_spent=crime.nerve_cost,
             cash_reward=reward,
+            base_cash_reward=base_reward,
+            cash_bonus=cash_bonus,
+            effective_success_chance=progression.effective_success_chance,
+            mastery_bonus=progression.mastery_bonus,
+            reputation_bonus_percent=progression.reputation_bonus_percent,
             xp_reward=crime.xp_reward,
             crime_xp_reward=crime.crime_xp_reward,
             reputation_reward=crime.reputation_reward,
