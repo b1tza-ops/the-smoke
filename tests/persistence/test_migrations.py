@@ -5,6 +5,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from database.core.setup import create_tables
+from database.repositories.players import (
+    create_player,
+    get_player_by_user_id,
+)
+from database.repositories.users import create_user
 
 
 from database.core.migrations import (
@@ -79,7 +84,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41),
         )
 
         with closing(
@@ -266,6 +271,8 @@ class MigrationTests(unittest.TestCase):
                     (37, "ammunition"),
                     (38, "casino"),
                     (39, "blackjack_splits"),
+                    (40, "player_clock_backfill"),
+                    (41, "loan_shark"),
                 ],
             )
 
@@ -429,13 +436,128 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(full_health_row, (140, 140))
         self.assertEqual(injured_row, (60, 140))
 
+    def test_new_player_on_an_upgraded_database_can_be_loaded(self):
+        """The clocks a fresh schema defaults must be written explicitly.
+
+        `players` has two shapes. Built fresh from the CREATE TABLE, the
+        wanted, happiness and health clocks are NOT NULL DEFAULT
+        CURRENT_TIMESTAMP. Reached through the migrations they came from
+        ALTER TABLE, which cannot carry a non-constant default, so they
+        are plain nullable TEXT with a one-off backfill behind them.
+
+        Every other test builds the fresh shape, which is why a player
+        registered against the upgraded shape -- inserted with NULL
+        clocks, then raising `fromisoformat: argument must be str` on
+        the first page they opened -- reached production. This test is
+        on the upgraded shape, so it holds that door shut.
+        """
+        create_tables()
+
+        # setUp's legacy fixture already holds players.user_id 1, so
+        # step over it rather than colliding with it.
+        create_user(
+            "placeholder_clockless",
+            "placeholder_clockless@example.com",
+            "hashed",
+        )
+        user_id = create_user(
+            "clockless",
+            "clockless@example.com",
+            "hashed",
+        )
+        create_player(user_id, "clockless")
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            clocks = conn.execute(
+                """
+                SELECT
+                    last_energy_update,
+                    last_nerve_update,
+                    last_wanted_update,
+                    last_happiness_update,
+                    last_health_update
+                FROM players
+                WHERE user_id = ?
+                """,
+                (user_id,),
+            ).fetchone()
+
+        for column, value in zip(
+            (
+                "last_energy_update",
+                "last_nerve_update",
+                "last_wanted_update",
+                "last_happiness_update",
+                "last_health_update",
+            ),
+            clocks,
+        ):
+            self.assertIsNotNone(
+                value,
+                f"{column} was left NULL",
+            )
+
+        self.assertIsNotNone(
+            get_player_by_user_id(user_id)
+        )
+
+    def test_backfill_repairs_a_player_left_without_clocks(self):
+        """Accounts stranded before the fix have to load again."""
+        create_tables()
+
+        # setUp's legacy fixture already holds players.user_id 1, so
+        # step over it rather than colliding with it.
+        create_user(
+            "placeholder_stranded",
+            "placeholder_stranded@example.com",
+            "hashed",
+        )
+        user_id = create_user(
+            "stranded",
+            "stranded@example.com",
+            "hashed",
+        )
+        create_player(user_id, "stranded")
+
+        with closing(
+            sqlite3.connect(self.database_path)
+        ) as conn:
+            # Put the row back into the state the old insert left it in,
+            # and rewind the migration so the backfill runs over it.
+            conn.execute(
+                """
+                UPDATE players
+                SET
+                    last_wanted_update = NULL,
+                    last_happiness_update = NULL,
+                    last_health_update = NULL
+                WHERE user_id = ?
+                """,
+                (user_id,),
+            )
+            conn.execute(
+                "DELETE FROM schema_migrations WHERE version = 40"
+            )
+            conn.commit()
+
+        with self.assertRaises(TypeError):
+            get_player_by_user_id(user_id)
+
+        run_migrations()
+
+        self.assertIsNotNone(
+            get_player_by_user_id(user_id)
+        )
+
     def test_running_migrations_twice_is_safe(self):
         first_run = run_migrations()
         second_run = run_migrations()
 
         self.assertEqual(
             first_run,
-            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39),
+            (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41),
         )
         self.assertEqual(second_run, ())
 
@@ -470,7 +592,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 39)
+            self.assertEqual(migration_count, 41)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -489,7 +611,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=40,
+            version=42,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -539,7 +661,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41],
             )
             self.assertEqual(money, 777)
 
@@ -574,7 +696,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41],
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)

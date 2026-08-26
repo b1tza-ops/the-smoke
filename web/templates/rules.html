@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#090b0d">
     <title>Rules · The Smoke</title>
     <meta name="description" content="The rules of The Smoke, and the penalty for breaking each one.">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='handbook-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='loans-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
-    <header class="topbar">
+    <header class="topbar">{% include "_topbar_menu.html" %}
         <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
         <a class="logout-link" href="{{ url_for('forum') }}">Guides</a>
     </header>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Ronnie Dell · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='loans-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">{% include "_topbar_menu.html" %}
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('city') }}">City</a>
+    </header>
+    {% include "_player_hud.html" %}
+    <main class="dashboard-main shark-page">
+        <section class="shark-hero">
+            <div>
+                <p class="eyebrow">Soho · Back of the Kingsland Arms</p>
+                <h1>Ronnie Dell</h1>
+            </div>
+            {% if loan and loan.principal %}
+            <div class="shark-owed {{ 'is-overdue' if overdue }}">
+                <small>{{ "Overdue" if overdue else "You owe" }}</small>
+                <strong>£{{ "{:,}".format(loan.balance) }}</strong>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="shark-quote">
+            <div class="shark-portrait">
+                {% if portrait %}
+                <img src="{{ url_for('static', filename=portrait) }}" alt="Ronnie Dell" width="128" height="128">
+                {% else %}
+                <span aria-hidden="true">RD</span>
+                {% endif %}
+            </div>
+            <blockquote>
+                {% if not loan or not loan.principal %}
+                <p>“Short, are you? Everyone’s short. I’ll go to <strong>£{{ "{:,}".format(headroom) }}</strong> on a face I don’t know, and that’s me being generous.”</p>
+                <p>“{{ (daily_rate * 100)|round(1) }}% a day, and I want something off it every three days. Pay me and we’re friends. Don’t, and I’ll send someone round to explain it properly.”</p>
+                {% elif overdue %}
+                <p>“You’re late. I don’t like late.”</p>
+                <p>“There’s <strong>£{{ "{:,}".format(loan.interest) }}</strong> of interest sitting there with your name on it. Clear that today or my lads will come and find you, wherever you happen to be standing.”</p>
+                {% else %}
+                <p>“Good lad. <strong>£{{ "{:,}".format(loan.balance) }}</strong> on the book, and it’s growing at {{ (daily_rate * 100)|round(1) }}% a day while you stand there.”</p>
+                <p>“Next payment by <strong data-due="{{ due_at.isoformat() if due_at }}">{{ due_at.strftime('%d %b, %H:%M') if due_at }}</strong>. At least the interest, mind. Anything less and it doesn’t count.”</p>
+                {% endif %}
+            </blockquote>
+        </section>
+
+        {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+        {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+        {% if player.level < minimum_level %}
+        <div class="game-notice game-notice--warning">Ronnie does not lend below level {{ minimum_level }}. Come back when you have something to lose.</div>
+        {% elif not accessible %}
+        <div class="game-notice game-notice--error">You need to be free and standing in Soho to do business with him.</div>
+        {% endif %}
+
+        {% if loan and loan.principal %}
+        <section class="shark-panel">
+            <div class="shark-panel__head"><h2>What you owe</h2></div>
+            <table class="paytable">
+                <tbody>
+                    <tr><td>Principal</td><td>£{{ "{:,}".format(loan.principal) }}</td></tr>
+                    <tr><td>Interest owed</td><td class="{{ 'is-loss' if loan.interest }}">£{{ "{:,}".format(loan.interest) }}</td></tr>
+                    <tr><td><strong>Total</strong></td><td><strong>£{{ "{:,}".format(loan.balance) }}</strong></td></tr>
+                    {% if loan.missed_payments %}
+                    <tr><td>Payments missed</td><td class="is-loss">{{ loan.missed_payments }}</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            <form method="post" class="shark-form">
+                <input type="hidden" name="action" value="repay">
+                <label>Pay him
+                    <input name="amount" type="number" min="1" max="{{ loan.balance }}" value="{{ loan.interest if loan.interest else loan.balance }}" inputmode="numeric">
+                </label>
+                <button class="work-button" type="submit"><span>Repay</span><span>→</span></button>
+            </form>
+            <p class="shark-hint">You can pay from anywhere — you do not have to come to Soho to stop the interest.</p>
+        </section>
+        {% endif %}
+
+        <section class="shark-panel">
+            <div class="shark-panel__head">
+                <h2>Borrow</h2>
+                <span>Up to £{{ "{:,}".format(headroom) }} · limit £{{ "{:,}".format(maximum) }} at level {{ player.level }}</span>
+            </div>
+            {% if headroom < minimum_loan %}
+            <p class="shark-hint">He will not lend you any more until you have paid some of this back.</p>
+            {% elif loan and loan.interest %}
+            <p class="shark-hint">Clear the £{{ "{:,}".format(loan.interest) }} of interest first. He does not lend to people who are already behind.</p>
+            {% else %}
+            <form method="post" class="shark-form">
+                <input type="hidden" name="action" value="borrow">
+                <label>Take
+                    <input name="amount" type="number" min="{{ minimum_loan }}" max="{{ headroom }}" step="1000" value="{{ minimum_loan }}" inputmode="numeric" {{ 'disabled' if not accessible }}>
+                </label>
+                <button class="work-button" type="submit" {{ 'disabled' if not accessible }}><span>Take it</span><span>→</span></button>
+            </form>
+            <p class="shark-hint">{{ (daily_rate * 100)|round(1) }}% a day on the principal. A payment covering at least the interest is due every three days.</p>
+            {% endif %}
+        </section>
+
+        {% if history %}
+        <section class="shark-panel">
+            <div class="shark-panel__head"><h2>The book</h2><span>Ronnie writes everything down</span></div>
+            <table class="paytable">
+                <thead><tr><th>Entry</th><th>Amount</th><th>Owed after</th></tr></thead>
+                <tbody>
+                {% for kind, amount, balance_after, happened_at in history %}
+                    <tr>
+                        <td>{{ {"borrow": "Borrowed", "repay": "Repaid", "interest": "Interest", "collection": "Collection"}[kind] }}</td>
+                        <td>{% if kind == "collection" %}{{ amount }} min in hospital{% else %}£{{ "{:,}".format(amount) }}{% endif %}</td>
+                        <td>£{{ "{:,}".format(balance_after) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+    </main>
+</div>
+</body>
+</html>

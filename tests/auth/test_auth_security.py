@@ -33,6 +33,7 @@ from database.repositories.users import (
     get_user_by_email,
 )
 from utils.security import (
+    BCRYPT_MAX_PASSWORD_BYTES,
     hash_password,
     hash_token,
     verify_password,
@@ -331,6 +332,70 @@ class AuthenticationSecurityTests(unittest.TestCase):
             ValidationError
         ):
             validate_password("short")
+
+
+class LongPasswordTests(unittest.TestCase):
+    """bcrypt reads 72 bytes and no more.
+
+    From bcrypt 4.0 the library raises on anything longer instead of
+    trimming it, so an unclamped call turned a long passphrase into a
+    500 on register, sign-in and password reset. These pin the clamp.
+    """
+
+    def test_password_longer_than_the_limit_can_be_hashed(self):
+        password = "a" * (BCRYPT_MAX_PASSWORD_BYTES + 1)
+
+        self.assertTrue(
+            verify_password(
+                password,
+                hash_password(password),
+            )
+        )
+
+    def test_short_password_of_many_bytes_can_be_hashed(self):
+        # 27 characters, 102 bytes: the limit is on bytes, and a
+        # password can cross it while still looking short.
+        password = "pw" + ("\U0001f525" * 25)
+
+        self.assertGreater(
+            len(password.encode("utf-8")),
+            BCRYPT_MAX_PASSWORD_BYTES,
+        )
+        self.assertTrue(
+            verify_password(
+                password,
+                hash_password(password),
+            )
+        )
+
+    def test_only_the_first_seventy_two_bytes_are_significant(self):
+        stored = hash_password(
+            "b" * BCRYPT_MAX_PASSWORD_BYTES
+        )
+
+        # A hash written by bcrypt 3.x, which trimmed silently, has to
+        # keep verifying or every long-password account is locked out.
+        self.assertTrue(
+            verify_password(
+                "b" * (BCRYPT_MAX_PASSWORD_BYTES + 40),
+                stored,
+            )
+        )
+
+    def test_a_wrong_long_password_is_still_rejected(self):
+        stored = hash_password("c" * 100)
+
+        self.assertFalse(
+            verify_password("d" * 100, stored)
+        )
+
+    def test_the_validator_still_accepts_a_long_password(self):
+        password = "a" * 128
+
+        self.assertEqual(
+            validate_password(password),
+            password,
+        )
 
 
 if __name__ == "__main__":

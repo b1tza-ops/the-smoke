@@ -19,6 +19,14 @@ def create_player(user_id, name):
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Every regenerating resource gets its clock set here rather than
+    # left to a column default. The two shapes this table can have do
+    # not agree: a database built fresh from the CREATE TABLE declares
+    # these NOT NULL DEFAULT CURRENT_TIMESTAMP, while one upgraded
+    # through the migrations got them from ALTER TABLE, which cannot
+    # carry a non-constant default and so left them plain nullable TEXT.
+    # On the upgraded shape a new player was written with NULL clocks
+    # and the loader raised on the first page they opened.
     cursor.execute(
         """
         INSERT INTO players (
@@ -29,10 +37,18 @@ def create_player(user_id, name):
             max_energy,
             max_nerve,
             last_energy_update,
-            last_nerve_update
+            last_nerve_update,
+            last_wanted_update,
+            last_happiness_update,
+            last_health_update
         )
         VALUES (
-            ?, ?, 150, 20, 150, 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ?, ?, 150, 20, 150, 20,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
         )
         """,
         (user_id, name)

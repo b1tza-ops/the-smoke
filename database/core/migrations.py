@@ -1696,6 +1696,81 @@ def migrate_039_blackjack_splits(cursor):
     """)
 
 
+def migrate_040_player_clock_backfill(cursor):
+    """Give every player a wanted, happiness and health clock.
+
+    These three columns reached an upgraded database through ALTER
+    TABLE, which cannot carry CURRENT_TIMESTAMP as a default, so they
+    were added as plain nullable TEXT and backfilled once. Any player
+    created afterwards was inserted without them and got NULL, and the
+    loader raised `fromisoformat: argument must be str` on the first
+    page that player opened -- an account that could be registered but
+    never used.
+
+    `create_player` now writes all three, so this only has to repair the
+    accounts already stranded. A database built fresh from the CREATE
+    TABLE never had the problem and has nothing to update here.
+    """
+    for column in (
+        "last_wanted_update",
+        "last_happiness_update",
+        "last_health_update",
+    ):
+        cursor.execute(
+            f"""
+            UPDATE players
+            SET {column} = COALESCE(
+                last_energy_update,
+                CURRENT_TIMESTAMP
+            )
+            WHERE {column} IS NULL
+            """
+        )
+
+
+def migrate_041_loan_shark(cursor):
+    """Ronnie Dell's book.
+
+    One row per borrower, and it stays after the debt is cleared so the
+    missed-payment count is remembered -- a player who defaulted once
+    does not get a clean slate by paying up and borrowing again.
+
+    Interest accrues from `interest_accrued_at` rather than on a
+    schedule, the same way energy and nerve do.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_loans (
+            player_id INTEGER PRIMARY KEY,
+            principal INTEGER NOT NULL DEFAULT 0
+                CHECK (principal >= 0),
+            interest INTEGER NOT NULL DEFAULT 0
+                CHECK (interest >= 0),
+            missed_payments INTEGER NOT NULL DEFAULT 0
+                CHECK (missed_payments >= 0),
+            taken_at TEXT,
+            interest_accrued_at TEXT,
+            due_at TEXT,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS loan_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            kind TEXT NOT NULL
+                CHECK (kind IN ('borrow', 'repay', 'interest', 'collection')),
+            amount INTEGER NOT NULL,
+            balance_after INTEGER NOT NULL CHECK (balance_after >= 0),
+            happened_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_loan_transactions_player
+        ON loan_transactions (player_id, id)
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1891,6 +1966,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=39,
         name="blackjack_splits",
         apply=migrate_039_blackjack_splits,
+    ),
+    Migration(
+        version=40,
+        name="player_clock_backfill",
+        apply=migrate_040_player_clock_backfill,
+    ),
+    Migration(
+        version=41,
+        name="loan_shark",
+        apply=migrate_041_loan_shark,
     ),
 )
 
