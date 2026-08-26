@@ -17,7 +17,9 @@ class MasteryTier:
 class CrimeProgression:
     crime_xp: int
     mastery_name: str
+    mastery_rank: int
     mastery_bonus: int
+    mastery_progress_percent: int
     next_mastery_name: str | None
     next_mastery_xp: int | None
     district_reputation: int
@@ -71,6 +73,19 @@ def crime_progression_for(player, crime, happiness_penalty=0):
     progress = getattr(player, "crime_progress", {}).get(crime.key, {})
     crime_xp = progress.get("xp", 0)
     mastery, next_mastery = mastery_for_xp(crime_xp)
+    mastery_rank = MASTERY_TIERS.index(mastery) + 1
+    if next_mastery:
+        mastery_progress_percent = min(
+            100,
+            max(
+                0,
+                (crime_xp - mastery.minimum_xp)
+                * 100
+                // (next_mastery.minimum_xp - mastery.minimum_xp),
+            ),
+        )
+    else:
+        mastery_progress_percent = 100
 
     reputation = getattr(player, "district_reputation", {}).get(
         crime.district,
@@ -92,7 +107,9 @@ def crime_progression_for(player, crime, happiness_penalty=0):
     return CrimeProgression(
         crime_xp=crime_xp,
         mastery_name=mastery.name,
+        mastery_rank=mastery_rank,
         mastery_bonus=mastery.success_bonus,
+        mastery_progress_percent=mastery_progress_percent,
         next_mastery_name=(next_mastery.name if next_mastery else None),
         next_mastery_xp=(next_mastery.minimum_xp if next_mastery else None),
         district_reputation=reputation,
