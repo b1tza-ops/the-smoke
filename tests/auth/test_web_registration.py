@@ -83,6 +83,54 @@ class WebRegistrationTests(unittest.TestCase):
                 42,
             )
 
+    @patch("web.application.request_email_verification")
+    @patch("web.application.create_player")
+    @patch(
+        "web.application.create_user",
+        return_value=43,
+    )
+    @patch(
+        "web.application.get_user_by_email",
+        return_value=None,
+    )
+    @patch(
+        "web.application.get_user_by_username",
+        return_value=None,
+    )
+    def test_a_long_password_registers_rather_than_erroring(
+        self,
+        get_user_by_username,
+        get_user_by_email,
+        create_user,
+        create_player,
+        request_email_verification,
+    ):
+        # Deliberately does not patch hash_password: the point is that
+        # the real hashing runs. bcrypt refuses anything over 72 bytes,
+        # and the unclamped call escaped the route's ValidationError
+        # handler and served the 500 page instead of an account.
+        password = "correct-horse-battery-staple-" * 4
+
+        response = self.client.post(
+            "/register",
+            data={
+                "username": "Long_Pass",
+                "email": "long@example.com",
+                "password": password,
+                "password_confirmation": password,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.headers["Location"],
+            "/check-email",
+        )
+        create_player.assert_called_once_with(
+            43,
+            "Long_Pass",
+        )
+
     @patch("web.application.create_user")
     @patch("web.application.create_player")
     def test_password_confirmation_must_match(

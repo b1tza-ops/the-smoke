@@ -1696,6 +1696,38 @@ def migrate_039_blackjack_splits(cursor):
     """)
 
 
+def migrate_040_player_clock_backfill(cursor):
+    """Give every player a wanted, happiness and health clock.
+
+    These three columns reached an upgraded database through ALTER
+    TABLE, which cannot carry CURRENT_TIMESTAMP as a default, so they
+    were added as plain nullable TEXT and backfilled once. Any player
+    created afterwards was inserted without them and got NULL, and the
+    loader raised `fromisoformat: argument must be str` on the first
+    page that player opened -- an account that could be registered but
+    never used.
+
+    `create_player` now writes all three, so this only has to repair the
+    accounts already stranded. A database built fresh from the CREATE
+    TABLE never had the problem and has nothing to update here.
+    """
+    for column in (
+        "last_wanted_update",
+        "last_happiness_update",
+        "last_health_update",
+    ):
+        cursor.execute(
+            f"""
+            UPDATE players
+            SET {column} = COALESCE(
+                last_energy_update,
+                CURRENT_TIMESTAMP
+            )
+            WHERE {column} IS NULL
+            """
+        )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1891,6 +1923,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=39,
         name="blackjack_splits",
         apply=migrate_039_blackjack_splits,
+    ),
+    Migration(
+        version=40,
+        name="player_clock_backfill",
+        apply=migrate_040_player_clock_backfill,
     ),
 )
 
