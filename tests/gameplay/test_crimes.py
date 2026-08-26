@@ -85,6 +85,26 @@ class CrimeProgressionTests(unittest.TestCase):
             MAX_SUCCESS_CHANCE,
         )
 
+    def test_mastery_progress_is_relative_to_current_tier(self):
+        crime = get_crime("soho_pickpocket")
+        progression = crime_progression_for(
+            self.make_player(crime_xp=200),
+            crime,
+        )
+
+        self.assertEqual(progression.mastery_rank, 2)
+        self.assertEqual(progression.mastery_progress_percent, 50)
+
+    def test_master_mastery_progress_is_complete(self):
+        crime = get_crime("soho_pickpocket")
+        progression = crime_progression_for(
+            self.make_player(crime_xp=1500),
+            crime,
+        )
+
+        self.assertEqual(progression.mastery_rank, 5)
+        self.assertEqual(progression.mastery_progress_percent, 100)
+
     def test_reputation_bonus_is_gradual_and_capped(self):
         crime = get_crime("soho_pickpocket")
         progression = crime_progression_for(
