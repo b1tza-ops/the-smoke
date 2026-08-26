@@ -415,6 +415,28 @@ Planned specialisations:
 
 Repeating related crimes develops the relevant skill and unlocks harder opportunities.
 
+Each individual crime has five mastery tiers. Mastery increases success
+chance by a small, capped number of percentage points; it never changes the
+crime's nerve cost, sentence or base payout.
+
+| Crime XP | Mastery | Success bonus |
+| ---: | --- | ---: |
+| 0 | Newcomer | +0 |
+| 100 | Practised | +2 |
+| 300 | Skilled | +4 |
+| 750 | Expert | +6 |
+| 1,500 | Master | +8 |
+
+Effective success chance is capped at 95% and is still reduced by low
+happiness. District reputation improves cash instead: every 25 reputation
+adds 1% to the rolled cash reward, capped at 15%. The two progressions stay
+separate so knowing one crime does not make every local crime safer, while
+being established in a district makes all of its work modestly more valuable.
+
+Bonuses are calculated from progress held before the attempt. The crime that
+crosses a threshold unlocks the improvement for the next attempt rather than
+rewarding itself.
+
 ### Wanted Level
 
 Wanted level increases through crime and falls over real time. Higher wanted levels increase police pressure and may restrict activities.

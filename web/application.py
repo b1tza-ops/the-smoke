@@ -84,6 +84,7 @@ from game.crime import (
     CRIMES,
     CRIMES_BY_KEY,
     commit_crime,
+    crime_progression_for,
 )
 from game.combat.rating import matchmaking_label
 from game.combat.streaks import get_streak_progress
@@ -305,6 +306,7 @@ from game.operations import (
     approach_shortfalls,
 )
 from game.player import Player
+from game.player.happiness import crime_success_penalty
 from game.player.progression import xp_required_for_level
 from game.player.regeneration import player_regeneration_forecast
 from game.player.status import update_player_status
@@ -2824,6 +2826,14 @@ def crimes():
         if crime.district.casefold()
         == player.current_district
     )
+    crime_progression = {
+        crime.key: crime_progression_for(
+            player,
+            crime,
+            happiness_penalty=crime_success_penalty(player),
+        )
+        for crime in district_crimes
+    }
     return render_template(
         "crimes.html",
         player=player,
@@ -2833,6 +2843,7 @@ def crimes():
         error=error,
         work_shift=work_shift,
         crime_block_reason=crime_block_reason,
+        crime_progression=crime_progression,
     )
 
 
@@ -3530,5 +3541,3 @@ def logout():
 
     session.clear()
     return redirect("/login")
-
-
