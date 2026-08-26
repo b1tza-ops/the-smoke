@@ -7,8 +7,10 @@ from datetime import timedelta
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 from types import SimpleNamespace
+from game.world.city import directory as city_directory
 from game.world.districts import (
     DISTRICTS,
+    DISTRICTS_BY_KEY,
     get_district,
     get_travel_route,
 )
@@ -64,6 +66,7 @@ from flask import (
     request,
     redirect,
     session,
+    url_for,
 )
 from database.core.connection import get_connection
 from database.core.setup import create_tables
@@ -203,8 +206,15 @@ from game.economy.fence import (
     fence_price,
     get_fence,
 )
-from game.shop import ShopError, get_district_shop, purchase
+from game.shop import (
+    ShopError,
+    get_district_shop,
+    get_venue,
+    purchase,
+    purchase_at,
+)
 from game.inventory import (
+    AMMO_KEYS,
     INVENTORY_SLOT_CAPACITY,
     ITEMS,
     ITEMS_BY_KEY,
@@ -215,6 +225,7 @@ from game.inventory import (
     get_equipment_summary,
     get_item,
     remove_item,
+    spend_ammo,
     unequip_item,
     use_item,
 )
@@ -1265,6 +1276,123 @@ def district_shop():
         ),
     )
 
+@app.route("/city")
+def city():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+
+    return render_template(
+        "city.html",
+        player=player,
+        sections=city_directory(player.current_district),
+        here=DISTRICTS_BY_KEY[player.current_district].name
+        if player.current_district in DISTRICTS_BY_KEY
+        else player.current_district.title(),
+        district_names={
+            key: district.name
+            for key, district in DISTRICTS_BY_KEY.items()
+        },
+    )
+
+
+GUN_BAZAAR_KEY = "kingsland_arms"
+
+# How many the quantity box starts on. Guns are bought one at a time;
+# rounds are bought by the handful.
+DEFAULT_BUY_QUANTITY = {"guns": 1, "ammo": 50}
+
+
+def _bazaar_lines(shop, player):
+    """Decorate the venue payload with what the counter needs to show."""
+    inventory = getattr(player, "inventory", {}) or {}
+    lines = []
+    for line in shop["items"]:
+        definition = ITEMS_BY_KEY[line["key"]]
+        group = "ammo" if definition.key in AMMO_KEYS else "guns"
+        default = DEFAULT_BUY_QUANTITY[group]
+        lines.append({
+            **line,
+            "group": group,
+            "strength_bonus": definition.strength_bonus,
+            "ammo_name": (
+                ITEMS_BY_KEY[definition.ammo_key].name
+                if definition.ammo_key else None
+            ),
+            "owned": inventory.get(definition.key, 0),
+            "default_quantity": max(1, min(default, line["stock"] or 1)),
+        })
+    return {**shop, "items": tuple(lines)}
+
+
+@app.route("/bazaar", methods=["GET", "POST"])
+def gun_bazaar():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    message = None
+    error = None
+
+    if request.method == "POST":
+        try:
+            quantity = int(request.form.get("quantity", "0"))
+            result = purchase_at(
+                session["user_id"],
+                GUN_BAZAAR_KEY,
+                request.form.get("item_key", ""),
+                quantity,
+            )
+            message = (
+                f"Bought {result['quantity']} × "
+                f"{result['item'].name} for £{result['total']:,}."
+            )
+            record_player_action(
+                "bazaar_purchase",
+                message,
+                {
+                    "shop": GUN_BAZAAR_KEY,
+                    "item_key": result["item"].item_key,
+                    "quantity": result["quantity"],
+                    "total": result["total"],
+                },
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (ValueError, ShopError) as shop_error:
+            error = str(shop_error)
+
+    shop = get_venue(GUN_BAZAAR_KEY)
+    return render_template(
+        "bazaar.html",
+        player=player,
+        shop=_bazaar_lines(shop, player),
+        equipment=get_equipment_summary(player.id),
+        message=message,
+        error=error,
+        accessible=(
+            player.current_district == shop["district"]
+            and player.travel_destination is None
+            and player.jail_until is None
+            and player.hospital_until is None
+        ),
+    )
+
+
 @app.route("/blackmarket", methods=["GET", "POST"])
 def black_market():
     if "user_id" not in session:
@@ -2249,6 +2377,7 @@ def fight():
     result = None
     fought_opponent = None
     error = None
+    rounds_spent = ()
 
     if request.method == "POST":
         opponent_key = request.form.get("opponent_key", "")
@@ -2267,6 +2396,7 @@ def fight():
                 equipment,
                 fought_opponent,
             )
+            rounds_spent = spend_ammo(player, equipment)
             record_encounter(
                 player.id,
                 fought_opponent.key,
@@ -2297,6 +2427,7 @@ def fight():
         fought_opponent=fought_opponent,
         records=records,
         equipment=equipment,
+        rounds_spent=rounds_spent,
         energy_cost=COMBAT_ENERGY_COST,
         block_reason=get_combat_block(player),
         result=result,
@@ -2323,6 +2454,7 @@ def pvp():
     error = None
     attacker_equipment = None
     defender_equipment = None
+    rounds_spent = ()
     selected_approach = request.form.get("approach", "balanced")
     if selected_approach == "balanced":
         selected_approach = "defensive"
@@ -2353,6 +2485,7 @@ def pvp():
                 selected_approach,
                 reward_multiplier=limits.reward_multiplier,
             )
+            rounds_spent = spend_ammo(player, attacker_equipment)
             save_player(player)
             save_player(defender)
             rating_update = record_pvp_attack(
@@ -2430,6 +2563,7 @@ def pvp():
         defender=defender,
         attacker_equipment=attacker_equipment,
         defender_equipment=defender_equipment,
+        rounds_spent=rounds_spent,
         playback=build_pvp_playback(result),
         error=error,
         history=get_recent_pvp_attacks(player.id),

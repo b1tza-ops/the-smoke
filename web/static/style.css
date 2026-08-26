@@ -621,6 +621,123 @@ input { font: inherit; }
     color: #d2ff79;
 }
 
+.city-hero {
+    margin-bottom: 1.4rem;
+}
+
+.city-hero h1 {
+    margin: .2rem 0 .35rem;
+}
+
+.city-hero p {
+    color: var(--muted);
+    max-width: 46ch;
+}
+
+.city-section {
+    margin-bottom: 1.6rem;
+}
+
+.city-section__heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: .5rem;
+    margin-bottom: .75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.city-section__heading h2 {
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.city-section__heading span {
+    color: var(--muted);
+    font-size: .82rem;
+}
+
+.city-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: .55rem;
+}
+
+.city-tile {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .7rem .85rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(17, 22, 26, .82);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+}
+
+.city-tile:hover,
+.city-tile:focus-visible {
+    border-color: var(--accent);
+    background: rgba(185, 243, 75, .06);
+}
+
+.city-tile .game-icon {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+}
+
+.city-tile div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.city-tile strong {
+    font-size: .92rem;
+}
+
+.city-tile small {
+    color: var(--muted);
+    font-size: .76rem;
+}
+
+.city-tile__away {
+    margin-left: auto;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .12rem .5rem;
+    white-space: nowrap;
+}
+
+.city-section--away .city-tile {
+    border-style: dashed;
+}
+
+.game-notice--warning {
+    border-color: rgba(255, 189, 74, .45);
+    background: rgba(255, 189, 74, .08);
+    color: #ffd591;
+}
+
+.game-notice--warning a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.ammo-spend {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+}
+
 .game-notice--error,
 .game-result--failure {
     border-color: rgba(255, 100, 105, .4);
@@ -1272,3 +1389,13 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .transport-option__name{font-weight:900}
 .transport-option__detail{opacity:.85;font-size:.72rem;font-variant-numeric:tabular-nums}
 .transport-note{margin:.4rem 0 .6rem;color:var(--muted);font-size:.74rem;font-style:italic}
+
+/* The row layout sets grid-template-rows but inherited `auto 1fr` columns
+   from .shop-buy, which split the narrow buy cell in two and crushed the
+   quantity box to a sliver. */
+.shop-row .shop-buy{grid-template-columns:1fr}
+/* Ammunition is bought in three-digit quantities, and the bazaar's name is
+   longer than any other shopfront in London. */
+.bazaar-page .shop-row{grid-template-columns:8.5rem minmax(0,1fr) 6.2rem}
+.bazaar-page .shop-hero h1{font-size:clamp(1.9rem,4.2vw,2.9rem)}
+@media(max-width:520px){.bazaar-page .shop-row{grid-template-columns:6.3rem minmax(0,1fr) 5.2rem}}

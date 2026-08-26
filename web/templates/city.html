@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>City · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='gun-bazaar-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('home') }}">Dashboard</a>
+    </header>
+    {% include "_player_hud.html" %}
+    <main class="dashboard-main city-page">
+        <section class="city-hero">
+            <div>
+                <p class="eyebrow">{{ here }}</p>
+                <h1>The City</h1>
+                <p>Everywhere in London you can walk into, and what you will find when you get there.</p>
+            </div>
+        </section>
+
+        {% for section in sections %}
+        <section class="city-section {{ 'city-section--away' if not section.reachable }}" aria-labelledby="city-{{ loop.index }}">
+            <div class="city-section__heading">
+                <h2 id="city-{{ loop.index }}">{{ section.title }}</h2>
+                <span>{{ section.subtitle }}</span>
+            </div>
+            <div class="city-grid">
+            {% for place in section.destinations %}
+                <a class="city-tile" href="{{ url_for(place.endpoint) }}">
+                    <svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#{{ place.icon }}"></use></svg>
+                    <div>
+                        <strong>{{ place.name }}</strong>
+                        <small>{{ place.blurb }}</small>
+                    </div>
+                    {% if not section.reachable %}<span class="city-tile__away">{{ district_names[place.district] }}</span>{% endif %}
+                </a>
+            {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </main>
+</div>
+</body>
+</html>

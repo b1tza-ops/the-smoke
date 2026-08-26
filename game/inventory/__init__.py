@@ -2,10 +2,13 @@
 
 from game.inventory.items import (
     ITEM_CATEGORIES,
+    AMMO_KEYS,
     ITEMS,
     ITEMS_BY_KEY,
     ItemDefinition,
     get_item,
+    is_ammo,
+    weapons_using,
 )
 from game.inventory.equipment import (
     EQUIPMENT_SLOTS,
@@ -29,7 +32,9 @@ from game.inventory.service import (
     UnknownItemError,
     add_item,
     inventory_menu,
+    SpentAmmo,
     remove_item,
+    spend_ammo,
     use_item,
 )
 
@@ -38,6 +43,7 @@ __all__ = [
     "EquipmentError",
     "INVENTORY_SLOT_CAPACITY",
     "ITEM_CATEGORIES",
+    "AMMO_KEYS",
     "ITEMS",
     "ITEMS_BY_KEY",
     "InsufficientItemError",
@@ -56,8 +62,12 @@ __all__ = [
     "get_equipment",
     "get_equipment_summary",
     "get_item",
+    "is_ammo",
+    "weapons_using",
     "inventory_menu",
+    "SpentAmmo",
     "remove_item",
+    "spend_ammo",
     "unequip_item",
     "use_item",
 ]

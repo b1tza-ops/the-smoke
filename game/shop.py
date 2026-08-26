@@ -11,6 +11,11 @@ from game.inventory import ITEMS_BY_KEY
 
 RESTOCK_HOURS = 24
 
+# Per-transaction cap. Each item's own max_quantity is checked as well
+# and is lower for everything except ammunition, which is bought by the
+# hundred rather than the handful.
+MAXIMUM_PURCHASE_QUANTITY = 200
+
 
 @dataclass(frozen=True)
 class ShopItem:
@@ -111,10 +116,6 @@ DISTRICT_SHOPS = {
         "name": "Hackney Lock-Up",
         "strapline": "Serious kit, sold quietly, cash only.",
         "items": (
-            ShopItem("derringer_22", "Derringer .22", "A palm-sized two-shot pistol.", 2000, 1, 4),
-            ShopItem("converted_blank_pistol", "Converted Blank Pistol", "A starter pistol bored out for live rounds.", 2800, 1, 3),
-            ShopItem("snub_nose_38", "Snub-Nose .38", "A short-barrelled revolver that hides easily.", 3600, 1, 3),
-            ShopItem("compact_9mm", "Compact 9mm", "A clean semi-automatic, never fired.", 4800, 1, 2),
             ShopItem("machete", "Machete", "A formidable heavy blade.", 1550, 1, 4),
             ShopItem("survival_knife", "Survival Knife", "A stronger secondary blade.", 940, 2, 6),
             ShopItem("hatchet", "Hatchet", "Short handle, heavy head.", 1050, 1, 5),
@@ -129,6 +130,42 @@ DISTRICT_SHOPS = {
             ShopItem("fish_and_chips", "Fish and Chips", "Restores up to 25 happiness.", 75, 8, 18),
         ),
     },
+}
+
+
+# Venues that are not a district's general store. Firearms live here and
+# nowhere else, so the bazaar is the one place in London selling them.
+SPECIALIST_SHOPS = {
+    "kingsland_arms": {
+        "key": "kingsland_arms",
+        "district": "hackney",
+        "name": "Kingsland Arms Bazaar",
+        "strapline": "Pistols and rounds, traded under a dead pub's name.",
+        "items": (
+            ShopItem("derringer_22", "Derringer .22", "A palm-sized two-shot pistol.", 2000, 1, 4),
+            ShopItem("converted_blank_pistol", "Converted Blank Pistol", "A starter pistol bored out for live rounds.", 2800, 1, 3),
+            ShopItem("snub_nose_38", "Snub-Nose .38", "A short-barrelled revolver that hides easily.", 3600, 1, 3),
+            ShopItem("compact_9mm", "Compact 9mm", "A clean semi-automatic, never fired.", 4800, 1, 2),
+            ShopItem("ammo_22", ".22 Rounds", "Rimfire rounds, sold loose by the handful.", 10, 200, 400),
+            ShopItem("ammo_9mm", "9mm Rounds", "The calibre everything else is chambered for.", 16, 200, 400),
+            ShopItem("ammo_38", ".38 Rounds", "Revolver rounds, harder to come by.", 20, 150, 300),
+        ),
+    },
+}
+
+
+# Every place a player can buy something, keyed by venue rather than by
+# district, because Hackney now holds two of them.
+VENUES = {
+    **{
+        shop["key"]: {**shop, "district": district, "kind": "general"}
+        for district, shop in DISTRICT_SHOPS.items()
+    },
+    **{key: {**shop, "kind": "guns"} for key, shop in SPECIALIST_SHOPS.items()},
+}
+
+GENERAL_STORE_KEYS = {
+    district: shop["key"] for district, shop in DISTRICT_SHOPS.items()
 }
 
 
@@ -153,6 +190,13 @@ def _require_shop(district):
     if shop is None:
         raise ShopError("There is no shop in this district.")
     return shop
+
+
+def _require_venue(venue_key):
+    venue = VENUES.get(venue_key)
+    if venue is None:
+        raise ShopError("There is no such place in London.")
+    return venue
 
 
 def _ensure_stock(conn, shop, now=None, rng=None):
@@ -190,7 +234,12 @@ def _ensure_stock(conn, shop, now=None, rng=None):
 
 
 def get_district_shop(district):
-    shop = _require_shop(district)
+    _require_shop(district)
+    return get_venue(GENERAL_STORE_KEYS[district])
+
+
+def get_venue(venue_key):
+    shop = _require_venue(venue_key)
     conn = get_connection()
     try:
         conn.execute("BEGIN IMMEDIATE")
@@ -206,7 +255,8 @@ def get_district_shop(district):
     return {
         "key": shop["key"],
         "name": shop["name"],
-        "district": district,
+        "district": shop["district"],
+        "kind": shop.get("kind", "general"),
         "strapline": shop["strapline"],
         "restock_at": _format_utc(restock_at),
         "items": tuple({
@@ -222,18 +272,29 @@ def get_district_shop(district):
 
 
 def purchase(user_id, district, item_key, quantity):
+    """Buy from a district's general store."""
+    _require_shop(district)
+    return purchase_at(
+        user_id, GENERAL_STORE_KEYS[district], item_key, quantity
+    )
+
+
+def purchase_at(user_id, venue_key, item_key, quantity):
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity < 1:
         raise ShopError("Choose a valid quantity.")
-    if quantity > 20:
-        raise ShopError("You can buy a maximum of 20 at once.")
+    if quantity > MAXIMUM_PURCHASE_QUANTITY:
+        raise ShopError(
+            f"You can buy a maximum of {MAXIMUM_PURCHASE_QUANTITY} at once."
+        )
 
-    shop = _require_shop(district)
+    shop = _require_venue(venue_key)
+    district = shop["district"]
     offer = next(
         (item for item in shop["items"] if item.item_key == item_key),
         None,
     )
     if offer is None:
-        raise ShopError("That item is not sold in this district.")
+        raise ShopError("That item is not sold here.")
     definition = ITEMS_BY_KEY[item_key]
     total = offer.price * quantity
     conn = get_connection()

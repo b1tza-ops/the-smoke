@@ -4,19 +4,14 @@
      data-nerve-full="{{ 1 if player.nerve >= player.max_nerve else 0 }}">
     <nav class="game-nav" aria-label="Game sections">
         <a href="{{ url_for('home') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#home"></use></svg><strong>Home</strong></a>
+        <a href="{{ url_for('city') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#city"></use></svg><strong>City</strong></a>
         <a href="{{ url_for('character') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#character"></use></svg><strong>Character</strong></a>
         <a href="{{ url_for('gym') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#gym"></use></svg><strong>Gym</strong></a>
         <a href="{{ url_for('crimes') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#crimes"></use></svg><strong>Crimes</strong></a>
+        <a href="{{ url_for('fight') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#pvp"></use></svg><strong>Fights</strong></a>
         <a href="{{ url_for('pvp') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#pvp"></use></svg><strong>PvP</strong></a>
         <a href="{{ url_for('travel') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#travel"></use></svg><strong>Travel</strong></a>
-        <a href="{{ url_for('hospital') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#hospital"></use></svg><strong>Hospital</strong></a>
-        <a href="{{ url_for('jail') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#jail"></use></svg><strong>Jail</strong></a>
         <a href="{{ url_for('inventory') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#inventory"></use></svg><strong>Items</strong></a>
-        <a href="{{ url_for('bank') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#bank"></use></svg><strong>Bank</strong></a>
-        <a href="{{ url_for('jobs') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#job"></use></svg><strong>Job</strong></a>
-        <a href="{{ url_for('district_shop') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#shop"></use></svg><strong>Shop</strong></a>
-        <a href="{{ url_for('black_market') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#shop"></use></svg><strong>Market</strong></a>
-        <a href="{{ url_for('item_market') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#shop"></use></svg><strong>Listings</strong></a>
         <a class="game-nav__mission" href="{{ url_for('prologue') }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#operations"></use></svg><strong>Operations</strong></a>
     </nav>
 

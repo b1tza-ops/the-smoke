@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from database.core.connection import get_connection
-from game.inventory.items import get_item
+from game.inventory.items import AMMO_KEYS, get_item
 
 
 EQUIPMENT_SLOTS = (
@@ -37,6 +37,16 @@ class EquipmentSummary:
     items: dict
     strength_bonus: int
     defence_bonus: int
+    # Equipped firearms with no rounds of their calibre in the player's
+    # inventory. They stay in their slot and keep showing on the character
+    # sheet, but they contribute nothing above.
+    unloaded: tuple = ()
+    # The ammunition each loaded firearm will spend on the next fight.
+    ammo_in_use: tuple = ()
+
+    @property
+    def has_unloaded_weapon(self):
+        return bool(self.unloaded)
 
 
 def _resolved_slot(stored_slot, item):
@@ -73,16 +83,53 @@ def get_equipment(player_id):
     return equipped
 
 
+def loaded_rounds(player_id):
+    """How many rounds of each calibre the player is carrying."""
+    connection = get_connection()
+    try:
+        rows = connection.execute(
+            """
+            SELECT item_key, quantity
+            FROM player_inventory
+            WHERE player_id = ? AND quantity > 0
+            """,
+            (player_id,),
+        ).fetchall()
+    finally:
+        connection.close()
+    return {
+        item_key: quantity
+        for item_key, quantity in rows
+        if item_key in AMMO_KEYS
+    }
+
+
 def get_equipment_summary(player_id):
     items = get_equipment(player_id)
+    rounds = loaded_rounds(player_id)
+
+    unloaded = tuple(
+        item for item in items.values()
+        if item.ammo_key is not None and rounds.get(item.ammo_key, 0) < 1
+    )
+    dead_weight = {item.key for item in unloaded}
+    ammo_in_use = tuple(sorted({
+        item.ammo_key for item in items.values()
+        if item.ammo_key is not None and item.key not in dead_weight
+    }))
+
     return EquipmentSummary(
         items=items,
         strength_bonus=sum(
             item.strength_bonus for item in items.values()
+            if item.key not in dead_weight
         ),
         defence_bonus=sum(
             item.defence_bonus for item in items.values()
+            if item.key not in dead_weight
         ),
+        unloaded=unloaded,
+        ammo_in_use=ammo_in_use,
     )
 
 
