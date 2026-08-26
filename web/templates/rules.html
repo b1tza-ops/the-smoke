@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Rules · The Smoke</title>
+    <meta name="description" content="The rules of The Smoke, and the penalty for breaking each one.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='handbook-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('forum') }}">Guides</a>
+    </header>
+    {% if player %}{% include "_player_hud.html" %}{% endif %}
+    <main class="dashboard-main handbook-page handbook-page--article">
+        <section class="handbook-hero">
+            <div>
+                <p class="eyebrow">The Smoke</p>
+                <h1>The Rules</h1>
+                <p>Seven of them. Each one says what happens if you break it.</p>
+            </div>
+        </section>
+
+        <div class="handbook-article">
+            {% with blocks = intro %}{% include "_handbook_blocks.html" %}{% endwith %}
+        </div>
+
+        {% for rule in rules %}
+        <article class="rule" id="{{ rule.key }}">
+            <div class="rule__head">
+                <h2>{{ rule.title }}</h2>
+                <span class="rule__penalty rule__penalty--{{ rule.penalty|lower|replace(' ', '-')|replace(',', '') }}">{{ rule.penalty }}</span>
+            </div>
+            <div class="handbook-article">
+                {% with blocks = rule.blocks %}{% include "_handbook_blocks.html" %}{% endwith %}
+            </div>
+        </article>
+        {% endfor %}
+
+        <div class="handbook-article">
+            {% with blocks = closing %}{% include "_handbook_blocks.html" %}{% endwith %}
+        </div>
+    </main>
+</div>
+</body>
+</html>

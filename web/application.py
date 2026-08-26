@@ -8,6 +8,15 @@ from functools import wraps
 from logging.handlers import RotatingFileHandler
 from types import SimpleNamespace
 from game.world.city import directory as city_directory
+from game.handbook import (
+    CLOSING as HANDBOOK_CLOSING,
+    GUIDES as HANDBOOK_GUIDES,
+    INTRO as HANDBOOK_INTRO,
+    RULES as HANDBOOK_RULES,
+    get_guide,
+    inline as handbook_inline,
+    sections as handbook_sections,
+)
 from game.casino import (
     MINIMUM_BET as CASINO_MINIMUM_BET,
     MINIMUM_LEVEL as CASINO_MINIMUM_LEVEL,
@@ -1566,6 +1575,64 @@ def casino_blackjack():
         hand_value=blackjack_hand_value,
         outcome_lines=BLACKJACK_OUTCOME_LINES,
         **_casino_shell(player),
+    )
+
+
+def _optional_player():
+    """The signed-in player, or None.
+
+    The handbook is readable logged out: someone deciding whether to
+    play should be able to read the rules and the guides first.
+    """
+    if "user_id" not in session:
+        return None
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return None
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    return player
+
+
+@app.route("/forum")
+def forum():
+    return render_template(
+        "forum.html",
+        player=_optional_player(),
+        sections=handbook_sections(),
+    )
+
+
+@app.route("/forum/<slug>")
+def forum_guide(slug):
+    guide = get_guide(slug)
+    if guide is None:
+        return redirect(url_for("forum"))
+
+    return render_template(
+        "forum_guide.html",
+        player=_optional_player(),
+        guide=guide,
+        blocks=guide.blocks,
+        siblings=tuple(
+            other for other in HANDBOOK_GUIDES
+            if other.section == guide.section and other.slug != guide.slug
+        ),
+        inline=handbook_inline,
+    )
+
+
+@app.route("/rules")
+def rules():
+    return render_template(
+        "rules.html",
+        player=_optional_player(),
+        rules=HANDBOOK_RULES,
+        intro=HANDBOOK_INTRO,
+        closing=HANDBOOK_CLOSING,
+        inline=handbook_inline,
     )
 
 

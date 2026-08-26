@@ -43,6 +43,8 @@ UBIQUITOUS = (
     Destination("travel", "Travel Agency", "travel", "Walk, bus or Underground."),
     Destination("hospital", "Hospital", "hospital", "Where losing a fight puts you."),
     Destination("jail", "Jail", "jail", "Where a failed crime puts you."),
+    Destination("forum", "Guides", "operations", "How the game works, in writing."),
+    Destination("rules", "Rules", "wanted", "What gets you banned."),
 )
 
 # Places that belong to one district and stay there. The general store and
