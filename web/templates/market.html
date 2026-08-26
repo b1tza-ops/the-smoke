@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b0d"><title>Item Market · The Smoke</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='item-market-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+<header class="topbar">
+<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+<a class="logout-link" href="{{ url_for('black_market') }}">Black market</a>
+</header>
+{% include "_player_hud.html" %}
+<main class="dashboard-main game-page">
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+{% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+
+<section class="shop-hero">
+<div><p class="eyebrow">London-wide</p><h1>Item Market</h1><p>Anyone can list, anyone can buy, wherever they are. The house takes {{ commission_percent }}% of every sale.</p></div>
+<div class="fence-rates"><small>Commission</small><strong>{{ commission_percent }}%</strong><small>paid by the seller</small></div>
+</section>
+
+{% if not accessible %}<div class="game-notice game-notice--error">You cannot trade while restricted.</div>{% endif %}
+
+<section class="operation-chapter">
+<header class="operation-chapter__header"><div><h2>Listings</h2><p class="operation-copy">Cheapest first.</p></div><span class="operation-stamp">{{ listings|length }} open</span></header>
+{% if listings %}
+<div class="shop-counter">
+{% for listing in listings %}
+<article class="shop-line{{ ' shop-line--premium' if listing.is_own }}">
+<div class="shop-line__item">
+<img src="{{ url_for('static', filename=listing.item.image_filename) }}" alt="" width="56" height="56" loading="lazy">
+<div><strong>{{ listing.quantity }} × {{ listing.item.name }}</strong><small>{{ listing.item.category|title }} · listed by {{ listing.seller_name }}{% if listing.is_own %} · yours{% endif %}</small></div>
+</div>
+<div class="shop-line__price"><strong>£{{ "{:,}".format(listing.total) }}</strong><small>£{{ "{:,}".format(listing.price_each) }} each</small></div>
+<form method="post" class="shop-buy">
+<input type="hidden" name="listing_id" value="{{ listing.id }}">
+{% if listing.is_own %}
+<input type="hidden" name="action" value="cancel">
+<button type="submit" {% if not accessible %}disabled{% endif %}>Delist</button>
+{% else %}
+<input type="hidden" name="action" value="buy">
+<button type="submit" {% if not accessible or player.money < listing.total %}disabled{% endif %}>{{ "Buy" if player.money >= listing.total else "Too dear" }}</button>
+{% endif %}
+</form>
+</article>
+{% endfor %}
+</div>
+{% else %}
+<div class="game-notice">Nothing for sale. Be the first.</div>
+{% endif %}
+</section>
+
+<section class="operation-chapter">
+<header class="operation-chapter__header"><div><h2>Sell something</h2><p class="operation-copy">Name your price. It is held for you until it sells or you take it back.</p></div></header>
+{% if sellable %}
+<div class="shop-counter">
+{% for offer in sellable %}
+<article class="shop-line">
+<div class="shop-line__item">
+<img src="{{ url_for('static', filename=offer.item.image_filename) }}" alt="" width="56" height="56" loading="lazy">
+<div><strong>{{ offer.item.name }}</strong><small>You have {{ offer.quantity }} · the fence pays £{{ "{:,}".format(offer.floor) }}</small></div>
+</div>
+<form method="post" class="shop-buy market-list">
+<input type="hidden" name="action" value="list">
+<input type="hidden" name="item_key" value="{{ offer.item.key }}">
+<label><span class="sr-only">Quantity</span><input type="number" name="quantity" value="1" min="1" max="{{ offer.quantity if offer.quantity <= 20 else 20 }}" {% if not accessible %}disabled{% endif %}></label>
+<label><span class="sr-only">Price each</span><input type="number" name="price_each" value="{{ offer.floor + 1 }}" min="{{ offer.floor }}" step="1" {% if not accessible %}disabled{% endif %}></label>
+<button type="submit" {% if not accessible %}disabled{% endif %}>List</button>
+</form>
+</article>
+{% endfor %}
+</div>
+{% else %}
+<div class="game-notice">You have nothing to sell.</div>
+{% endif %}
+</section>
+</main>
+<footer class="app-footer"><span>The Smoke</span><a class="logout-link" href="{{ url_for('home') }}">Back to dashboard</a></footer>
+</div>
+</body></html>

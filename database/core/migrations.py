@@ -1471,6 +1471,55 @@ def migrate_033_black_market(cursor):
     )
 
 
+def migrate_034_item_market(cursor):
+    """Listings for the global player-to-player item market.
+
+    Items are escrowed onto the listing row rather than left in the
+    seller's inventory: that is what makes it impossible to sell the
+    same machete twice, or to sell one and still be carrying it.
+    """
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS market_listings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            seller_player_id INTEGER NOT NULL,
+            item_key TEXT NOT NULL,
+            quantity INTEGER NOT NULL CHECK (quantity > 0),
+            price_each INTEGER NOT NULL CHECK (price_each > 0),
+            status TEXT NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'sold', 'cancelled')),
+            buyer_player_id INTEGER,
+            commission INTEGER NOT NULL DEFAULT 0
+                CHECK (commission >= 0),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            closed_at TEXT,
+
+            FOREIGN KEY (seller_player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (buyer_player_id)
+                REFERENCES players(id)
+                ON DELETE SET NULL,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_market_listings_open
+        ON market_listings (status, item_key, price_each)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_market_listings_seller
+        ON market_listings (seller_player_id, status)
+        """
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1636,6 +1685,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=33,
         name="black_market",
         apply=migrate_033_black_market,
+    ),
+    Migration(
+        version=34,
+        name="item_market",
+        apply=migrate_034_item_market,
     ),
 )
 
