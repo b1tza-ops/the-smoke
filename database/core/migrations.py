@@ -1541,6 +1541,39 @@ def migrate_035_transport_modes(cursor):
         )
 
 
+def migrate_036_guns_v1(cursor):
+    """Register the first four firearms.
+
+    Shop stock and inventory rows both hold a foreign key into `items`,
+    so a weapon has to exist here before the Hackney Lock-Up can put it
+    on the shelf.
+    """
+    from game.inventory.items import ITEMS_BY_KEY
+
+    item_keys = (
+        "derringer_22",
+        "converted_blank_pistol",
+        "snub_nose_38",
+        "compact_9mm",
+    )
+    cursor.executemany(
+        """
+        INSERT OR IGNORE INTO items (
+            item_key, name, category, description, stackable,
+            max_quantity, effect_key, effect_amount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            (
+                item.key, item.name, item.category, item.description,
+                int(item.stackable), item.max_quantity,
+                item.effect_key, item.effect_amount,
+            )
+            for item in (ITEMS_BY_KEY[key] for key in item_keys)
+        ),
+    )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -1716,6 +1749,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=35,
         name="transport_modes",
         apply=migrate_035_transport_modes,
+    ),
+    Migration(
+        version=36,
+        name="guns_v1",
+        apply=migrate_036_guns_v1,
     ),
 )
 

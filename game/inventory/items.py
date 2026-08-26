@@ -223,6 +223,11 @@ ITEMS = (
     ItemDefinition("tire_iron", "Tyre Iron", "weapon", "Compact steel with a punishing swing.", "items/tyre-iron.webp", False, 1, 760, equipment_slot="primary", strength_bonus=10),
     ItemDefinition("hatchet", "Hatchet", "weapon", "A short, heavy chopping weapon.", "items/hatchet.webp", False, 1, 980, equipment_slot="primary", strength_bonus=12),
     ItemDefinition("survival_knife", "Survival Knife", "weapon", "A stronger secondary blade.", "items/survival-knife.webp", False, 1, 880, equipment_slot="secondary", strength_bonus=8),
+    # Guns v1.0: low-calibre pistols, the first firearms on the ladder.
+    ItemDefinition("derringer_22", "Derringer .22", "weapon", "A palm-sized two-shot pistol with no range to speak of.", "items/derringer-22.webp", False, 1, 2000, equipment_slot="primary", strength_bonus=16),
+    ItemDefinition("converted_blank_pistol", "Converted Blank Pistol", "weapon", "A starter pistol bored out in somebody's shed.", "items/converted-blank-pistol.webp", False, 1, 2800, equipment_slot="primary", strength_bonus=18),
+    ItemDefinition("snub_nose_38", "Snub-Nose .38", "weapon", "A short-barrelled revolver that disappears under a coat.", "items/snub-nose-38.webp", False, 1, 3600, equipment_slot="primary", strength_bonus=20),
+    ItemDefinition("compact_9mm", "Compact 9mm", "weapon", "A clean semi-automatic that has never been fired in anger.", "items/compact-9mm.webp", False, 1, 4800, equipment_slot="primary", strength_bonus=22),
     ItemDefinition("denim_jacket", "Reinforced Denim Jacket", "armour", "Street clothing with sewn-in padding.", "items/denim-jacket.webp", False, 1, 350, equipment_slot="body", defence_bonus=7),
     ItemDefinition("hard_hat", "Construction Hard Hat", "armour", "Basic protection against head impacts.", "items/hard-hat.webp", False, 1, 380, equipment_slot="head", defence_bonus=5),
     ItemDefinition("combat_gloves", "Combat Gloves", "armour", "Padded gloves with reinforced knuckles.", "items/combat-gloves.webp", False, 1, 520, equipment_slot="hands", defence_bonus=5),
