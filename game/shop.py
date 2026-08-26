@@ -111,6 +111,10 @@ DISTRICT_SHOPS = {
         "name": "Hackney Lock-Up",
         "strapline": "Serious kit, sold quietly, cash only.",
         "items": (
+            ShopItem("derringer_22", "Derringer .22", "A palm-sized two-shot pistol.", 2000, 1, 4),
+            ShopItem("converted_blank_pistol", "Converted Blank Pistol", "A starter pistol bored out for live rounds.", 2800, 1, 3),
+            ShopItem("snub_nose_38", "Snub-Nose .38", "A short-barrelled revolver that hides easily.", 3600, 1, 3),
+            ShopItem("compact_9mm", "Compact 9mm", "A clean semi-automatic, never fired.", 4800, 1, 2),
             ShopItem("machete", "Machete", "A formidable heavy blade.", 1550, 1, 4),
             ShopItem("survival_knife", "Survival Knife", "A stronger secondary blade.", 940, 2, 6),
             ShopItem("hatchet", "Hatchet", "Short handle, heavy head.", 1050, 1, 5),

@@ -1,3 +1,5 @@
+import pathlib
+
 from game.inventory.items import ITEMS, ITEMS_BY_KEY
 from game.shop import DISTRICT_SHOPS
 
@@ -39,3 +41,9 @@ def test_every_shop_offer_has_a_catalogue_definition():
     for shop in DISTRICT_SHOPS.values():
         for offer in shop["items"]:
             assert offer.item_key in ITEMS_BY_KEY
+
+
+def test_every_catalogue_item_has_artwork_on_disk():
+    static_root = pathlib.Path(__file__).resolve().parents[2] / "web" / "static"
+    for item in ITEMS:
+        assert (static_root / item.image_filename).is_file(), item.key

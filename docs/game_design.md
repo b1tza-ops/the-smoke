@@ -483,6 +483,24 @@ Every item has a `value`: the lowest price any shop charges for it. That is
 the single source of truth for what an item is worth, and everything that
 pays out for an item is a fraction of it.
 
+### Firearms — Guns v1.0
+
+The first four firearms sit above every melee weapon and are sold only over
+the Hackney Lock-Up counter, which needs level 7 to reach. A gun is
+therefore something a player travels for, not something they start with.
+
+| Weapon | Strength | Price |
+| --- | ---: | ---: |
+| Derringer .22 | +16 | £2,000 |
+| Converted Blank Pistol | +18 | £2,800 |
+| Snub-Nose .38 | +20 | £3,600 |
+| Compact 9mm | +22 | £4,800 |
+
+The machete tops the melee ladder at +15 for £1,450, so the cheapest pistol
+is a small step in power for a large step in price. All four occupy the
+primary weapon slot and none of them drop as crime loot: a free pistol would
+undercut the whole ladder.
+
 ### The black market
 
 Legitimate shops sell but never buy — they do not take stolen goods. Selling
