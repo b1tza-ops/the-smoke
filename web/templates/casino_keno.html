@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Keno · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-3') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='casino-4') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -19,10 +19,15 @@
                 <span>Max £{{ "{:,}".format(maximum_bet) }}</span>
             </div>
 
-            {% include "_casino_notices.html" %}
+            <div data-notices>{% include "_casino_notices.html" %}</div>
 
-            {% if cards %}
-            <div class="keno-results">
+            {#
+              Rounds are rendered server-side so the page works without
+              JavaScript. With it, the script replaces this and reveals
+              the balls one at a time -- the draw is already decided, the
+              reveal is only pacing.
+            #}
+            <div class="keno-results" data-keno-results>
             {% for card in cards %}
                 <div class="keno-round">
                     {% if cards|length > 1 %}<small>Round {{ loop.index }}</small>{% endif %}
@@ -33,9 +38,8 @@
                 </div>
             {% endfor %}
             </div>
-            {% endif %}
 
-            <form method="post" class="keno-form">
+            <form method="post" class="keno-form" data-keno-form>
                 <div class="keno-card" role="group" aria-label="Mark your card">
                 {% for number in range(1, pool + 1) %}
                     <label class="keno-pick">
@@ -142,6 +146,92 @@
         });
     }
     update();
+
+    // ---------------------------------------------------- the draw
+    const results = document.querySelector("[data-keno-results]");
+    const notices = document.querySelector("[data-notices]");
+    const cash = document.querySelector("[data-hud-cash]");
+    const submit = form.querySelector("button[type=submit]");
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const BALL_DELAY = 70;
+
+    const wait = ms => new Promise(resolve => window.setTimeout(resolve, ms));
+
+    const notice = (text, kind) => {
+        if (!notices) return;
+        notices.replaceChildren();
+        if (!text) return;
+        const box = document.createElement("div");
+        box.className = "game-notice game-notice--" + kind;
+        box.setAttribute("role", kind === "error" ? "alert" : "status");
+        box.textContent = text;
+        notices.append(box);
+    };
+
+    const drawRound = async (round, index, total) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "keno-round";
+        if (total > 1) {
+            const label = document.createElement("small");
+            label.textContent = "Round " + (index + 1);
+            wrapper.append(label);
+        }
+        const row = document.createElement("div");
+        row.className = "keno-drawn";
+        wrapper.append(row);
+        const line = document.createElement("em");
+        wrapper.append(line);
+        results.append(wrapper);
+
+        for (const number of round.drawn) {
+            const ball = document.createElement("span");
+            ball.className = "keno-ball is-dropping"
+                + (round.hits.includes(number) ? " is-hit" : "");
+            ball.textContent = number;
+            row.append(ball);
+            if (!still) await wait(BALL_DELAY);
+        }
+
+        line.textContent = round.line
+            + (round.payout ? " — £" + round.payout.toLocaleString() : "");
+        line.className = round.payout ? "is-win" : "is-loss";
+    };
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (submit.disabled) return;
+        submit.disabled = true;
+        results.replaceChildren();
+
+        let data;
+        try {
+            const response = await fetch(
+                form.action || window.location.pathname,
+                {
+                    method: "POST",
+                    headers: {"X-Requested-With": "casino"},
+                    body: new FormData(form),
+                },
+            );
+            data = await response.json();
+        } catch (failure) {
+            window.location.reload();
+            return;
+        }
+
+        if (!data.ok) {
+            submit.disabled = false;
+            notice(data.error, "error");
+            return;
+        }
+
+        if (cash) cash.textContent = "£" + data.money.toLocaleString();
+        for (let index = 0; index < data.rounds.length; index += 1) {
+            await drawRound(data.rounds[index], index, data.rounds.length);
+        }
+        notice(data.message, "success");
+        submit.disabled = false;
+    });
 })();
 </script>
 </body>

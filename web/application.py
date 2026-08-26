@@ -97,6 +97,7 @@ from game.gym import (
 )
 from flask import (
     Flask,
+    jsonify,
     render_template,
     request,
     redirect,
@@ -1378,6 +1379,23 @@ def _read_bet(raw):
         raise CasinoError("Choose a stake.")
 
 
+def _wants_json():
+    """True when the page is playing a round without reloading itself."""
+    return request.headers.get("X-Requested-With") == "casino"
+
+
+def _casino_state(player, payout=0, message=None, error=None):
+    """The bits of a round the page needs to update in place."""
+    return {
+        "ok": error is None,
+        "error": error,
+        "message": message,
+        "payout": payout,
+        "money": player.money,
+        "maximum_bet": casino_maximum_bet(player.level),
+    }
+
+
 def _casino_message(line, staked, payout):
     net = payout - staked
     if net > 0:
@@ -1418,6 +1436,14 @@ def casino_slots():
             player = Player(*get_player_by_user_id(session["user_id"]))
         except CasinoError as casino_error:
             error = str(casino_error)
+
+        if _wants_json():
+            return jsonify({
+                **_casino_state(player, payout, message, error),
+                "reels": list(spin.reels) if spin else [],
+                "line": spin.line if spin else "",
+                "names": SLOTS_SYMBOL_NAMES,
+            })
 
     return render_template(
         "casino_slots.html",
@@ -1463,6 +1489,21 @@ def casino_keno():
             player = Player(*get_player_by_user_id(session["user_id"]))
         except (CasinoError, KenoError) as casino_error:
             error = str(casino_error)
+
+        if _wants_json():
+            return jsonify({
+                **_casino_state(player, payout, message, error),
+                "staked": staked,
+                "rounds": [
+                    {
+                        "drawn": sorted(card.drawn),
+                        "hits": list(card.hits),
+                        "line": card.line,
+                        "payout": card.payout,
+                    }
+                    for card in cards
+                ],
+            })
 
     return render_template(
         "casino_keno.html",
