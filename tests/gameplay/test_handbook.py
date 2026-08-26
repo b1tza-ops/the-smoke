@@ -20,7 +20,7 @@ from game.crime import CRIMES
 from game.gym.definitions import GYMS
 from game.handbook import GUIDES, RULES, get_guide, inline, sections
 from game.handbook.blocks import Bullets, Note, Steps, Table, Text
-from game.handbook.guides import SECTION_ORDER
+from game.handbook.guides import GUIDES_BY_SLUG, SECTION_ORDER
 from game.inventory import AMMO_KEYS, ITEMS_BY_KEY
 from game.player.regeneration import (
     ENERGY_POINTS_PER_TICK,
@@ -239,6 +239,23 @@ class HandbookLinkTests(unittest.TestCase):
                     prose.extend(block.items)
         return prose
 
+    def resolves(self, path):
+        """Whether a link lands somewhere real.
+
+        A guide may link to another guide, and `/forum/<slug>` is one
+        route rather than one per guide, so those are checked against
+        the catalogue instead of the URL map -- which also catches a
+        link to a guide that has been renamed or removed.
+        """
+        if path in self.routes:
+            return True
+
+        prefix = "/forum/"
+        return (
+            path.startswith(prefix)
+            and path[len(prefix):] in GUIDES_BY_SLUG
+        )
+
     def test_every_internal_link_resolves(self):
         pattern = re.compile(r"\[[^\]]+\]\((/[A-Za-z0-9/_\-]*)\)")
         found = 0
@@ -246,8 +263,15 @@ class HandbookLinkTests(unittest.TestCase):
             for path in pattern.findall(str(text)):
                 found += 1
                 with self.subTest(path=path):
-                    self.assertIn(path, self.routes, f"{path} is not a route")
+                    self.assertTrue(
+                        self.resolves(path),
+                        f"{path} goes nowhere",
+                    )
         self.assertGreater(found, 0, "no links found to check")
+
+    def test_a_link_to_a_missing_guide_is_caught(self):
+        self.assertFalse(self.resolves("/forum/no-such-guide"))
+        self.assertTrue(self.resolves("/forum/the-casino"))
 
 
 if __name__ == "__main__":

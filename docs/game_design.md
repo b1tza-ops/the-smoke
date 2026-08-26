@@ -457,6 +457,38 @@ Money should always have competing uses such as training, equipment, vehicles, h
 
 A future net-worth value can combine cash, bank funds, properties, vehicles, businesses and investments.
 
+### Borrowing — Ronnie Dell
+
+A loan shark stands in **Soho** and lends against level rather than
+collateral. Borrowing mints money, so the design only works if the debt
+is genuinely inescapable.
+
+- **From level 3**, £5,000 per level (£50,000 at level 10), minimum
+  £1,000. The ceiling counts existing principal, so it is a ceiling on
+  total exposure rather than on each loan.
+- **2.5% of the principal per day**, accrued lazily from elapsed time
+  the same way energy and nerve are, so nothing needs a scheduler.
+  Charged by the second rather than in daily steps, so paying early
+  costs less.
+- **A payment is due every three days.** A payment only counts if it
+  covers the accrued interest; anything less leaves the balance growing.
+- Repayment clears **interest before principal**, so a player servicing
+  a loan is never quietly compounding.
+- **Borrowing happens in Soho; repayment happens anywhere.** Forcing a
+  journey to stop interest would be a trap rather than a mechanic.
+- **A missed payment is a hospital stay, and the debt stays put** —
+  30 minutes, then 2 hours, 6 hours, 12 hours, the last repeating. The
+  collection is checked on every request, so it cannot be dodged by
+  staying off the page.
+- A settled loan **keeps its missed-payment count**: clearing the book
+  does not buy a clean slate.
+- No further borrowing while interest is outstanding, which stops a
+  player rolling one loan into the next to outrun the accrual.
+
+The sink only closes if loans are repaid. Interest destroys money;
+principal does not. A player who defaults forever has been handed cash
+in exchange for time in hospital, which is why the stay escalates.
+
 ---
 
 ## Items, Shops and Inventory

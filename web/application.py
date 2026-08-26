@@ -8,6 +8,20 @@ from functools import wraps
 from logging.handlers import RotatingFileHandler
 from types import SimpleNamespace
 from game.world.city import directory as city_directory
+from game.economy.loans import (
+    DAILY_INTEREST_RATE as LOAN_DAILY_RATE,
+    MINIMUM_LEVEL as LOAN_MINIMUM_LEVEL,
+    MINIMUM_LOAN as LOAN_MINIMUM,
+    LoanError,
+)
+from database.repositories.loans import (
+    LOAN_DISTRICT,
+    borrow as borrow_from_shark,
+    collect_if_overdue as collect_overdue_loan,
+    get_loan as get_loan_state,
+    recent_transactions as loan_transactions,
+    repay as repay_shark,
+)
 from game.handbook import (
     CLOSING as HANDBOOK_CLOSING,
     GUIDES as HANDBOOK_GUIDES,
@@ -1594,6 +1608,97 @@ def _optional_player():
     update_player_status(player)
     save_player(player)
     return player
+
+
+@app.before_request
+def _collect_overdue_loan():
+    """Ronnie's people catch up with you wherever you are.
+
+    Run per request rather than on the loan page, so a debt cannot be
+    dodged by never visiting him. A failure here must never take a page
+    down with it -- the worst case is that a collection waits for the
+    next request.
+    """
+    if "user_id" not in session or request.endpoint == "static":
+        return
+    try:
+        collect_overdue_loan(session["user_id"])
+    except sqlite3.Error:
+        pass
+
+
+def _read_loan_amount(raw):
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        raise LoanError("Write a figure Ronnie can read.")
+
+
+@app.route("/loanshark", methods=["GET", "POST"])
+def loan_shark():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+
+    message = error = None
+
+    if request.method == "POST":
+        try:
+            amount = _read_loan_amount(
+                request.form.get("amount")
+            )
+            if request.form.get("action") == "borrow":
+                taken, principal = borrow_from_shark(session["user_id"], amount)
+                message = (
+                    f"Ronnie counts out £{taken:,}. You now owe "
+                    f"£{principal:,} on the principal."
+                )
+            else:
+                paid, after = repay_shark(session["user_id"], amount)
+                message = (
+                    f"You hand over £{paid:,}. "
+                    + (
+                        "Ronnie tears the page out of the book."
+                        if after.settled
+                        else f"£{after.balance:,} still on the book."
+                    )
+                )
+            record_player_action("loan_shark", message, {})
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except LoanError as loan_error:
+            error = str(loan_error)
+
+    state = get_loan_state(session["user_id"]) or {}
+    return render_template(
+        "loanshark.html",
+        player=player,
+        message=message,
+        error=error,
+        loan=state.get("loan"),
+        due_at=state.get("due_at"),
+        overdue=state.get("overdue", False),
+        maximum=state.get("maximum", 0),
+        headroom=state.get("headroom", 0),
+        minimum_loan=LOAN_MINIMUM,
+        minimum_level=LOAN_MINIMUM_LEVEL,
+        daily_rate=LOAN_DAILY_RATE,
+        history=loan_transactions(session["user_id"]),
+        accessible=(
+            player.level >= LOAN_MINIMUM_LEVEL
+            and player.current_district == LOAN_DISTRICT
+            and player.travel_destination is None
+            and player.jail_until is None
+            and player.hospital_until is None
+        ),
+    )
 
 
 @app.route("/forum")

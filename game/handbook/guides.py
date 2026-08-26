@@ -453,6 +453,89 @@ GUIDES = (
             ),
         ),
     ),
+    Guide(
+        slug="the-loan-shark",
+        title="The Loan Shark",
+        summary="Ronnie Dell lends fast and collects harder.",
+        section="Around London",
+        icon="bank",
+        blocks=(
+            Text(
+                "**Ronnie Dell** works out of the back of a Soho pub and "
+                "will put money in your hand on a handshake. There is no "
+                "credit check and no waiting. There is also no forgiveness."
+            ),
+            Heading("What he will lend"),
+            Bullets((
+                "From **level 3**. Below that he does not get out of bed.",
+                "**£5,000 for every level you have**, so £50,000 at level "
+                "10 and £100,000 at level 20.",
+                "**£1,000 minimum.** He is not interested in pocket money.",
+                "The ceiling counts what you already owe, so a £20,000 "
+                "debt at level 10 leaves you £30,000 of room.",
+            )),
+            Heading("What it costs"),
+            Text(
+                "**2.5% of the principal per day**, charged by the second "
+                "rather than in daily lumps — so paying early genuinely "
+                "costs less. Your first payment is due **three days** "
+                "after you borrow."
+            ),
+            Table(
+                headers=("Borrowed", "After 1 day", "After 3 days"),
+                rows=(
+                    ("£5,000", "£125", "£375"),
+                    ("£20,000", "£500", "£1,500"),
+                    ("£50,000", "£1,250", "£3,750"),
+                ),
+                caption="Interest owed on top of the principal.",
+            ),
+            Heading("Paying him"),
+            Bullets((
+                "Payments clear the **interest first**, then the "
+                "principal.",
+                "A payment only counts as made if it **covers the "
+                "interest**. Pay less and the clock keeps running.",
+                "Covering the interest buys you another three days.",
+                "You can pay **from anywhere in London** — you only have "
+                "to be in Soho to borrow.",
+                "Type more than you owe and he takes only what is owed.",
+            )),
+            Heading("Missing a payment"),
+            Text(
+                "Ronnie's people come and find you. You go to hospital, "
+                "and **the debt stays exactly where it was** — you have "
+                "lost the time and gained nothing. The stay gets longer "
+                "every time it happens."
+            ),
+            Table(
+                headers=("Missed", "Hospital"),
+                rows=(
+                    ("First", "30 minutes"),
+                    ("Second", "2 hours"),
+                    ("Third", "6 hours"),
+                    ("Fourth or more", "12 hours"),
+                ),
+            ),
+            Note(
+                "Staying off his page does not help. The collection "
+                "happens wherever you are, on whatever you are doing.",
+                tone="warning",
+            ),
+            Note(
+                "He remembers. Clearing a debt does not reset the missed "
+                "payments, so a defaulter who borrows again picks up where "
+                "they left off.",
+                tone="info",
+            ),
+            Note(
+                "Borrowing to gamble is how players lose accounts. The "
+                "[casino](/forum/the-casino) keeps an edge on every game; "
+                "Ronnie keeps one on you.",
+                tone="warning",
+            ),
+        ),
+    ),
 )
 
 GUIDES_BY_SLUG = {guide.slug: guide for guide in GUIDES}

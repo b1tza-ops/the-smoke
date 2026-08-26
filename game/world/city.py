@@ -71,6 +71,13 @@ FIXED = (
         "Slots, keno and blackjack. The house wins slowly.",
         district="soho",
     ),
+    Destination(
+        "loan_shark",
+        "Ronnie Dell",
+        "bank",
+        "Lends on a handshake. Collects in person.",
+        district="soho",
+    ),
 )
 
 
