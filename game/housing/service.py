@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from database.core.connection import get_connection
 
 FACILITIES = {
     "interior": ("Superior interior", 1500, "+2 comfort"),
@@ -158,29 +157,13 @@ def purchase_residence(player, residence_key):
         cash_balance=player.money,
     )
 
-def player_facilities(player_id):
-    connection = get_connection()
-    try:
-        return {row[0] for row in connection.execute("SELECT facility_key FROM player_housing_facilities WHERE player_id = ?", (player_id,))}
-    finally:
-        connection.close()
-
-def purchase_facility(player, facility_key):
+def facility_for(facility_key):
+    """The definition behind a facility key, or a refusal."""
     facility = FACILITIES.get(facility_key)
+
     if facility is None:
         raise HousingError("Unknown facility.")
-    owned = player_facilities(player.id)
-    if facility_key in owned:
-        raise HousingError("Facility already installed.")
-    if player.money < facility[1]:
-        raise InsufficientCashError("Not enough carried cash.")
-    connection = get_connection()
-    try:
-        connection.execute("INSERT INTO player_housing_facilities (player_id, facility_key) VALUES (?, ?)", (player.id, facility_key))
-        connection.commit()
-    finally:
-        connection.close()
-    player.money -= facility[1]
+
     return facility
 
 

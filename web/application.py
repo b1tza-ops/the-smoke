@@ -262,7 +262,15 @@ from utils.security import (
     verify_password,
 )
 from game.housing import (
-    FACILITIES, RESIDENCES, HousingError, get_residence, player_facilities, purchase_facility, purchase_residence,
+    FACILITIES,
+    RESIDENCES,
+    HousingError,
+    get_residence,
+)
+from database.repositories.housing import (
+    facilities_for,
+    install_facility,
+    move_house,
 )
 from game.economy.bank import (
     BankError,
@@ -2585,15 +2593,32 @@ def housing():
     player = Player(*player_data)
     notice = None
     error = None
+
     if request.method == "POST":
         try:
-            outcome = purchase_residence(player, request.form.get("residence_key", ""))
-            save_player(player)
-            notice = f"Moved in. £{outcome.amount_paid:,} paid."
+            # The repository moves the money and the player together, so
+            # the reload below -- not save_player -- is what this page
+            # renders from. Writing the snapshot back would undo it.
+            residence, _remaining = move_house(
+                session["user_id"],
+                request.form.get("residence_key", ""),
+            )
+            notice = (
+                f"Moved in. £{residence.purchase_price:,} paid."
+            )
+            player = Player(
+                *get_player_by_user_id(session["user_id"])
+            )
         except HousingError as housing_error:
             error = str(housing_error)
-    return render_template("housing.html", player=player, residences=RESIDENCES,
-                           notice=notice, error=error)
+
+    return render_template(
+        "housing.html",
+        player=player,
+        residences=RESIDENCES,
+        notice=notice,
+        error=error,
+    )
 
 
 @app.route("/housing/manage", methods=["GET", "POST"])
@@ -2605,14 +2630,31 @@ def manage_housing():
         return redirect("/login")
     player = Player(*player_data)
     notice = error = None
+
     if request.method == "POST":
         try:
-            facility = purchase_facility(player, request.form.get("facility_key", ""))
-            save_player(player)
-            notice = f"Installed {facility[0]} for £{facility[1]:,}."
+            facility, _remaining = install_facility(
+                session["user_id"],
+                request.form.get("facility_key", ""),
+            )
+            notice = (
+                f"Installed {facility[0]} for £{facility[1]:,}."
+            )
+            player = Player(
+                *get_player_by_user_id(session["user_id"])
+            )
         except HousingError as housing_error:
             error = str(housing_error)
-    return render_template("housing_manage.html", player=player, residence=get_residence(player.residence_key), facilities=FACILITIES, owned_facilities=player_facilities(player.id), notice=notice, error=error)
+
+    return render_template(
+        "housing_manage.html",
+        player=player,
+        residence=get_residence(player.residence_key),
+        facilities=FACILITIES,
+        owned_facilities=facilities_for(session["user_id"]),
+        notice=notice,
+        error=error,
+    )
 
 
 @app.route("/character")

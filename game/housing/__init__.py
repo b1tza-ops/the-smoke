@@ -14,8 +14,7 @@ from game.housing.service import (
     get_residence,
     housing_menu,
     purchase_residence,
-    player_facilities,
-    purchase_facility,
+    facility_for,
 )
 
 __all__ = [
@@ -32,6 +31,5 @@ __all__ = [
     "get_residence",
     "housing_menu",
     "purchase_residence",
-    "player_facilities",
-    "purchase_facility",
+    "facility_for",
 ]

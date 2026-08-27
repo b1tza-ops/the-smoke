@@ -1,4 +1,3 @@
- 1 file changed, 2 insertions(+), 1 deletion(-)
 from contextlib import closing
 import sqlite3
 import tempfile
