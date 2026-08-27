@@ -261,7 +261,9 @@ from utils.security import (
     hash_password,
     verify_password,
 )
-from game.housing import get_residence
+from game.housing import (
+    FACILITIES, RESIDENCES, HousingError, get_residence, player_facilities, purchase_facility, purchase_residence,
+)
 from game.economy.bank import (
     BankError,
     deposit_cash,
@@ -2571,6 +2573,46 @@ def jail():
         error=error,
         interaction_result=interaction_result,
     )
+
+
+@app.route("/housing", methods=["GET", "POST"])
+def housing():
+    if "user_id" not in session:
+        return redirect("/login")
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+    player = Player(*player_data)
+    notice = None
+    error = None
+    if request.method == "POST":
+        try:
+            outcome = purchase_residence(player, request.form.get("residence_key", ""))
+            save_player(player)
+            notice = f"Moved in. £{outcome.amount_paid:,} paid."
+        except HousingError as housing_error:
+            error = str(housing_error)
+    return render_template("housing.html", player=player, residences=RESIDENCES,
+                           notice=notice, error=error)
+
+
+@app.route("/housing/manage", methods=["GET", "POST"])
+def manage_housing():
+    if "user_id" not in session:
+        return redirect("/login")
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+    player = Player(*player_data)
+    notice = error = None
+    if request.method == "POST":
+        try:
+            facility = purchase_facility(player, request.form.get("facility_key", ""))
+            save_player(player)
+            notice = f"Installed {facility[0]} for £{facility[1]:,}."
+        except HousingError as housing_error:
+            error = str(housing_error)
+    return render_template("housing_manage.html", player=player, residence=get_residence(player.residence_key), facilities=FACILITIES, owned_facilities=player_facilities(player.id), notice=notice, error=error)
 
 
 @app.route("/character")

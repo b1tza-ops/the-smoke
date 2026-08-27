@@ -1,4 +1,13 @@
 from dataclasses import dataclass
+from database.core.connection import get_connection
+
+FACILITIES = {
+    "interior": ("Superior interior", 1500, "+2 comfort"),
+    "hot_tub": ("Hot tub", 3000, "+5% energy recovery"),
+    "sauna": ("Sauna", 2500, "+5% nerve recovery"),
+    "pool": ("Swimming pool", 8000, "+2% gym gains"),
+    "open_bar": ("Open bar", 5000, "+3 comfort"),
+}
 
 
 class HousingError(Exception):
@@ -85,6 +94,11 @@ RESIDENCES = (
         safe_cash_capacity=2000,
         garage_capacity=1,
     ),
+    ResidenceDefinition("van", "Converted Van", "A discreet van with a bed, lockbox and a quick exit.", 1800, 3, 16, 8, 12, 1500, 1),
+    ResidenceDefinition("council_house", "Council House", "A solid brick house with a small garden and room to grow.", 4500, 5, 32, 15, 15, 5000, 1),
+    ResidenceDefinition("apartment", "City Apartment", "A secure apartment above the noise of the street.", 12000, 6, 45, 20, 20, 12000, 1),
+    ResidenceDefinition("modern_house", "Modern House", "A contemporary London home with proper privacy and space.", 30000, 8, 65, 30, 25, 30000, 2),
+    ResidenceDefinition("penthouse", "Penthouse", "A skyline penthouse: secure, spacious and unmistakably successful.", 85000, 10, 100, 40, 35, 100000, 3),
 )
 
 
@@ -143,6 +157,31 @@ def purchase_residence(player, residence_key):
         amount_paid=residence.purchase_price,
         cash_balance=player.money,
     )
+
+def player_facilities(player_id):
+    connection = get_connection()
+    try:
+        return {row[0] for row in connection.execute("SELECT facility_key FROM player_housing_facilities WHERE player_id = ?", (player_id,))}
+    finally:
+        connection.close()
+
+def purchase_facility(player, facility_key):
+    facility = FACILITIES.get(facility_key)
+    if facility is None:
+        raise HousingError("Unknown facility.")
+    owned = player_facilities(player.id)
+    if facility_key in owned:
+        raise HousingError("Facility already installed.")
+    if player.money < facility[1]:
+        raise InsufficientCashError("Not enough carried cash.")
+    connection = get_connection()
+    try:
+        connection.execute("INSERT INTO player_housing_facilities (player_id, facility_key) VALUES (?, ?)", (player.id, facility_key))
+        connection.commit()
+    finally:
+        connection.close()
+    player.money -= facility[1]
+    return facility
 
 
 def housing_menu(player):

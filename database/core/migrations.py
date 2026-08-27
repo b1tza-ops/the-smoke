@@ -2008,6 +2008,7 @@ MIGRATIONS: tuple[Migration, ...] = (
         name="operations_controls",
         apply=migrate_042_operations_controls,
     ),
+    Migration(version=43, name="housing_facilities", apply=lambda cursor: cursor.execute("CREATE TABLE IF NOT EXISTS player_housing_facilities (player_id INTEGER NOT NULL, facility_key TEXT NOT NULL, PRIMARY KEY (player_id, facility_key), FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE)")),
 )
 
 def ensure_migration_table(cursor):
