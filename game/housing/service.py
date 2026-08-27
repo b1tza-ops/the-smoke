@@ -79,6 +79,20 @@ RESIDENCES = (
         garage_capacity=0,
     ),
     ResidenceDefinition(
+        key="van",
+        name="Converted Van",
+        description=(
+            "A discreet van with a bed, lockbox and a quick exit."
+        ),
+        purchase_price=600,
+        comfort=3,
+        storage_capacity=14,
+        energy_recovery_bonus_percent=7,
+        nerve_recovery_bonus_percent=8,
+        safe_cash_capacity=1000,
+        garage_capacity=1,
+    ),
+    ResidenceDefinition(
         key="council_flat",
         name="Council Flat",
         description=(
@@ -93,11 +107,63 @@ RESIDENCES = (
         safe_cash_capacity=2000,
         garage_capacity=1,
     ),
-    ResidenceDefinition("van", "Converted Van", "A discreet van with a bed, lockbox and a quick exit.", 1800, 3, 16, 8, 12, 1500, 1),
-    ResidenceDefinition("council_house", "Council House", "A solid brick house with a small garden and room to grow.", 4500, 5, 32, 15, 15, 5000, 1),
-    ResidenceDefinition("apartment", "City Apartment", "A secure apartment above the noise of the street.", 12000, 6, 45, 20, 20, 12000, 1),
-    ResidenceDefinition("modern_house", "Modern House", "A contemporary London home with proper privacy and space.", 30000, 8, 65, 30, 25, 30000, 2),
-    ResidenceDefinition("penthouse", "Penthouse", "A skyline penthouse: secure, spacious and unmistakably successful.", 85000, 10, 100, 40, 35, 100000, 3),
+    ResidenceDefinition(
+        key="council_house",
+        name="Council House",
+        description=(
+            "A solid brick house with a small garden and room to grow."
+        ),
+        purchase_price=4500,
+        comfort=5,
+        storage_capacity=32,
+        energy_recovery_bonus_percent=15,
+        nerve_recovery_bonus_percent=15,
+        safe_cash_capacity=5000,
+        garage_capacity=1,
+    ),
+    ResidenceDefinition(
+        key="apartment",
+        name="City Apartment",
+        description=(
+            "A secure apartment above the noise of the street."
+        ),
+        purchase_price=12000,
+        comfort=6,
+        storage_capacity=45,
+        energy_recovery_bonus_percent=20,
+        nerve_recovery_bonus_percent=20,
+        safe_cash_capacity=12000,
+        garage_capacity=1,
+    ),
+    ResidenceDefinition(
+        key="modern_house",
+        name="Modern House",
+        description=(
+            "A contemporary London home with proper privacy and space."
+        ),
+        purchase_price=30000,
+        comfort=8,
+        storage_capacity=65,
+        energy_recovery_bonus_percent=30,
+        nerve_recovery_bonus_percent=25,
+        safe_cash_capacity=30000,
+        garage_capacity=2,
+    ),
+    ResidenceDefinition(
+        key="penthouse",
+        name="Penthouse",
+        description=(
+            "A skyline penthouse: secure, spacious and unmistakably "
+            "successful."
+        ),
+        purchase_price=85000,
+        comfort=10,
+        storage_capacity=100,
+        energy_recovery_bonus_percent=40,
+        nerve_recovery_bonus_percent=35,
+        safe_cash_capacity=100000,
+        garage_capacity=3,
+    ),
 )
 
 
