@@ -69,7 +69,7 @@ GUIDES = (
                 "and hospital both cost time, not money, but being broke "
                 "means you cannot buy your way out of a bad run.",
                 "Do not attempt the **Hackney canal handover** because it "
-                "pays £700–1,500. It costs 12 nerve — a whole hour of it "
+                "pays £1,475–3,160. It costs 12 nerve — a whole hour of it "
                 "— succeeds 28% of the time, and needs level 7 to reach.",
                 "Do not buy a gun before level 7. They are only sold in "
                 "Hackney, and Hackney needs level 7 to reach.",
@@ -141,15 +141,15 @@ GUIDES = (
                 headers=("Crime", "District", "Nerve", "Pays", "Success", "Jail if caught"),
                 rows=(
                     ("Shoplift", "Camden", "2", "£20–60", "80%", "10%, 10 min"),
-                    ("Market stall", "Camden", "4", "£60–140", "65%", "15%, 20 min"),
-                    ("Phone snatch", "Brixton", "3", "£40–100", "72%", "12%, 15 min"),
-                    ("Warehouse", "Brixton", "7", "£180–480", "42%", "25%, 35 min"),
-                    ("Pickpocket", "Soho", "4", "£50–150", "65%", "15%, 20 min"),
-                    ("Nightclub office", "Soho", "8", "£250–650", "38%", "30%, 40 min"),
-                    ("Gallery lift", "Shoreditch", "6", "£180–420", "55%", "22%, 30 min"),
-                    ("Server room", "Shoreditch", "10", "£400–900", "34%", "35%, 50 min"),
-                    ("Canal lock-up", "Hackney", "9", "£350–750", "45%", "28%, 45 min"),
-                    ("Canal handover", "Hackney", "12", "£700–1,500", "28%", "40%, 1 hour"),
+                    ("Market stall", "Camden", "4", "£95–225", "65%", "15%, 20 min"),
+                    ("Phone snatch", "Brixton", "3", "£50–125", "72%", "12%, 15 min"),
+                    ("Warehouse", "Brixton", "7", "£340–905", "42%", "25%, 35 min"),
+                    ("Pickpocket", "Soho", "4", "£80–240", "65%", "15%, 20 min"),
+                    ("Nightclub office", "Soho", "8", "£480–1,250", "38%", "30%, 40 min"),
+                    ("Gallery lift", "Shoreditch", "6", "£220–515", "55%", "22%, 30 min"),
+                    ("Server room", "Shoreditch", "10", "£865–1,945", "34%", "35%, 50 min"),
+                    ("Canal lock-up", "Hackney", "9", "£565–1,210", "45%", "28%, 45 min"),
+                    ("Canal handover", "Hackney", "12", "£1,475–3,160", "28%", "40%, 1 hour"),
                 ),
             ),
             Heading("Read the table by the hour"),
@@ -160,10 +160,12 @@ GUIDES = (
                 "returns **per point of nerve**, not on the headline."
             ),
             Text(
-                "Done that way the ladder is close: the small Camden jobs "
-                "sit around **£220 an hour** and the big Hackney and "
-                "Shoreditch jobs around **£280–350**. The heavy jobs are "
-                "worth doing — you just cannot do them all day, because "
+                "Done that way the ladder climbs steadily: the Camden "
+                "shoplift returns about **£190 an hour**, the middle "
+                "jobs £300–500, and the Hackney canal handover about "
+                "**£650**. Getting to the harder districts is worth "
+                "roughly three and a half times what you started on — "
+                "you just cannot run the heavy jobs all day, because "
                 "of heat."
             ),
             Heading("Heat"),
