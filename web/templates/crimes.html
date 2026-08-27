@@ -100,6 +100,7 @@
                             {% if result.success %}
                                 <p class="eyebrow">Crime successful</p>
                                 <h3>£{{ result.cash_reward }} gained</h3>
+                                {% include "_crime_outcome_story.html" %}
                                 {% if result.cash_bonus %}<p>Includes £{{ result.cash_bonus }} from local reputation.</p>{% endif %}
                                 <p>+{{ result.xp_reward }} XP · +{{ result.reputation_reward }} reputation · {{ result.nerve_spent }} nerve used</p>
                                 {% if result.loot_item_name %}<p class="crime-loot">{% if result.loot_cash %}Nowhere to put the {{ result.loot_item_name|lower }} — offloaded for £{{ "{:,}".format(result.loot_cash) }}.{% else %}Also picked up: <strong>{{ result.loot_item_name }}</strong>.{% endif %}</p>{% endif %}
@@ -108,7 +109,8 @@
                                 <h3>{% if result.reason == "wrong_district" %}Wrong district{% elif result.reason == "not_enough_nerve" %}Not enough nerve{% elif result.reason == "travelling" %}Currently travelling{% else %}Crime unavailable{% endif %}</h3>
                             {% else %}
                                 <p class="eyebrow">Crime failed</p>
-                                <h3>{{ result.damage }} damage taken</h3>
+                                <h3>{% if result.consequence == "jail" %}Arrested — you are in jail{% elif result.consequence == "hospital" %}You were hurt — taken to hospital{% else %}{{ result.damage }} damage taken{% endif %}</h3>
+                                {% include "_crime_outcome_story.html" %}
                                 <p>{{ result.nerve_spent }} nerve used{% if result.consequence %} · {{ result.consequence|title }}{% endif %}</p>
                             {% endif %}
                         </section>
