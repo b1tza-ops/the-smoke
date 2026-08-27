@@ -162,6 +162,32 @@ class CombatTests(unittest.TestCase):
         for changes, reason in cases:
             assert reason in get_combat_block(player(**changes), opponent)
 
+    def test_the_page_can_ask_about_a_player_with_no_opponent(self):
+        """The fight page renders by asking "can this player fight?"
+
+        `get_combat_block` took `opponent=None` and every guard handled
+        it except the energy one, which read `opponent.energy_cost`
+        anyway. So the page 500'd for any healthy, free player and
+        worked only for players in hospital, in jail, travelling or on a
+        shift -- it was up for exactly the people who could not use it.
+        """
+        assert get_combat_block(player()) is None
+
+    def test_with_no_opponent_it_prices_the_cheapest_fight_available(self):
+        from game.combat.npc import cheapest_fight_cost
+
+        cheapest = cheapest_fight_cost("camden")
+
+        assert get_combat_block(player(energy=cheapest)) is None
+        assert "energy" in get_combat_block(player(energy=cheapest - 1))
+
+    def test_a_district_with_nobody_to_fight_blocks_nothing(self):
+        # No opponents is not a reason to tell a player they are unable
+        # to fight; there is simply nobody here.
+        broke = player(current_district="brixton", energy=0)
+
+        assert get_combat_block(broke) is None
+
     def test_blocked_fight_does_not_spend_energy(self):
         fighter = player(energy=0)
         try:
