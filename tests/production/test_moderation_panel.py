@@ -142,6 +142,21 @@ class ModerationPanelTests(unittest.TestCase):
             self.assertIsNone(session["admin_user_id"])
             self.assertEqual(session["admin_role"], "admin")
 
+    def test_operations_dashboard_filters_players_and_shows_metrics(self):
+        self.sign_in_operator()
+
+        response = self.client.get("/admin?q=Civilian&status=all")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Civilian", response.data)
+        self.assertIn(b"Online now", response.data)
+        self.assertIn(b"Verified", response.data)
+        self.assertIn(b"Restricted", response.data)
+
+        response = self.client.get("/admin?q=not-a-player")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"No accounts match this filter", response.data)
+
     def test_moderator_suspension_records_them_as_the_actor(self):
         self.sign_in_staff("steward", "mod-pass")
 

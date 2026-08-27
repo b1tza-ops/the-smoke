@@ -3,12 +3,38 @@ import sqlite3
 from database.core.connection import get_connection
 
 
-def get_admin_player_overview():
+def get_admin_player_overview(search="", status="all"):
+    search = str(search or "").strip()
+    status = status if status in {
+        "all", "online", "unverified", "restricted",
+    } else "all"
+    clauses = []
+    parameters = []
+
+    if search:
+        term = f"%{search}%"
+        clauses.append(
+            "(users.username LIKE ? OR users.email LIKE ? "
+            "OR players.name LIKE ?)"
+        )
+        parameters.extend((term, term, term))
+    if status == "online":
+        clauses.append("players.last_seen >= DATETIME('now', '-5 minutes')")
+    elif status == "unverified":
+        clauses.append("users.email_verified = 0")
+    elif status == "restricted":
+        clauses.append(
+            "(users.account_state != 'active' OR users.suspended_at IS NOT NULL "
+            "OR players.jail_until > CURRENT_TIMESTAMP "
+            "OR players.hospital_until > CURRENT_TIMESTAMP)"
+        )
+
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     connection = get_connection()
 
     try:
         return tuple(connection.execute(
-            """
+            f"""
             SELECT
                 users.id,
                 users.username,
@@ -26,9 +52,43 @@ def get_admin_player_overview():
             FROM users
             LEFT JOIN players
                 ON players.user_id = users.id
+            {where}
             ORDER BY users.id DESC
-            """
+            """,
+            parameters,
         ).fetchall())
+    finally:
+        connection.close()
+
+
+def get_admin_metrics():
+    """Small, cheap snapshots for the Operations dashboard."""
+    connection = get_connection()
+    try:
+        row = connection.execute(
+            """
+            SELECT
+                COUNT(*) AS accounts,
+                COALESCE(SUM(users.email_verified = 1), 0) AS verified,
+                COALESCE(SUM(
+                    players.last_seen >= DATETIME('now', '-5 minutes')
+                ), 0) AS online,
+                COALESCE(SUM(
+                    users.account_state != 'active'
+                    OR users.suspended_at IS NOT NULL
+                    OR players.jail_until > CURRENT_TIMESTAMP
+                    OR players.hospital_until > CURRENT_TIMESTAMP
+                ), 0) AS restricted
+            FROM users
+            LEFT JOIN players ON players.user_id = users.id
+            """
+        ).fetchone()
+        return {
+            "accounts": row[0],
+            "verified": row[1],
+            "online": row[2],
+            "restricted": row[3],
+        }
     finally:
         connection.close()
 

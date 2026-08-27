@@ -149,6 +149,7 @@ from database.repositories.growth import (
 )
 from database.repositories.moderation import get_user_role
 from database.repositories.admin import (
+    get_admin_metrics,
     get_admin_player_details,
     get_admin_player_overview,
     is_user_suspended,
@@ -767,9 +768,17 @@ def admin_login():
 @admin_required
 def admin_dashboard():
     operations = get_operations_settings()
+    player_search = request.args.get("q", "").strip()[:100]
+    player_status = request.args.get("status", "all")
     return render_template(
         "admin_dashboard.html",
-        players=get_admin_player_overview(),
+        players=get_admin_player_overview(
+            search=player_search,
+            status=player_status,
+        ),
+        metrics=get_admin_metrics(),
+        player_search=player_search,
+        player_status=player_status,
         activities=get_recent_activity(limit=100),
         feedback=get_recent_feedback(limit=100),
         admin_role=session.get("admin_role"),
