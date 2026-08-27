@@ -1879,6 +1879,206 @@ def migrate_045_pvp_aftermath(cursor):
         )
 
 
+def migrate_046_weapon_slots(cursor):
+    """Make room in the schema for melee and throwable weapons.
+
+    `player_equipment.slot` carries a CHECK constraint naming every
+    allowed slot, and SQLite cannot alter one in place, so the table is
+    rebuilt the same way migration 017 rebuilt it. Without this, adding
+    the slots to the catalogue would let a player equip a machete right
+    up until the INSERT failed.
+    """
+    cursor.execute(
+        "ALTER TABLE player_equipment RENAME TO player_equipment_slots_old"
+    )
+    cursor.execute(
+        """
+        CREATE TABLE player_equipment (
+            player_id INTEGER NOT NULL,
+            slot TEXT NOT NULL CHECK (
+                slot IN (
+                    'primary',
+                    'secondary',
+                    'melee',
+                    'throwable',
+                    'head',
+                    'body',
+                    'hands',
+                    'legs',
+                    'feet'
+                )
+            ),
+            item_key TEXT NOT NULL,
+            equipped_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (player_id, slot),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (item_key)
+                REFERENCES items(item_key)
+                ON DELETE RESTRICT
+        )
+        """
+    )
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO player_equipment (
+            player_id, slot, item_key, equipped_at
+        )
+        SELECT player_id, slot, item_key, equipped_at
+        FROM player_equipment_slots_old
+        """
+    )
+    cursor.execute("DROP TABLE player_equipment_slots_old")
+
+
+def migrate_047_melee_slot(cursor):
+    """Move melee weapons into the slot that now exists for them.
+
+    Until now a machete and a 9mm competed for the same `primary` slot,
+    because there was nowhere else to put a blade. Players have those
+    weapons equipped right now, and after the catalogue change their
+    stored slot no longer matches the item's own.
+
+    The keys are written out here rather than imported from
+    `game.inventory` on purpose: a migration has to keep meaning the
+    same thing years later, and the catalogue will keep moving.
+
+    A player already holding something in the melee slot keeps it; the
+    displaced weapon goes back to being an ordinary inventory item
+    rather than being thrown away.
+    """
+    melee_keys = (
+        "kitchen_knife", "screwdriver", "claw_hammer", "crowbar",
+        "baseball_bat", "machete", "police_baton", "tire_iron",
+        "hatchet", "survival_knife",
+    )
+    sidearm_keys = ("derringer_22", "converted_blank_pistol")
+    placeholders = ", ".join("?" for _ in melee_keys)
+
+    cursor.execute(
+        f"""
+        UPDATE player_equipment
+        SET slot = 'melee'
+        WHERE item_key IN ({placeholders})
+          AND slot IN ('primary', 'secondary', 'weapon')
+          AND NOT EXISTS (
+              SELECT 1 FROM player_equipment AS held
+              WHERE held.player_id = player_equipment.player_id
+                AND held.slot = 'melee'
+          )
+        """,
+        melee_keys,
+    )
+
+    # Anything that could not move loses its slot but stays owned.
+    cursor.execute(
+        f"""
+        DELETE FROM player_equipment
+        WHERE item_key IN ({placeholders})
+          AND slot IN ('primary', 'secondary', 'weapon')
+        """,
+        melee_keys,
+    )
+
+    cursor.execute(
+        """
+        UPDATE player_equipment
+        SET slot = 'secondary'
+        WHERE item_key IN (?, ?)
+          AND slot IN ('primary', 'weapon')
+          AND NOT EXISTS (
+              SELECT 1 FROM player_equipment AS held
+              WHERE held.player_id = player_equipment.player_id
+                AND held.slot = 'secondary'
+          )
+        """,
+        sidearm_keys,
+    )
+    cursor.execute(
+        """
+        DELETE FROM player_equipment
+        WHERE item_key IN (?, ?) AND slot IN ('primary', 'weapon')
+        """,
+        sidearm_keys,
+    )
+
+
+def migrate_048_player_fights(cursor):
+    """A fight in progress, one turn at a time.
+
+    Player fights used to resolve in a single request, so there was
+    nothing to remember between them. Choosing a weapon each turn means
+    the fight has to outlive the request that started it.
+
+    One row per attacker at most, enforced by the unique index below: a
+    player cannot have two fights open and pick the favourable one, and
+    starting a new attack has to finish or abandon the old one first.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_fights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            attacker_id INTEGER NOT NULL,
+            defender_id INTEGER NOT NULL,
+            approach TEXT NOT NULL,
+            turn INTEGER NOT NULL DEFAULT 0
+                CHECK (turn >= 0),
+            attacker_health INTEGER NOT NULL,
+            defender_health INTEGER NOT NULL,
+            attacker_max_health INTEGER NOT NULL,
+            defender_max_health INTEGER NOT NULL,
+            reward_multiplier REAL NOT NULL DEFAULT 1.0,
+            log_json TEXT NOT NULL DEFAULT '[]',
+            status TEXT NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'finished', 'fled')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+
+            FOREIGN KEY (attacker_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (defender_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS
+            player_fights_one_open_per_attacker
+        ON player_fights (attacker_id)
+        WHERE status = 'open'
+    """)
+
+
+def migrate_049_throwable_items(cursor):
+    """Register the throwables so they can be owned.
+
+    `player_inventory.item_key` is a foreign key into `items`, so a
+    weapon that exists only in the Python catalogue cannot be picked up.
+    Reads the definitions rather than repeating them, the way migration
+    026 does, because these rows only mirror the catalogue.
+    """
+    from game.inventory.items import ITEMS_BY_KEY
+
+    for key in ("brick", "glass_bottle", "flash_banger", "petrol_bomb"):
+        item = ITEMS_BY_KEY[key]
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO items (
+                item_key, name, category, description, stackable,
+                max_quantity, effect_key, effect_amount
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.key, item.name, item.category, item.description,
+                int(item.stackable), item.max_quantity,
+                item.effect_key, item.effect_amount,
+            ),
+        )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2104,6 +2304,26 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=45,
         name="pvp_aftermath",
         apply=migrate_045_pvp_aftermath,
+    ),
+    Migration(
+        version=46,
+        name="weapon_slots",
+        apply=migrate_046_weapon_slots,
+    ),
+    Migration(
+        version=47,
+        name="melee_slot",
+        apply=migrate_047_melee_slot,
+    ),
+    Migration(
+        version=48,
+        name="player_fights",
+        apply=migrate_048_player_fights,
+    ),
+    Migration(
+        version=49,
+        name="throwable_items",
+        apply=migrate_049_throwable_items,
     ),
 )
 

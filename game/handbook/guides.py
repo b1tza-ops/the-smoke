@@ -344,6 +344,39 @@ GUIDES = (
                 "fight puts you in hospital, where you can do nothing until "
                 "you heal."
             ),
+            Heading("Taking a turn"),
+            Text(
+                "A player fight runs a turn at a time. Each turn you "
+                "pick what to swing, they answer, and you pick again — "
+                "up to **25 turns**, after which whoever is in better "
+                "shape has won. A draw goes to the defender, so starting "
+                "something you cannot finish pays nothing."
+            ),
+            Table(
+                headers=("Slot", "What goes in it", "Runs out?"),
+                rows=(
+                    ("Primary", "The bigger firearm", "Costs a round"),
+                    ("Secondary", "A backup sidearm", "Costs a round"),
+                    ("Melee", "Blades, bats, hammers", "Never"),
+                    ("Throwable", "Bricks, bottles, petrol bombs",
+                     "Gone when thrown"),
+                    ("Fists", "Always available", "Never"),
+                ),
+            ),
+            Note(
+                "A throwable hits harder than a small pistol and is gone "
+                "the moment it leaves your hand — that is the trade. "
+                "Bricks and bottles come from any corner shop; the made "
+                "ones are only at the Kingsland Arms.",
+                tone="tip",
+            ),
+            Text(
+                "The whole fight costs **25 energy**, charged once when "
+                "you start it rather than per turn, so a long fight is "
+                "not a more expensive one. You can walk away at any "
+                "point; you keep nothing, and you do not get the energy "
+                "back."
+            ),
             Heading("Once they are down"),
             Text(
                 "Winning does not decide what happens next — you do. "

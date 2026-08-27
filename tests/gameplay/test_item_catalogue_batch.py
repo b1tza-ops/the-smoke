@@ -23,7 +23,9 @@ class ItemCatalogueTests(unittest.TestCase):
         assert BATCH_ONE_KEYS <= set(ITEMS_BY_KEY)
 
     def test_every_new_equipment_slot_is_valid(self):
-        valid_slots = {"primary", "secondary", "head", "body", "hands", "legs", "feet"}
+        from game.inventory.equipment import EQUIPMENT_SLOTS
+
+        valid_slots = set(EQUIPMENT_SLOTS)
         for key in BATCH_ONE_KEYS:
             item = ITEMS_BY_KEY[key]
             if item.category in {"weapon", "armour"}:

@@ -27,11 +27,14 @@ BAZAAR_KEY = "kingsland_arms"
 
 
 class GunCatalogueTests(unittest.TestCase):
-    def test_every_pistol_is_a_primary_weapon(self):
+    def test_every_pistol_is_a_firearm_slot_weapon(self):
+        # The two smaller pistols are sidearms now that melee weapons
+        # have a slot of their own: primary is the gun you lead with,
+        # secondary the one you also carry.
         for key in PISTOL_KEYS:
             item = ITEMS_BY_KEY[key]
             self.assertEqual(item.category, "weapon")
-            self.assertEqual(item.equipment_slot, "primary")
+            self.assertIn(item.equipment_slot, ("primary", "secondary"))
             self.assertFalse(item.stackable)
             self.assertEqual(item.max_quantity, 1)
             self.assertEqual(item.defence_bonus, 0)
@@ -49,11 +52,19 @@ class GunCatalogueTests(unittest.TestCase):
         self.assertEqual(values, sorted(values))
         self.assertEqual(len(set(strengths)), len(strengths))
 
-    def test_pistols_sit_above_every_melee_weapon(self):
+    def test_pistols_sit_above_every_reusable_melee_weapon(self):
+        """A gun beats anything you can swing twice.
+
+        Throwables are deliberately outside this. A petrol bomb hits
+        harder than a derringer and should: it is gone the moment it
+        leaves your hand, which is the trade.
+        """
         pistols = {ITEMS_BY_KEY[key] for key in PISTOL_KEYS}
         melee = [
             item for item in ITEMS
-            if item.category == "weapon" and item not in pistols
+            if item.category == "weapon"
+            and item not in pistols
+            and item.equipment_slot != "throwable"
         ]
         strongest_melee = max(item.strength_bonus for item in melee)
         dearest_melee = max(item.value for item in melee)

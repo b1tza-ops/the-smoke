@@ -2,12 +2,12 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Player fights · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='attack-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='turns-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar">{% include "_topbar_menu.html" %}<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('fight') }}">NPC fights</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page pvp-page">
-{% set focused = staged_target or result %}
+{% set focused = staged_target or result or (fight and fight.open) %}
 {% if not focused %}
 <nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_contracts') }}">Contracts</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
 <section class="pvp-rating-strip"><div><span>Your rating</span><strong>{{ pvp_profile.rating }}</strong></div><div><span>Record</span><strong>{{ pvp_profile.wins }}–{{ pvp_profile.losses }}</strong></div><div><span>Win streak</span><strong>{{ pvp_profile.streak }}</strong></div><div><span>Personal best</span><strong>{{ pvp_profile.best_rating }}</strong></div></section>
@@ -17,10 +17,11 @@
 <div class="pvp-streak-badges">{% for milestone in streak_progress.achieved %}<span>◆ {{ milestone.title }}</span>{% endfor %}</div>
 </section>
 <section class="combat-hero"><div><p class="eyebrow">{{ player.current_district|title }} rivalries</p><h1>Player fights</h1><p>Choose a target and a tactical approach. Only cash carried on the street can be mugged.</p></div><div class="combat-cost"><span>Each attack</span><strong>{{ energy_cost }} energy</strong></div></section>
-{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if attacker_equipment and attacker_equipment.unloaded %}<div class="game-notice game-notice--warning" role="alert"><strong>{% for gun in attacker_equipment.unloaded %}{{ gun.name }}{{ ", " if not loop.last }}{% endfor %}{{ " has" if attacker_equipment.unloaded|length == 1 else " have" }} no rounds.</strong> An unloaded gun adds nothing to a fight. <a href="{{ url_for('gun_bazaar') }}">Buy ammunition at the bazaar</a>.</div>{% endif %}
 {% for notice in notifications %}<a class="game-notice pvp-notification" href="{{ url_for('pvp_report', attack_id=notice.attack_id) }}"><strong>Incoming attack</strong> · {{ notice.message }} View report →</a>{% endfor %}
 {% endif %}
+
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 
 {% macro fighter_bar(side, who, level, hits, damage, health, maximum) %}
 <article class="attack-fighter attack-fighter--{{ side }}" data-fighter="{{ side }}">
@@ -33,23 +34,30 @@
 </article>
 {% endmacro %}
 
-{% macro weapon_column() %}
+{% macro weapon_column(live=false) %}
 <div class="attack-weapons" aria-label="Your loadout">
   {% for tile in weapons %}
-    <div class="attack-weapon {{ 'is-empty' if tile.empty }} {{ 'is-unloaded' if tile.unloaded }}">
-      {% if tile.empty %}
-        <span class="attack-weapon__slot">{{ tile.slot|capitalize }}</span>
-        <span class="attack-weapon__none">empty</span>
-      {% else %}
+    {% set out = tile.available is not none and tile.available <= 0 %}
+    {% if live %}
+      <button class="attack-weapon {{ 'is-spent' if out }}" type="submit"
+              name="weapon" value="{{ tile.key }}" {{ 'disabled' if out }}>
+        <span class="attack-weapon__slot">{{ tile.slot }}</span>
         <span class="attack-weapon__name">{{ tile.name }}</span>
-        {% if tile.rounds is not none %}
-          <span class="attack-weapon__ammo">{{ tile.rounds }} <small>rounds</small></span>
-        {% else %}
-          <span class="attack-weapon__ammo">&#8734;</span>
-        {% endif %}
-        {% if tile.unloaded %}<span class="attack-weapon__warn">no ammo</span>{% endif %}
-      {% endif %}
-    </div>
+        <span class="attack-weapon__ammo">
+          {%- if tile.available is none %}&#8734;{% else %}{{ tile.available }}{% endif -%}
+        </span>
+        <span class="attack-weapon__hit">{{ tile.damage }} dmg</span>
+      </button>
+    {% else %}
+      <div class="attack-weapon {{ 'is-spent' if out }}">
+        <span class="attack-weapon__slot">{{ tile.slot }}</span>
+        <span class="attack-weapon__name">{{ tile.name }}</span>
+        <span class="attack-weapon__ammo">
+          {%- if tile.available is none %}&#8734;{% else %}{{ tile.available }}{% endif -%}
+        </span>
+        <span class="attack-weapon__hit">{{ tile.damage }} dmg</span>
+      </div>
+    {% endif %}
   {% endfor %}
 </div>
 {% endmacro %}
@@ -101,6 +109,45 @@
 </section>
 {% endif %}
 
+{% if fight and fight.open and not result %}
+<section class="attack-screen is-live">
+  <header class="attack-screen__head"><h1>Attacking</h1>
+    <span class="attack-turn"><b>{{ fight.turn }}</b>/{{ maximum_turns }}</span>
+    <form method="post" class="attack-flee">
+      <input type="hidden" name="action" value="flee">
+      <input type="hidden" name="fight_id" value="{{ fight.id }}">
+      <button type="submit" title="Walk away">&#128694;</button>
+    </form></header>
+  <div class="attack-fighters">
+    {{ fighter_bar("attacker", player.name, player.level,
+                   fight.log|selectattr("attacker_event", "equalto", "hit")|list|length,
+                   fight.log|sum(attribute="attacker_damage"),
+                   fight.attacker_health, fight.attacker_max_health) }}
+    {{ fighter_bar("defender", fight.defender_name, 0,
+                   fight.log|selectattr("defender_event", "equalto", "hit")|list|length,
+                   fight.log|sum(attribute="defender_damage"),
+                   fight.defender_health, fight.defender_max_health) }}
+  </div>
+  <form method="post" class="attack-body">
+    <input type="hidden" name="action" value="turn">
+    {{ weapon_column(live=true) }}
+    <div class="attack-arena">
+      <div class="attack-silhouette" aria-hidden="true"></div>
+      {% if fight.log %}
+        <ul class="attack-log">
+          {% for entry in fight.log[-4:] %}
+            <li><b>{{ entry.turn }}</b> {{ entry.narration|join(" ") }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="attack-commentary">Pick something and swing.</p>
+      {% endif %}
+      <p class="attack-cost">Choose a weapon to take your turn.</p>
+    </div>
+  </form>
+</section>
+{% endif %}
+
 {% if result %}
 <section id="pvp-arena" class="attack-screen {{ 'is-victory' if result.victory else 'is-defeat' }}" data-playback>
   <header class="attack-screen__head"><h1>Attacking</h1>
@@ -142,7 +189,7 @@
   {% if rounds_spent %}<p class="combat-warning ammo-spend">Spent {% for round in rounds_spent %}1 &times; {{ round.name }} ({{ round.remaining }} left){{ ", " if not loop.last }}{% endfor %}.</p>{% endif %}
 </section>
 <a class="character-link" href="{{ url_for('pvp') }}">Return to target board →</a>
-{% elif not staged_target %}
+{% elif not focused %}
 <section class="pvp-approaches"><p class="eyebrow">Combat approach</p><div>{% for key in approaches %}<label><input form="target-form-placeholder" type="radio" disabled hidden><span><strong>{{ key|title }}</strong><small>{% if key == 'aggressive' %}More damage, less defence{% elif key == 'defensive' %}Higher defence, lower damage{% elif key == 'precise' %}Improved accuracy{% else %}Harder to hit{% endif %}</small></span></label>{% endfor %}</div></section>
 <div class="pvp-targets">
 {% for target in targets %}

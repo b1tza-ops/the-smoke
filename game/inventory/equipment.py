@@ -7,12 +7,19 @@ from game.inventory.items import AMMO_KEYS, get_item
 EQUIPMENT_SLOTS = (
     "primary",
     "secondary",
+    "melee",
+    "throwable",
     "head",
     "body",
     "hands",
     "legs",
     "feet",
 )
+
+# Slots a fight can actually swing. Armour is worn, not wielded, so it
+# never appears in the weapon column on the attack screen.
+WEAPON_SLOTS = ("primary", "secondary", "melee", "throwable")
+
 LEGACY_SLOTS = ("weapon", "armour")
 
 
