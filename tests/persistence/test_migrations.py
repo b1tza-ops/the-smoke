@@ -1,3 +1,4 @@
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 from contextlib import closing
 import sqlite3
 import tempfile
@@ -274,6 +275,7 @@ class MigrationTests(unittest.TestCase):
                     (40, "player_clock_backfill"),
                     (41, "loan_shark"),
                     (42, "operations_controls"),
+                    (43, "housing_facilities"),
                 ],
             )
 
@@ -612,7 +614,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=43,
+            version=44,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
