@@ -393,5 +393,64 @@ class HousingGuideTests(unittest.TestCase):
                 self.assertIn(unwired, prose)
 
 
+class CrimeGuideTests(unittest.TestCase):
+    """The crime table drifted once already.
+
+    It carried three-day and five-day sentences, and prose explaining
+    that the big jobs are worth £12 an hour, for as long as that was
+    true and then afterwards. Pin the column to the crimes.
+    """
+
+    def jail_column(self):
+        guide = get_guide("crime-and-jail")
+
+        for block in guide.blocks:
+            if isinstance(block, Table) and "Jail if caught" in block.headers:
+                index = block.headers.index("Jail if caught")
+                return {row[0]: row[index] for row in block.rows}
+
+        self.fail("no crime table with a jail column")
+
+    def test_the_jail_column_matches_the_crimes(self):
+        from game.crime import CRIMES
+
+        shown = self.jail_column()
+        by_minutes = {}
+
+        for crime in CRIMES:
+            minutes = crime.jail_seconds // 60
+            by_minutes[crime.jail_chance, minutes] = crime.key
+
+        for label, cell in shown.items():
+            with self.subTest(crime=label):
+                chance, sentence = cell.split(", ")
+                chance = int(chance.rstrip("%"))
+                minutes = (
+                    60 if sentence == "1 hour"
+                    else int(sentence.split()[0])
+                )
+
+                self.assertIn(
+                    (chance, minutes),
+                    by_minutes,
+                    f"{label} shows {cell}, which no crime has",
+                )
+
+    def test_it_no_longer_promises_multi_day_sentences(self):
+        for cell in self.jail_column().values():
+            with self.subTest(cell=cell):
+                self.assertNotIn("day", cell)
+
+    def test_it_explains_heat(self):
+        # Heat is the cost of a big score now. A guide that omits it
+        # leaves players thinking the top crimes are free money.
+        prose = " ".join(
+            str(getattr(block, "text", ""))
+            for block in get_guide("crime-and-jail").blocks
+        )
+
+        self.assertIn("wanted level", prose)
+
+
 if __name__ == "__main__":
     unittest.main()

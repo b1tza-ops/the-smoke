@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from game.crime.loot import roll_loot
 from game.crime.progression import (
+    jail_chance_with_heat,
     apply_reputation_bonus,
     crime_progression_for,
 )
@@ -107,7 +108,7 @@ CRIMES = (
         reputation_reward=4,
         wanted_gain=2,
         jail_chance=15,
-        jail_seconds=60 * 60,
+        jail_seconds=20 * 60,
         hospital_chance=8,
         hospital_seconds=120,
     ),
@@ -124,7 +125,7 @@ CRIMES = (
         reputation_reward=3,
         wanted_gain=2,
         jail_chance=12,
-        jail_seconds=30 * 60,
+        jail_seconds=15 * 60,
         hospital_chance=8,
         hospital_seconds=120,
     ),
@@ -141,7 +142,7 @@ CRIMES = (
         reputation_reward=7,
         wanted_gain=5,
         jail_chance=25,
-        jail_seconds=12 * 60 * 60,
+        jail_seconds=35 * 60,
         hospital_chance=20,
         hospital_seconds=300,
     ),
@@ -160,7 +161,7 @@ CRIMES = (
 
         wanted_gain=2,
         jail_chance=15,
-        jail_seconds=30 * 60,
+        jail_seconds=20 * 60,
         hospital_chance=8,
         hospital_seconds=120,
     ),
@@ -177,7 +178,7 @@ CRIMES = (
         reputation_reward=8,
         wanted_gain=6,
         jail_chance=30,
-        jail_seconds=3 * 24 * 60 * 60,
+        jail_seconds=40 * 60,
         hospital_chance=25,
         hospital_seconds=420,
     ),
@@ -194,7 +195,7 @@ CRIMES = (
         reputation_reward=6,
         wanted_gain=4,
         jail_chance=22,
-        jail_seconds=90 * 60,
+        jail_seconds=30 * 60,
         hospital_chance=15,
         hospital_seconds=240,
     ),
@@ -211,7 +212,7 @@ CRIMES = (
         reputation_reward=10,
         wanted_gain=8,
         jail_chance=35,
-        jail_seconds=4 * 24 * 60 * 60,
+        jail_seconds=50 * 60,
         hospital_chance=28,
         hospital_seconds=600,
     ),
@@ -228,7 +229,7 @@ CRIMES = (
         reputation_reward=9,
         wanted_gain=6,
         jail_chance=28,
-        jail_seconds=2 * 24 * 60 * 60,
+        jail_seconds=45 * 60,
         hospital_chance=22,
         hospital_seconds=480,
     ),
@@ -245,7 +246,7 @@ CRIMES = (
         reputation_reward=14,
         wanted_gain=12,
         jail_chance=40,
-        jail_seconds=5 * 24 * 60 * 60,
+        jail_seconds=60 * 60,
         hospital_chance=32,
         hospital_seconds=900,
     ),
@@ -414,11 +415,16 @@ def _resolve_failed_crime(
 ):
     consequence_roll = rng.randint(1, 100)
 
-    hospital_cutoff = crime.hospital_chance
-    jail_cutoff = (
-        crime.hospital_chance
-        + crime.jail_chance
+    # Heat sharpens the odds of being taken in. The wanted level was
+    # accrued by every crime already and read by nothing; this is what
+    # it is for.
+    jail_chance = jail_chance_with_heat(
+        crime.jail_chance,
+        getattr(player, "wanted_level", 0),
     )
+
+    hospital_cutoff = crime.hospital_chance
+    jail_cutoff = crime.hospital_chance + jail_chance
 
     if consequence_roll <= hospital_cutoff:
         damage = rng.randint(
