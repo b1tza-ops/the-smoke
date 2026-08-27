@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import random
 
+from game.combat.stats import whole
 from game.player.progression import award_xp
 from game.player.status import send_to_hospital
 
@@ -230,12 +231,17 @@ def fight_opponent(player, equipment, opponent, rng=None, now=None):
     player_health = player.health
     opponent_health = opponent.health
     log = []
-    player_strength = player.strength + equipment.strength_bonus
-    player_defence = player.defence + equipment.defence_bonus
+    # Training leaves stats fractional (84.35, not 84), which randint
+    # will not take and which read badly in the round log. Settled once
+    # here rather than at each use.
+    player_speed = whole(player.speed)
+    player_dexterity = whole(player.dexterity)
+    player_strength = whole(player.strength + equipment.strength_bonus)
+    player_defence = whole(player.defence + equipment.defence_bonus)
 
     for round_number in range(1, 13):
         player_first = (
-            player.speed + rng.randint(0, max(1, player.dexterity))
+            player_speed + rng.randint(0, max(1, player_dexterity))
             >= opponent.speed + rng.randint(0, opponent.dexterity)
         )
         turns = ("player", "opponent") if player_first else (
@@ -247,7 +253,7 @@ def fight_opponent(player, equipment, opponent, rng=None, now=None):
             if attacker == "player":
                 accuracy = max(
                     25,
-                    min(92, 65 + (player.dexterity - opponent.speed) * 2),
+                    min(92, 65 + (player_dexterity - opponent.speed) * 2),
                 )
                 if rng.randint(1, 100) > accuracy:
                     log.append(f"Round {round_number}: You miss.")
@@ -264,7 +270,7 @@ def fight_opponent(player, equipment, opponent, rng=None, now=None):
             else:
                 accuracy = max(
                     25,
-                    min(90, 62 + (opponent.dexterity - player.speed) * 2),
+                    min(90, 62 + (opponent.dexterity - player_speed) * 2),
                 )
                 if rng.randint(1, 100) > accuracy:
                     log.append(

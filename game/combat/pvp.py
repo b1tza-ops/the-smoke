@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import random
 
+from game.combat.stats import whole
 from game.player.progression import award_xp
 from game.player.status import send_to_hospital
 
@@ -125,23 +126,29 @@ def fight_player(
     )
     rounds = []
 
-    attacker_strength = (
+    attacker_strength = whole(
         attacker.strength + attacker_equipment.strength_bonus
     )
-    attacker_defence = (
+    attacker_defence = whole(
         attacker.defence + attacker_equipment.defence_bonus
     )
-    defender_strength = (
+    defender_strength = whole(
         defender.strength + defender_equipment.strength_bonus
     )
-    defender_defence = (
+    defender_defence = whole(
         defender.defence + defender_equipment.defence_bonus
     )
+    # Trained stats are fractional; randint needs whole numbers, and so
+    # does a damage figure anybody has to read.
+    attacker_speed = whole(attacker.speed)
+    attacker_dexterity = whole(attacker.dexterity)
+    defender_speed = whole(defender.speed)
+    defender_dexterity = whole(defender.dexterity)
 
     for number in range(1, 16):
         attacker_first = (
-            attacker.speed + rng.randint(0, max(1, attacker.dexterity))
-            >= defender.speed + rng.randint(0, max(1, defender.dexterity))
+            attacker_speed + rng.randint(0, max(1, attacker_dexterity))
+            >= defender_speed + rng.randint(0, max(1, defender_dexterity))
         )
         order = ("attacker", "defender") if attacker_first else (
             "defender", "attacker"
@@ -151,7 +158,7 @@ def fight_player(
                 break
             if actor == "attacker":
                 accuracy = _clamp(
-                    62 + (attacker.dexterity - defender.speed) * 2
+                    62 + (attacker_dexterity - defender_speed) * 2
                     + tactics["accuracy"],
                     25,
                     94,
@@ -176,7 +183,7 @@ def fight_player(
                 defender_health = max(0, defender_health - damage)
             else:
                 accuracy = _clamp(
-                    62 + (defender.dexterity - attacker.speed) * 2
+                    62 + (defender_dexterity - attacker_speed) * 2
                     + (8 if approach == "aggressive" else 0)
                     + (-14 if approach == "evasive" else 0),
                     20,
