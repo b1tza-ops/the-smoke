@@ -1,5 +1,5 @@
 <!doctype html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ residence.name }} · Housing</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='landing-1') }}"></head>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ residence.name }} · Housing</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='attack-1') }}"></head>
 <body class="dashboard-page"><div class="app-shell">{% include "_player_hud.html" %}<main class="dashboard-main game-page">
 <section class="game-page__header"><div><p class="eyebrow">Current property</p><h1>{{ residence.name }}</h1><p>{{ residence.description }}</p></div></section>
 {% if residence.key in artwork %}<img src="{{ url_for('static', filename='images/housing/' + residence.key + '.webp') }}" alt="{{ residence.name }}" class="property-art property-art--wide">{% else %}<div class="property-art property-art--wide property-art--placeholder" role="img" aria-label="{{ residence.name }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#housing"></use></svg></div>{% endif %}

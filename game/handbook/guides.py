@@ -344,6 +344,31 @@ GUIDES = (
                 "fight puts you in hospital, where you can do nothing until "
                 "you heal."
             ),
+            Heading("Once they are down"),
+            Text(
+                "Winning does not decide what happens next — you do. "
+                "The fight ends with them on the floor and three things "
+                "you can do about it."
+            ),
+            Table(
+                headers=("Choice", "What it does"),
+                rows=(
+                    ("Leave", "Nothing. They keep their money and walk "
+                              "away when they have healed."),
+                    ("Mug", "Takes 5–10% of the cash they are carrying, "
+                            "up to £500. Banked money is safe."),
+                    ("Hospitalise",
+                     "Puts them in hospital for 15 minutes. They lose "
+                     "no money, but they lose the time."),
+                ),
+            ),
+            Note(
+                "**You get one of the three, not two.** Robbing someone "
+                "and putting them out of action are different prizes: "
+                "take the money, or take them off the board. Decide "
+                "within five minutes or they get up and walk off.",
+                tone="tip",
+            ),
             Note(
                 "An equipped gun with no ammunition contributes **nothing**. "
                 "It sits in the slot marked inert and you fight as though "

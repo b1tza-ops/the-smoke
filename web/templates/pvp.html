@@ -2,11 +2,13 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Player fights · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='landing-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='attack-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar">{% include "_topbar_menu.html" %}<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('fight') }}">NPC fights</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page pvp-page">
+{% set focused = staged_target or result %}
+{% if not focused %}
 <nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_contracts') }}">Contracts</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
 <section class="pvp-rating-strip"><div><span>Your rating</span><strong>{{ pvp_profile.rating }}</strong></div><div><span>Record</span><strong>{{ pvp_profile.wins }}–{{ pvp_profile.losses }}</strong></div><div><span>Win streak</span><strong>{{ pvp_profile.streak }}</strong></div><div><span>Personal best</span><strong>{{ pvp_profile.best_rating }}</strong></div></section>
 <section class="pvp-streak-card {{ 'is-active' if streak_progress.streak >= 3 }}">
@@ -18,49 +20,142 @@
 {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
 {% if attacker_equipment and attacker_equipment.unloaded %}<div class="game-notice game-notice--warning" role="alert"><strong>{% for gun in attacker_equipment.unloaded %}{{ gun.name }}{{ ", " if not loop.last }}{% endfor %}{{ " has" if attacker_equipment.unloaded|length == 1 else " have" }} no rounds.</strong> An unloaded gun adds nothing to a fight. <a href="{{ url_for('gun_bazaar') }}">Buy ammunition at the bazaar</a>.</div>{% endif %}
 {% for notice in notifications %}<a class="game-notice pvp-notification" href="{{ url_for('pvp_report', attack_id=notice.attack_id) }}"><strong>Incoming attack</strong> · {{ notice.message }} View report →</a>{% endfor %}
-{% if result %}
-<section id="pvp-arena" class="pvp-arena {{ 'is-victory' if result.victory else 'is-defeat' }}" data-playback>
-<div class="pvp-fighters">
-{% for side, who, gear, start, maximum in (
-    ("attacker", player, attacker_equipment, result.attacker_start_health, result.attacker_max_health),
-    ("defender", defender, defender_equipment, result.defender_start_health, result.defender_max_health)) %}
-{% if side == "defender" %}<div class="pvp-versus">VS</div>{% endif %}
-<article class="pvp-fighter" data-fighter="{{ side }}">
-<span class="combat-avatar">{{ who.name[:2]|upper }}</span>
-<strong>{{ who.name }}</strong>
-<small class="pvp-fighter__level">Level {{ who.level }}</small>
-{% if gear %}
-<div class="pvp-loadout">
-<span>{% if gear.items.get("primary") %}{{ gear.items["primary"].name }}{% else %}Bare knuckles{% endif %}</span>
-{% if gear.defence_bonus %}<span>+{{ gear.defence_bonus }} armour</span>{% endif %}
+{% endif %}
+
+{% macro fighter_bar(side, who, level, hits, damage, health, maximum) %}
+<article class="attack-fighter attack-fighter--{{ side }}" data-fighter="{{ side }}">
+  <span class="attack-fighter__name">{{ who }}</span>
+  <span class="attack-fighter__stat" title="Hits landed">&#9678; <b data-hits>{{ hits }}</b></span>
+  <span class="attack-fighter__stat" title="Damage dealt">&#10033; <b data-damage>{{ damage }}</b></span>
+  <span class="attack-fighter__stat attack-fighter__life" title="Life">&#9829; <b data-value>{{ health }} / {{ maximum }}</b></span>
+  <div class="attack-fighter__bar"><i data-bar style="width:{{ (health / maximum * 100)|round(1) if maximum else 0 }}%"></i></div>
+  <span class="attack-hit" data-hit aria-hidden="true"></span>
+</article>
+{% endmacro %}
+
+{% macro weapon_column() %}
+<div class="attack-weapons" aria-label="Your loadout">
+  {% for tile in weapons %}
+    <div class="attack-weapon {{ 'is-empty' if tile.empty }} {{ 'is-unloaded' if tile.unloaded }}">
+      {% if tile.empty %}
+        <span class="attack-weapon__slot">{{ tile.slot|capitalize }}</span>
+        <span class="attack-weapon__none">empty</span>
+      {% else %}
+        <span class="attack-weapon__name">{{ tile.name }}</span>
+        {% if tile.rounds is not none %}
+          <span class="attack-weapon__ammo">{{ tile.rounds }} <small>rounds</small></span>
+        {% else %}
+          <span class="attack-weapon__ammo">&#8734;</span>
+        {% endif %}
+        {% if tile.unloaded %}<span class="attack-weapon__warn">no ammo</span>{% endif %}
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% if aftermath %}
+<div class="game-notice attack-settled">
+  {% if aftermath.choice == "mug" %}
+    {% if aftermath.cash_stolen %}You went through their pockets and took <strong>&pound;{{ "{:,}".format(aftermath.cash_stolen) }}</strong>.{% else %}You went through their pockets. They had nothing on them.{% endif %}
+  {% elif aftermath.choice == "hospitalise" %}
+    You put them in hospital. They are out of it for a quarter of an hour.
+  {% else %}
+    You left them where they fell.
+  {% endif %}
 </div>
 {% endif %}
-<div class="pvp-health"><i data-bar style="width:{{ (start / maximum * 100)|round(1) if maximum else 0 }}%"></i></div>
-<span class="pvp-health__value" data-value>{{ start }}/{{ maximum }}</span>
-<span class="pvp-hit" data-hit aria-hidden="true"></span>
-</article>
-{% endfor %}
-</div>
-<div class="pvp-playback"><p class="eyebrow" data-round>Round 1 of {{ playback.total_rounds }}</p><strong data-event>Both fighters enter the street.</strong></div>
-<script type="application/json" id="combat-events">{{ playback|tojson }}</script>
-<div class="pvp-controls"><button type="button" data-speed>2× speed</button><button type="button" data-skip>Skip animation</button></div>
-<div class="combat-result__rewards"><span>Result <strong>{{ 'Victory' if result.victory else 'Defeat' }}</strong></span><span>Mugged <strong>£{{ result.cash_stolen }}</strong></span><span>XP <strong>+{{ result.xp_reward }}</strong></span><span>Rating <strong>{% if rating_update and rating_update.rated %}{{ '%+d'|format(rating_update.attacker_delta) }} · {{ rating_update.attacker_after }}{% else %}Unrated repeat{% endif %}</strong></span></div>
-{% if rounds_spent %}<p class="combat-warning ammo-spend">Spent {% for round in rounds_spent %}1 × {{ round.name }} ({{ round.remaining }} left){{ ", " if not loop.last }}{% endfor %}.</p>{% endif %}
+
+{% if staged_target %}
+<section class="attack-screen">
+  <header class="attack-screen__head"><h1>Attacking</h1>
+    <a class="attack-back" href="{{ url_for('pvp') }}" aria-label="Back to targets">&larr;</a></header>
+  <div class="attack-fighters">
+    {{ fighter_bar("attacker", player.name, player.level, 0, 0, player.health, player.max_health) }}
+    {{ fighter_bar("defender", staged_target.name, staged_target.level, 0, 0, staged_target.health, staged_target.max_health or 100) }}
+  </div>
+  <div class="attack-body">
+    {{ weapon_column() }}
+    <div class="attack-arena">
+      <div class="attack-silhouette" aria-hidden="true"></div>
+      {% if block_reason %}
+        <p class="attack-blocked">{{ block_reason }}</p>
+      {% else %}
+        <form method="post" class="attack-start">
+          <input type="hidden" name="target_id" value="{{ staged_target.id }}">
+          <input type="hidden" name="approach" value="{{ selected_approach }}">
+          <button class="attack-start__button" type="submit">START FIGHT</button>
+          <div class="attack-approach">
+            {% for key in approaches %}
+              <label class="{{ 'is-active' if key == selected_approach }}">
+                <input type="radio" name="approach" value="{{ key }}" {{ 'checked' if key == selected_approach }}>
+                <span>{{ key|capitalize }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          <p class="attack-cost">Costs {{ energy_cost }} energy</p>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if result %}
+<section id="pvp-arena" class="attack-screen {{ 'is-victory' if result.victory else 'is-defeat' }}" data-playback>
+  <header class="attack-screen__head"><h1>Attacking</h1>
+    <span class="attack-turn"><b data-round>1</b>/{{ playback.total_rounds }}</span>
+    <a class="attack-back" href="{{ url_for('pvp') }}" aria-label="Back to targets">&larr;</a></header>
+  <div class="attack-fighters">
+    {{ fighter_bar("attacker", player.name, player.level, 0, 0, result.attacker_start_health, result.attacker_max_health) }}
+    {{ fighter_bar("defender", defender.name, defender.level, 0, 0, result.defender_start_health, result.defender_max_health) }}
+  </div>
+  <div class="attack-body">
+    {{ weapon_column() }}
+    <div class="attack-arena">
+      <div class="attack-silhouette" aria-hidden="true"></div>
+      <p class="attack-commentary" data-event>Both fighters enter the street.</p>
+
+      {% if result.victory and pending_aftermath %}
+      <div class="attack-outcome" data-outcome>
+        <p class="eyebrow">{{ defender.name }} is on the floor</p>
+        <form method="post">
+          <input type="hidden" name="action" value="aftermath">
+          <input type="hidden" name="attack_id" value="{{ pending_aftermath.attack_id }}">
+          <button type="submit" name="choice" value="leave">LEAVE</button>
+          <button type="submit" name="choice" value="mug">MUG</button>
+          <button type="submit" name="choice" value="hospitalise">HOSPITALISE</button>
+        </form>
+        <p class="attack-outcome__note">Mug them or put them in hospital &mdash; not both.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="attack-banner {{ 'is-win' if result.victory else 'is-loss' }}" data-banner>
+    {% if result.victory %}WON &mdash; {{ result.rounds|sum(attribute='damage') }} damage{% else %}LOST{% endif %}
+  </div>
+
+  <script type="application/json" id="combat-events">{{ playback|tojson }}</script>
+  <div class="attack-controls"><button type="button" data-speed>2&times; speed</button><button type="button" data-skip>Skip</button></div>
+  <div class="combat-result__rewards"><span>XP <strong>+{{ result.xp_reward }}</strong></span><span>Rating <strong>{% if rating_update and rating_update.rated %}{{ '%+d'|format(rating_update.attacker_delta) }} &middot; {{ rating_update.attacker_after }}{% else %}Unrated repeat{% endif %}</strong></span></div>
+  {% if rounds_spent %}<p class="combat-warning ammo-spend">Spent {% for round in rounds_spent %}1 &times; {{ round.name }} ({{ round.remaining }} left){{ ", " if not loop.last }}{% endfor %}.</p>{% endif %}
 </section>
 <a class="character-link" href="{{ url_for('pvp') }}">Return to target board →</a>
-{% else %}
+{% elif not staged_target %}
 <section class="pvp-approaches"><p class="eyebrow">Combat approach</p><div>{% for key in approaches %}<label><input form="target-form-placeholder" type="radio" disabled hidden><span><strong>{{ key|title }}</strong><small>{% if key == 'aggressive' %}More damage, less defence{% elif key == 'defensive' %}Higher defence, lower damage{% elif key == 'precise' %}Improved accuracy{% else %}Harder to hit{% endif %}</small></span></label>{% endfor %}</div></section>
 <div class="pvp-targets">
 {% for target in targets %}
 <article class="pvp-target">
 <div class="pvp-target__identity"><span class="combat-avatar">{{ target.name[:2]|upper }}</span><div><small>{{ target.matchmaking }} · Level {{ target.level }}</small><h2>{{ target.name }}</h2><p>{{ target.health }}/{{ target.max_health }} health · {{ target.rating }} rating · {{ target.estimate }}</p></div></div>
 {% if target.beginner_protection_seconds %}<p class="combat-block">New player protection · {{ (target.beginner_protection_seconds // 3600) + 1 }}h</p>{% elif target.restricted %}<p class="combat-block">Currently unavailable</p>{% elif target.limits.protected_seconds %}<p class="combat-block">Protected for {{ target.limits.protected_seconds }} seconds</p>{% endif %}
-<form method="post" action="{{ url_for('pvp') }}#pvp-arena">
-<input type="hidden" name="target_id" value="{{ target.id }}">
-<label class="pvp-approach-select"><span>Approach</span><select name="approach">{% for key in approaches %}<option value="{{ key }}">{{ key|title }}</option>{% endfor %}</select></label>
-<button class="work-button" type="submit" {% if block_reason or target.beginner_protection_seconds or target.restricted or target.limits.blocked %}disabled{% endif %}><span>Attack {{ target.name }}</span><span>→</span></button>
+{% if block_reason or target.beginner_protection_seconds or target.restricted or target.limits.blocked %}
+<button class="work-button" type="button" disabled><span>Attack {{ target.name }}</span><span>&rarr;</span></button>
+{% else %}
+<a class="work-button" href="{{ url_for('pvp', target_id=target.id) }}"><span>Attack {{ target.name }}</span><span>&rarr;</span></a>
+{% endif %}
 {% if target.limits.reward_multiplier < 1 %}<small class="combat-warning">Repeat-target rewards reduced to {{ (target.limits.reward_multiplier * 100)|int }}%.</small>{% endif %}
-</form></article>
+</article>
 {% else %}<section class="combat-card"><h2>No available players here</h2><p>Invite another player or travel to a busier district.</p></section>{% endfor %}
 </div>
 {% if block_reason %}<p class="combat-block">{{ block_reason }}</p>{% endif %}
@@ -77,6 +172,14 @@ const roundLabel = document.querySelector("[data-round]");
 const eventLabel = document.querySelector("[data-event]");
 const speedButton = document.querySelector("[data-speed]");
 const skipButton = document.querySelector("[data-skip]");
+const outcome = document.querySelector("[data-outcome]");
+const banner = document.querySelector("[data-banner]");
+
+// Hidden here rather than in the markup: with no JavaScript the fight
+// is already over by the time the page arrives, so the decision and the
+// result must be on screen and usable from the first paint.
+if (outcome) outcome.hidden = true;
+if (banner) banner.hidden = true;
 
 const sides = {};
 for (const side of ["attacker", "defender"]) {
@@ -86,7 +189,11 @@ for (const side of ["attacker", "defender"]) {
         bar: card.querySelector("[data-bar]"),
         value: card.querySelector("[data-value]"),
         hit: card.querySelector("[data-hit]"),
+        hits: card.querySelector("[data-hits]"),
+        damage: card.querySelector("[data-damage]"),
         max: Math.max(1, fight.max_health[side]),
+        landed: 0,
+        dealt: 0,
     };
 }
 
@@ -102,10 +209,18 @@ function paint(side, health) {
     const safe = Math.max(0, health);
     const fraction = safe / view.max;
     view.bar.style.width = `${Math.min(100, fraction * 100).toFixed(1)}%`;
-    view.value.textContent = `${safe}/${view.max}`;
+    view.value.textContent = `${safe} / ${view.max}`;
     view.card.classList.toggle("is-wounded", fraction <= 0.6 && fraction > 0.25);
     view.card.classList.toggle("is-critical", fraction <= 0.25);
     view.card.classList.toggle("is-down", safe <= 0);
+}
+
+function tally(side, damage) {
+    const view = sides[side];
+    view.landed += 1;
+    view.dealt += damage;
+    if (view.hits) view.hits.textContent = view.landed;
+    if (view.damage) view.damage.textContent = view.dealt;
 }
 
 function flash(element, className) {
@@ -115,10 +230,8 @@ function flash(element, className) {
 }
 
 function show(event) {
-    roundLabel.textContent = `Round ${event.round} of ${fight.total_rounds}`;
+    if (roundLabel) roundLabel.textContent = event.round;
     eventLabel.textContent = NARRATION[event.event][event.actor];
-    // is-struck carries a static outline, so it has to be cleared or
-    // the last fighter hit keeps it for the rest of the fight.
     for (const side of ["attacker", "defender"]) {
         sides[side].card.classList.remove("is-struck");
     }
@@ -129,9 +242,11 @@ function show(event) {
     const struck = event.actor === "attacker" ? "defender" : "attacker";
     const view = sides[struck];
     if (event.event === "hit") {
+        tally(event.actor, event.damage);
         view.hit.textContent = `-${event.damage}`;
         view.hit.classList.remove("is-evaded");
         flash(view.card, "is-struck");
+        flash(view.hit, "is-flash");
     } else {
         view.hit.textContent = event.event === "dodge" ? "EVADED" : "MISS";
         view.hit.classList.add("is-evaded");
@@ -139,15 +254,34 @@ function show(event) {
     flash(view.hit, "is-visible");
 }
 
+function replay(upTo) {
+    // Skipping forward has to rebuild the running totals, or the hit
+    // and damage counters show only the last blow.
+    for (const side of ["attacker", "defender"]) {
+        sides[side].landed = 0;
+        sides[side].dealt = 0;
+    }
+    for (let n = 0; n < upTo; n += 1) {
+        const event = fight.rounds[n];
+        if (event.event === "hit") tally(event.actor, event.damage);
+    }
+    for (const side of ["attacker", "defender"]) {
+        const view = sides[side];
+        if (view.hits) view.hits.textContent = view.landed;
+        if (view.damage) view.damage.textContent = view.dealt;
+    }
+}
+
 function finish() {
-    roundLabel.textContent = fight.victory ? "Victory" : "Defeat";
     eventLabel.textContent = fight.victory
-        ? "You won the fight."
+        ? "They are not getting up."
         : "You were sent to Hospital.";
     for (const side of ["attacker", "defender"]) {
         sides[side].card.classList.remove("is-struck");
     }
     arena.classList.add("is-finished");
+    if (banner) banner.hidden = false;
+    if (outcome) outcome.hidden = false;
 }
 
 let index = 0;
@@ -165,11 +299,14 @@ function next() {
 
 speedButton.onclick = () => {
     delay = delay === 650 ? 250 : 650;
-    speedButton.textContent = delay === 650 ? "2× speed" : "Normal speed";
+    speedButton.textContent = delay === 650 ? "2\u00d7 speed" : "Normal speed";
 };
 skipButton.onclick = () => {
     clearTimeout(timer);
-    if (fight.rounds.length) show(fight.rounds[fight.rounds.length - 1]);
+    if (fight.rounds.length) {
+        show(fight.rounds[fight.rounds.length - 1]);
+        replay(fight.rounds.length);
+    }
     index = fight.rounds.length;
     finish();
 };

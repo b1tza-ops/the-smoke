@@ -1851,6 +1851,34 @@ def migrate_044_housing_upkeep(cursor):
     """)
 
 
+def migrate_045_pvp_aftermath(cursor):
+    """Which of leave, mug or hospitalise the winner picked.
+
+    NULL means the fight is won and the choice is still open. Existing
+    rows are backfilled to 'mug', because that is what every attack
+    before this did automatically -- the history should say what
+    happened, not what would happen now.
+    """
+    columns = {
+        row[1]
+        for row in cursor.execute(
+            "PRAGMA table_info(player_pvp_attacks)"
+        )
+    }
+
+    if "aftermath" not in columns:
+        cursor.execute(
+            "ALTER TABLE player_pvp_attacks ADD COLUMN aftermath TEXT"
+        )
+        cursor.execute(
+            """
+            UPDATE player_pvp_attacks
+            SET aftermath = 'mug'
+            WHERE outcome = 'victory'
+            """
+        )
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2071,6 +2099,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=44,
         name="housing_upkeep",
         apply=migrate_044_housing_upkeep,
+    ),
+    Migration(
+        version=45,
+        name="pvp_aftermath",
+        apply=migrate_045_pvp_aftermath,
     ),
 )
 

@@ -8,6 +8,31 @@ from game.player.status import send_to_hospital
 
 PVP_ENERGY_COST = 25
 PVP_HOSPITAL_SECONDS = 15 * 60
+
+# What a winner may do with someone who is already beaten. The fight
+# itself decides none of this: it leaves the loser on the floor and the
+# choice open, the way Torn's attack screen does.
+#
+# The three are exclusive on purpose. Taking their money and putting
+# them out of action for a quarter of an hour are different prizes, and
+# having to pick one is the whole decision.
+AFTERMATH_LEAVE = "leave"
+AFTERMATH_MUG = "mug"
+AFTERMATH_HOSPITALISE = "hospitalise"
+AFTERMATH_CHOICES = (
+    AFTERMATH_LEAVE,
+    AFTERMATH_MUG,
+    AFTERMATH_HOSPITALISE,
+)
+
+# A won fight does not stay open for ever. Without this a player could
+# beat someone, sit on the choice, and mug them the moment they came
+# back rich. Past the window the fight settles as though they walked.
+AFTERMATH_WINDOW_SECONDS = 5 * 60
+
+MUG_MINIMUM_PERCENT = 5
+MUG_MAXIMUM_PERCENT = 10
+MUG_CASH_CAP = 500
 APPROACHES = {
     "aggressive": {"damage": 1.20, "defence": 0.85, "accuracy": 0},
     "defensive": {"damage": 0.85, "defence": 1.25, "accuracy": 0},
@@ -225,14 +250,8 @@ def fight_player(
     xp_reward = 0
     hospital_until = None
     if victory:
-        mug_percent = rng.randint(5, 10) / 100
-        cash_stolen = min(
-            500,
-            defender.money,
-            int(defender.money * mug_percent * reward_multiplier),
-        )
-        defender.money -= cash_stolen
-        attacker.money += cash_stolen
+        # Winning is worth the experience whatever the winner does
+        # next; the money and the hospital bed are the part they choose.
         xp_reward = (
             0
             if reward_multiplier <= 0
@@ -243,10 +262,8 @@ def fight_player(
         )
         award_xp(attacker, xp_reward)
         defender.health = 0
-        hospital_until = send_to_hospital(
-            defender, PVP_HOSPITAL_SECONDS, now=now
-        )
     else:
+        # Losing is not a decision anybody gets to make.
         attacker.health = 0
         hospital_until = send_to_hospital(
             attacker, PVP_HOSPITAL_SECONDS, now=now
@@ -269,6 +286,73 @@ def fight_player(
         defender_start_health=defender_start_health,
         defender_max_health=defender_max_health,
     )
+
+
+@dataclass(frozen=True)
+class Aftermath:
+    """What the winner actually did with the person on the floor."""
+    choice: str
+    cash_stolen: int = 0
+    hospital_until: str | None = None
+
+
+def mug_takings(defender_money, percent, reward_multiplier=1.0):
+    """What comes out of a beaten player's pockets.
+
+    Capped twice over -- a share of what they carry, and a hard ceiling
+    -- so a rich player is worth robbing without being ruinous to lose
+    to. Banked money is never touched; that is what the bank is for.
+    """
+    if defender_money <= 0 or reward_multiplier <= 0:
+        return 0
+
+    return max(0, min(
+        MUG_CASH_CAP,
+        defender_money,
+        int(defender_money * (percent / 100) * reward_multiplier),
+    ))
+
+
+def apply_aftermath(
+    attacker,
+    defender,
+    choice,
+    reward_multiplier=1.0,
+    rng=None,
+    now=None,
+):
+    """Carry out the winner's decision. Pure rules, no persistence.
+
+    Called after `fight_player` has already settled who won, so it
+    trusts that and only applies the consequence. Refusing an unknown
+    choice rather than defaulting, because defaulting to `mug` would
+    quietly take money nobody asked to take.
+    """
+    if choice not in AFTERMATH_CHOICES:
+        raise PvpError("That is not something you can do.")
+
+    rng = rng or random.SystemRandom()
+
+    if choice == AFTERMATH_MUG:
+        percent = rng.randint(MUG_MINIMUM_PERCENT, MUG_MAXIMUM_PERCENT)
+        taken = mug_takings(
+            defender.money, percent, reward_multiplier
+        )
+        defender.money -= taken
+        attacker.money += taken
+        return Aftermath(choice=choice, cash_stolen=taken)
+
+    if choice == AFTERMATH_HOSPITALISE:
+        defender.health = 0
+        return Aftermath(
+            choice=choice,
+            hospital_until=send_to_hospital(
+                defender, PVP_HOSPITAL_SECONDS, now=now
+            ),
+        )
+
+    # Walking away costs the loser nothing but the fight itself.
+    return Aftermath(choice=AFTERMATH_LEAVE)
 
 
 def _power(player):

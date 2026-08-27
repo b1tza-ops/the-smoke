@@ -212,6 +212,8 @@ from database.repositories.pvp_contracts import (
     record_contract_fight,
 )
 from database.repositories.pvp import (
+    get_pending_aftermath,
+    settle_aftermath,
     AttackReservationError,
     get_attack_limits,
     get_pvp_targets,
@@ -305,8 +307,10 @@ from game.inventory import (
     InventoryError,
     add_item,
     equip_item,
+    get_equipment,
     get_equipment_summary,
     get_item,
+    loaded_rounds,
     remove_item,
     spend_ammo,
     unequip_item,
@@ -620,6 +624,55 @@ def internal_server_error(error):
             "Please try again shortly."
         ),
     ), 500
+
+
+def build_weapon_column(player_id, equipment):
+    """The loadout as the attack screen draws it, down the left.
+
+    One tile per firearm slot plus fists, which are always there and
+    never run out. A slot with nothing in it still gets a tile -- the
+    gap is information, the same way Torn shows an empty throwable
+    slot.
+
+    Ammunition is counted per calibre, so two pistols sharing a calibre
+    correctly show the same pool rather than implying two of them.
+    """
+    rounds = loaded_rounds(player_id)
+    unloaded = set(getattr(equipment, "unloaded", ()) or ())
+    column = []
+
+    for slot in ("primary", "secondary"):
+        item = equipment.items.get(slot) if equipment else None
+        if item is None:
+            column.append({
+                "slot": slot,
+                "name": None,
+                "empty": True,
+            })
+            continue
+
+        ammo_key = getattr(item, "ammo_key", None)
+        column.append({
+            "slot": slot,
+            "name": item.name,
+            "key": item.key,
+            "empty": False,
+            "ammo_key": ammo_key,
+            "rounds": rounds.get(ammo_key, 0) if ammo_key else None,
+            "unloaded": item.key in unloaded,
+        })
+
+    column.append({
+        "slot": "fists",
+        "name": "Fists",
+        "key": "fists",
+        "empty": False,
+        "ammo_key": None,
+        "rounds": None,
+        "unloaded": False,
+    })
+
+    return column
 
 
 def build_pvp_playback(result):
@@ -3324,7 +3377,22 @@ def pvp():
     if selected_approach == "balanced":
         selected_approach = "defensive"
 
-    if request.method == "POST":
+    aftermath = None
+
+    if request.method == "POST" and request.form.get("action") == "aftermath":
+        # A fight that has already been won; this only decides what
+        # happens to the person on the floor.
+        try:
+            aftermath = settle_aftermath(
+                int(request.form.get("attack_id", "0")),
+                player.id,
+                request.form.get("choice", ""),
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (PvpError, ValueError) as settle_error:
+            error = str(settle_error)
+
+    elif request.method == "POST":
         try:
             target_id = int(request.form.get("target_id", "0"))
             target_user_id = get_target_user_id(target_id)
@@ -3416,8 +3484,28 @@ def pvp():
     if notifications:
         mark_pvp_notifications_read(player.id)
 
+    # Squaring up to somebody: the attack screen before a punch is
+    # thrown. A plain link with a target on it, so it costs nothing and
+    # survives a refresh.
+    staged_target = None
+    if result is None:
+        try:
+            staged_id = int(request.args.get("target_id", "0"))
+        except ValueError:
+            staged_id = 0
+        if staged_id:
+            staged_target = next(
+                (
+                    target for target in targets
+                    if target["id"] == staged_id
+                    and not target["restricted"]
+                ),
+                None,
+            )
+
     return render_template(
         "pvp.html",
+        staged_target=staged_target,
         player=player,
         targets=targets,
         approaches=APPROACHES,
@@ -3436,6 +3524,12 @@ def pvp():
         pvp_profile=pvp_profile,
         streak_progress=get_streak_progress(pvp_profile["streak"]),
         rating_update=rating_update,
+        weapons=build_weapon_column(
+            player.id,
+            attacker_equipment or get_equipment_summary(player.id),
+        ),
+        pending_aftermath=get_pending_aftermath(player.id),
+        aftermath=aftermath,
     )
 
 
