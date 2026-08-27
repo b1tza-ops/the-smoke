@@ -589,6 +589,25 @@ GUIDES = (
                 "in the tent and **three and a half** in the penthouse. "
                 "Over a week that is most of an extra day of playing."
             ),
+            Text(
+                "A home also decides how many **different items** you "
+                "can carry: **20** in the tent, rising to **100** in "
+                "the penthouse. Stacks of the same item never count "
+                "against it, only the number of kinds."
+            ),
+            Table(
+                headers=("Home", "Carries"),
+                rows=(
+                    ("Tent", "20 items"),
+                    ("Hostel Room", "24 items"),
+                    ("Converted Van", "28 items"),
+                    ("Council Flat", "34 items"),
+                    ("Council House", "42 items"),
+                    ("City Apartment", "55 items"),
+                    ("Modern House", "75 items"),
+                    ("Penthouse", "100 items"),
+                ),
+            ),
             Note(
                 "Every home is a better deal than the one below it on "
                 "every figure. There are no trap purchases on this "
@@ -634,9 +653,10 @@ GUIDES = (
                 "yet:"
             ),
             Bullets((
-                "**Storage, safe capacity and garage space** are listed "
-                "on every property and are not yet read by anything. "
-                "Your inventory limit does not change when you move.",
+                "**Safe capacity and garage space** are listed on "
+                "every property and are not yet read by anything. "
+                "There is nowhere to keep cash safe and no vehicle to "
+                "put in a garage.",
                 "**Comfort** is shown but has no effect, so the "
                 "superior interior and the open bar are decoration for "
                 "now.",

@@ -20,6 +20,7 @@ from game.inventory.equipment import (
 )
 from game.inventory.service import (
     INVENTORY_SLOT_CAPACITY,
+    slot_capacity,
     InsufficientItemError,
     InvalidQuantityError,
     InventoryChangeResult,
@@ -42,6 +43,7 @@ __all__ = [
     "EQUIPMENT_SLOTS",
     "EquipmentError",
     "INVENTORY_SLOT_CAPACITY",
+    "slot_capacity",
     "ITEM_CATEGORIES",
     "AMMO_KEYS",
     "ITEMS",

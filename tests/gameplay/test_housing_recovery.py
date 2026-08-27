@@ -197,5 +197,100 @@ class RecoveryThroughTheLoaderTests(unittest.TestCase):
         self.assertEqual(player.nerve, player.max_nerve)
 
 
+class StorageCapacityTests(unittest.TestCase):
+    """A bigger home carries more, and a smaller one never confiscates.
+
+    Wiring this up nearly took slots away from every live player: they
+    all live in the tent, the tent was designed to hold five, and the
+    cap before homes meant anything was twenty. The ladder was rescaled
+    so the tent *is* twenty and it climbs from there.
+    """
+
+    def make_player(self, residence_key, carrying=0):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            residence_key=residence_key,
+            inventory={f"filler_{n}": 1 for n in range(carrying)},
+        )
+
+    def test_the_tent_holds_what_everyone_held_before(self):
+        from game.inventory import INVENTORY_SLOT_CAPACITY, slot_capacity
+
+        self.assertEqual(
+            slot_capacity(self.make_player("tent")),
+            INVENTORY_SLOT_CAPACITY,
+        )
+
+    def test_no_home_ever_holds_less_than_the_tent(self):
+        from game.housing import RESIDENCES
+        from game.inventory import INVENTORY_SLOT_CAPACITY, slot_capacity
+
+        for home in RESIDENCES:
+            with self.subTest(residence=home.key):
+                self.assertGreaterEqual(
+                    slot_capacity(self.make_player(home.key)),
+                    INVENTORY_SLOT_CAPACITY,
+                )
+
+    def test_climbing_the_ladder_carries_more(self):
+        from game.inventory import slot_capacity
+
+        self.assertEqual(slot_capacity(self.make_player("penthouse")), 100)
+        self.assertGreater(
+            slot_capacity(self.make_player("modern_house")),
+            slot_capacity(self.make_player("council_flat")),
+        )
+
+    def test_a_player_with_no_home_falls_back_to_the_default(self):
+        from game.inventory import INVENTORY_SLOT_CAPACITY, slot_capacity
+        from types import SimpleNamespace
+
+        self.assertEqual(
+            slot_capacity(SimpleNamespace(inventory={})),
+            INVENTORY_SLOT_CAPACITY,
+        )
+
+    def test_a_full_tent_refuses_a_new_item(self):
+        from game.inventory import InventoryFullError, add_item
+
+        player = self.make_player("tent", carrying=20)
+
+        with self.assertRaises(InventoryFullError):
+            add_item(player, "bottled_water")
+
+    def test_the_same_load_fits_in_a_penthouse(self):
+        from game.inventory import add_item
+
+        player = self.make_player("penthouse", carrying=20)
+
+        add_item(player, "bottled_water")
+
+        self.assertEqual(player.inventory["bottled_water"], 1)
+
+    def test_being_over_capacity_never_confiscates_anything(self):
+        # Nothing can move a player down a rung today, but if anything
+        # ever does, what they carry must survive it: only a brand new
+        # kind of item is refused.
+        from game.inventory import InventoryFullError, add_item, remove_item
+
+        player = self.make_player("tent", carrying=40)
+        player.inventory["bottled_water"] = 3
+
+        # Stacking what they already hold still works.
+        add_item(player, "bottled_water")
+        self.assertEqual(player.inventory["bottled_water"], 4)
+
+        # As does getting rid of it.
+        remove_item(player, "bottled_water", 2)
+        self.assertEqual(player.inventory["bottled_water"], 2)
+
+        # Only a new kind is refused.
+        with self.assertRaises(InventoryFullError):
+            add_item(player, "protein_bar")
+
+        self.assertEqual(len(player.inventory), 41)
+
+
 if __name__ == "__main__":
     unittest.main()

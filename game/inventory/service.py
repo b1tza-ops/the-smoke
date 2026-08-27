@@ -65,18 +65,40 @@ class ItemUseResult:
     quantity_after: int
 
 
+def slot_capacity(player):
+    """How many different items this player can carry.
+
+    Where they live decides it. The tent every player starts in holds
+    exactly what everyone held before homes meant anything, so wiring
+    this up took nothing away from anyone -- it only ever adds.
+
+    A player somehow above their capacity is never forced to drop
+    anything: the check below blocks a *new* kind of item, so what they
+    already carry can still be stacked, used and sold.
+    """
+    from game.housing.service import get_residence
+
+    residence = get_residence(
+        getattr(player, "residence_key", None)
+    )
+
+    if residence is None:
+        return INVENTORY_SLOT_CAPACITY
+
+    return max(INVENTORY_SLOT_CAPACITY, residence.storage_capacity)
+
+
 def add_item(player, item_key, quantity=1):
     item = _require_item(item_key)
     _validate_quantity(quantity)
     inventory = _inventory_for(player)
     current_quantity = inventory.get(item.key, 0)
+    capacity = slot_capacity(player)
 
-    if (
-        current_quantity == 0
-        and len(inventory) >= INVENTORY_SLOT_CAPACITY
-    ):
+    if current_quantity == 0 and len(inventory) >= capacity:
         raise InventoryFullError(
-            "Inventory has no free item slots."
+            f"No free slots. Your home holds {capacity} "
+            f"different items."
         )
 
     new_quantity = current_quantity + quantity
@@ -206,7 +228,7 @@ def inventory_menu(player):
         print("\n===== INVENTORY =====")
         print(
             "Capacity:",
-            f"{len(inventory)}/{INVENTORY_SLOT_CAPACITY}",
+            f"{len(inventory)}/{slot_capacity(player)}",
         )
 
         if not inventory:

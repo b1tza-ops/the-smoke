@@ -333,6 +333,24 @@ class HousingGuideTests(unittest.TestCase):
             with self.subTest(fitting=name):
                 self.assertEqual(quoted[name], f"£{price:,}")
 
+    def test_the_storage_table_matches_the_residences(self):
+        from game.housing import RESIDENCES
+
+        quoted = {row[0]: row[1] for row in self.rows_of("Home") if False}
+        for block in self.guide.blocks:
+            if isinstance(block, Table) and block.headers == ("Home", "Carries"):
+                quoted = {row[0]: row[1] for row in block.rows}
+                break
+
+        self.assertEqual(len(quoted), len(RESIDENCES))
+
+        for home in RESIDENCES:
+            with self.subTest(residence=home.key):
+                self.assertEqual(
+                    quoted[home.name],
+                    f"{home.storage_capacity} items",
+                )
+
     def test_every_picture_it_shows_exists(self):
         from pathlib import Path as _Path
 
@@ -370,7 +388,7 @@ class HousingGuideTests(unittest.TestCase):
             for item in block.items
         )
 
-        for unwired in ("Storage", "Comfort", "Gym gains"):
+        for unwired in ("Safe capacity", "Comfort", "Gym gains"):
             with self.subTest(attribute=unwired):
                 self.assertIn(unwired, prose)
 
