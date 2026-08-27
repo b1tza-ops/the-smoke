@@ -3263,6 +3263,10 @@ def fight():
                 fought_opponent.key,
                 result.victory,
             )
+            # Street fights count towards the daily contracts too.
+            # They used to count for nothing, which made the whole board
+            # unreachable on a server without an opponent to attack.
+            record_contract_fight(player.id, result)
             record_player_action(
                 "npc_combat",
                 (

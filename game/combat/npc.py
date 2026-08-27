@@ -180,12 +180,44 @@ def get_combat_block(player, opponent=None):
         return "You cannot fight while working a shift."
     if player.health <= 0:
         return "You are not healthy enough to fight."
-    if player.energy < opponent.energy_cost:
-        return (
-            f"You need {opponent.energy_cost} energy to fight "
-            f"{opponent.name}."
-        )
+
+    if opponent is not None:
+        if player.energy < opponent.energy_cost:
+            return (
+                f"You need {opponent.energy_cost} energy to fight "
+                f"{opponent.name}."
+            )
+        return None
+
+    # Asked about the player rather than a particular fight, which is
+    # what the fight page does when it renders itself. Every guard above
+    # already handled a missing opponent; this one read
+    # `opponent.energy_cost` regardless and took the whole page down
+    # with an AttributeError -- for healthy players only, since anyone
+    # in hospital, in jail, travelling or on a shift returned before
+    # reaching it. The page worked for exactly the people who could not
+    # use it.
+    cheapest = cheapest_fight_cost(player.current_district)
+
+    if cheapest is not None and player.energy < cheapest:
+        return f"You need {cheapest} energy to fight anyone here."
+
     return None
+
+
+def cheapest_fight_cost(district):
+    """The least energy any fight in this district costs, or None.
+
+    None means there is nobody to fight there, which is not a reason to
+    stop a player doing anything -- it just means this district has no
+    opponents in it.
+    """
+    costs = [
+        opponent.energy_cost
+        for opponent in get_district_opponents(district)
+    ]
+
+    return min(costs) if costs else None
 
 
 def fight_opponent(player, equipment, opponent, rng=None, now=None):

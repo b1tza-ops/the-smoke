@@ -272,9 +272,9 @@ Fourteen gyms, ordered by price, level and average gain together:
 | The Warehouse | Shoreditch | £25,000 | 5 | Middleweight |
 | Iron Yard | Shoreditch | £60,000 | 6 | Middleweight |
 | The Arches | Hackney | £150,000 | 7 | Middleweight |
-| Marsh Athletic | Hackney | £400,000 | 9 | Heavyweight |
-| Powerhouse | Hackney | £1,000,000 | 12 | Heavyweight |
-| The Lock | Hackney | £2,500,000 | 15 | Heavyweight |
+| Marsh Athletic | Hackney | £200,000 | 9 | Heavyweight |
+| Powerhouse | Hackney | £300,000 | 12 | Heavyweight |
+| The Lock | Hackney | £400,000 | 15 | Heavyweight |
 
 A specialist can beat the gym above it on its one strong stat without
 being the better gym overall — West End Fight Lab trains no speed, and

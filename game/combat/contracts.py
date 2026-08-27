@@ -15,56 +15,100 @@ class PvpContract:
     item_key: str | None = None
     required_approach: str | None = None
 
+    @property
+    def needs_another_player(self):
+        """Whether this contract can only be finished against a person.
+
+        The approach contracts are about PvP tactics -- picking
+        Aggressive or Evasive is a choice that only exists in a player
+        fight -- so they stay player-only. Everything else counts any
+        fight, including street opponents.
+        """
+        return self.required_approach is not None
+
 
 CONTRACT_POOL = (
     PvpContract(
         "first_blood", "First blood",
-        "Win one rated player fight.", "wins", 1,
+        "Win one fight, against anyone.", "wins", 1,
         150, 30, "energy_drink",
     ),
     PvpContract(
         "street_patrol", "Street patrol",
-        "Complete three rated player fights.", "attempts", 3,
+        "Finish three fights, win or lose.", "attempts", 3,
         225, 40,
     ),
     PvpContract(
         "clean_sweep", "Clean sweep",
-        "Win two rated player fights.", "wins", 2,
+        "Win two fights, against anyone.", "wins", 2,
         300, 55, "first_aid_kit",
     ),
     PvpContract(
         "cash_run", "Cash run",
-        "Mug £100 from rated player fights.", "cash", 100,
+        "Take £100 from fights.", "cash", 100,
         200, 45,
     ),
     PvpContract(
         "go_loud", "Go loud",
-        "Win a rated fight using Aggressive.", "approach_wins", 1,
+        "Win a player fight using Aggressive.", "approach_wins", 1,
         225, 45, None, "aggressive",
     ),
     PvpContract(
         "hold_the_line", "Hold the line",
-        "Win a rated fight using Defensive.", "approach_wins", 1,
+        "Win a player fight using Defensive.", "approach_wins", 1,
         225, 45, None, "defensive",
     ),
     PvpContract(
         "precision_work", "Precision work",
-        "Win a rated fight using Precise.", "approach_wins", 1,
+        "Win a player fight using Precise.", "approach_wins", 1,
         225, 45, None, "precise",
     ),
     PvpContract(
         "untouchable", "Untouchable",
-        "Win a rated fight using Evasive.", "approach_wins", 1,
+        "Win a player fight using Evasive.", "approach_wins", 1,
         225, 45, None, "evasive",
     ),
 )
 CONTRACTS_BY_KEY = {contract.key: contract for contract in CONTRACT_POOL}
 
 
+DAILY_CONTRACT_COUNT = 3
+
+# At least this many of each day's contracts must be finishable without
+# another player. The board used to be sampled freely from the pool, and
+# four of the eight need a person on the other side, so 31 days a year
+# rolled a board a solo player could not touch at all -- on a server
+# with almost nobody on it, that is most days made worthless.
+MINIMUM_SOLO_CONTRACTS = 2
+
+SOLO_CONTRACTS = tuple(
+    contract for contract in CONTRACT_POOL
+    if not contract.needs_another_player
+)
+
+
 def daily_contracts(now=None):
+    """Three contracts, the same for everyone, rerolled at UTC midnight.
+
+    Seeded off the date so every player sees the same board without
+    anything being stored, and so yesterday's board can still be worked
+    out when a fight needs recording against it.
+    """
     now = _now(now)
     generator = random.Random(now.date().toordinal())
-    return tuple(generator.sample(CONTRACT_POOL, 3))
+
+    chosen = generator.sample(SOLO_CONTRACTS, MINIMUM_SOLO_CONTRACTS)
+    remaining = [
+        contract for contract in CONTRACT_POOL
+        if contract not in chosen
+    ]
+    chosen += generator.sample(
+        remaining,
+        DAILY_CONTRACT_COUNT - MINIMUM_SOLO_CONTRACTS,
+    )
+    generator.shuffle(chosen)
+
+    return tuple(chosen)
 
 
 def daily_key(now=None):

@@ -12,9 +12,17 @@ from game.world.districts import DISTRICTS
 
 class GymProgressionTests(unittest.TestCase):
     def test_the_roster_runs_from_free_to_the_top_of_london(self):
+        # The price of the top gym is deliberately not pinned here.
+        # What this test is about is the shape of the roster: fourteen
+        # gyms, the first free, the last the dearest in London. What
+        # that costs is a balance decision, held to a curve in
+        # tests/gameplay/test_gym_pricing.py instead.
         self.assertEqual(len(GYMS), 14)
         self.assertEqual(GYMS[0].membership_cost, 0)
-        self.assertEqual(GYMS[-1].membership_cost, 2_500_000)
+        self.assertEqual(
+            GYMS[-1].membership_cost,
+            max(gym.membership_cost for gym in GYMS),
+        )
 
     def test_membership_cost_level_and_gains_all_rise_together(self):
         costs = [gym.membership_cost for gym in GYMS]

@@ -85,10 +85,21 @@ def get_contract_board(player_id, now=None):
 def record_contract_fight(
     player_id,
     result,
-    approach,
-    rated,
+    approach=None,
+    rated=True,
     now=None,
 ):
+    """Credit a finished fight against today's contracts.
+
+    Takes either kind of fight. A street fight passes no approach, which
+    means the approach contracts simply do not move -- picking
+    Aggressive or Evasive is a choice that only exists against a person.
+
+    `rated` is the player-fight guard: an unrated attack (the same
+    target over and over) earns no contract progress either. Street
+    fights are always counted, since the per-opponent cooldown already
+    limits them.
+    """
     if not rated:
         return
     now = _now(now)
@@ -226,14 +237,30 @@ def _progress_amount(contract, result, approach):
     if contract.metric == "wins":
         return 1 if result.victory else 0
     if contract.metric == "cash":
-        return result.cash_stolen
+        return _cash_taken(result)
     if contract.metric == "approach_wins":
+        # No approach means a street fight, which cannot satisfy these.
         return (
             1
             if result.victory
+            and approach is not None
             and approach == contract.required_approach
             else 0
         )
+    return 0
+
+
+def _cash_taken(result):
+    """What the player walked away with, whichever fight this was.
+
+    A player fight reports `cash_stolen` and a street fight reports
+    `cash_reward`. The contract does not care which pocket it came out
+    of, so read whichever the result carries.
+    """
+    for field in ("cash_stolen", "cash_reward"):
+        amount = getattr(result, field, None)
+        if amount is not None:
+            return max(0, amount)
     return 0
 
 

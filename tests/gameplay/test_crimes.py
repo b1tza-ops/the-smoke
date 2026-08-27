@@ -117,8 +117,17 @@ class CrimeProgressionTests(unittest.TestCase):
         )
 
         self.assertEqual(progression.reputation_bonus_percent, 10)
-        self.assertEqual(progression.min_reward, 55)
-        self.assertEqual(progression.max_reward, 165)
+        # Measured against the crime's own rewards rather than pinned
+        # numbers: this test is about the bonus being 10%, and hard
+        # figures here only break whenever the economy is retuned.
+        self.assertEqual(
+            progression.min_reward,
+            round(crime.min_reward * 1.10),
+        )
+        self.assertEqual(
+            progression.max_reward,
+            round(crime.max_reward * 1.10),
+        )
         self.assertEqual(
             capped.reputation_bonus_percent,
             MAX_REPUTATION_BONUS_PERCENT,
