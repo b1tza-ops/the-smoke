@@ -61,7 +61,9 @@ def test_equipment_bonuses_drive_a_winning_fight():
         rng=HighRolls(),
     )
     assert result.victory is True
-    assert fighter.energy == 100 - COMBAT_ENERGY_COST
+    assert fighter.energy == (
+        100 - OPPONENTS_BY_KEY["canal_yard_enforcer"].energy_cost
+    )
     assert fighter.money >= 70
     assert fighter.xp == 35
     assert result.rounds

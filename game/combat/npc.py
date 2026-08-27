@@ -26,6 +26,7 @@ class Opponent:
     xp_reward: int
     cooldown_seconds: int
     hospital_seconds: int
+    energy_cost: int = COMBAT_ENERGY_COST
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,7 @@ OPPONENTS = (
         xp_reward=15,
         cooldown_seconds=5 * 60,
         hospital_seconds=8 * 60,
+        energy_cost=5,
     ),
     Opponent(
         key="canal_yard_enforcer",
@@ -82,6 +84,7 @@ OPPONENTS = (
         xp_reward=35,
         cooldown_seconds=10 * 60,
         hospital_seconds=15 * 60,
+        energy_cost=10,
     ),
     Opponent(
         key="soho_door_enforcer",
@@ -98,11 +101,12 @@ OPPONENTS = (
         defence=22,
         speed=18,
         dexterity=17,
-        cash_min=250,
-        cash_max=400,
+        cash_min=120,
+        cash_max=200,
         xp_reward=80,
         cooldown_seconds=20 * 60,
         hospital_seconds=30 * 60,
+        energy_cost=15,
     ),
 )
 OPPONENTS_BY_KEY = {opponent.key: opponent for opponent in OPPONENTS}
@@ -121,6 +125,43 @@ def get_district_opponents(district):
     )
 
 
+# What is left of a payout once you have outgrown the fight. Rolling
+# someone far beneath you is not lucrative, and without this the hardest
+# opponent you can beat is the only rational thing to do forever: the
+# win rate goes from 2% to 100% between stats 10 and 20, so there is no
+# gradient to price the reward against -- only how far past them you are.
+OUTGROWN_PAYOUT_FLOOR = 0.15
+
+
+def combat_power(strength, defence, speed, dexterity):
+    return strength + defence + speed + dexterity
+
+
+def payout_share(player, opponent, equipment=None):
+    """How much of an opponent's purse is still worth taking.
+
+    Full price while they are your equal or better; falling away as you
+    outgrow them, never quite to nothing.
+    """
+    theirs = combat_power(
+        opponent.strength,
+        opponent.defence,
+        opponent.speed,
+        opponent.dexterity,
+    )
+    mine = combat_power(
+        player.strength + getattr(equipment, "strength_bonus", 0),
+        player.defence + getattr(equipment, "defence_bonus", 0),
+        player.speed,
+        player.dexterity,
+    )
+
+    return max(
+        OUTGROWN_PAYOUT_FLOOR,
+        min(1.0, theirs / max(1, mine)),
+    )
+
+
 def get_combat_block(player, opponent=None):
     if opponent is not None and player.current_district != opponent.district:
         return f"{opponent.name} operates in {opponent.district.title()}."
@@ -134,8 +175,11 @@ def get_combat_block(player, opponent=None):
         return "You cannot fight while working a shift."
     if player.health <= 0:
         return "You are not healthy enough to fight."
-    if player.energy < COMBAT_ENERGY_COST:
-        return f"You need {COMBAT_ENERGY_COST} energy to fight."
+    if player.energy < opponent.energy_cost:
+        return (
+            f"You need {opponent.energy_cost} energy to fight "
+            f"{opponent.name}."
+        )
     return None
 
 
@@ -145,7 +189,7 @@ def fight_opponent(player, equipment, opponent, rng=None, now=None):
         raise CombatError(block)
 
     rng = rng or random.SystemRandom()
-    player.energy -= COMBAT_ENERGY_COST
+    player.energy -= opponent.energy_cost
     player_health = player.health
     opponent_health = opponent.health
     log = []
@@ -214,7 +258,10 @@ def fight_opponent(player, equipment, opponent, rng=None, now=None):
 
     player.health = player_health
     if victory:
-        cash_reward = rng.randint(opponent.cash_min, opponent.cash_max)
+        cash_reward = round(
+            rng.randint(opponent.cash_min, opponent.cash_max)
+            * payout_share(player, opponent, equipment)
+        )
         player.money += cash_reward
         award_xp(player, opponent.xp_reward)
         hospital_until = None

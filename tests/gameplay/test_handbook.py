@@ -15,7 +15,6 @@ import re
 import unittest
 
 from game.casino.limits import BET_PER_LEVEL, MINIMUM_LEVEL
-from game.combat.npc import COMBAT_ENERGY_COST
 from game.crime import CRIMES
 from game.gym.definitions import GYMS
 from game.handbook import GUIDES, RULES, get_guide, inline, sections
@@ -145,10 +144,21 @@ class GuideAccuracyTests(unittest.TestCase):
             with self.subTest(crime=crime.key):
                 self.assertIn(f"{crime.success_chance}%", text)
 
-    def test_the_fight_energy_cost_is_right(self):
-        self.assertIn(
-            f"**{COMBAT_ENERGY_COST} energy**", self.guide("fighting")
-        )
+    def test_every_opponent_is_listed_at_its_real_energy_cost(self):
+        # The guide said "every fight costs 10 energy" for as long as
+        # that was true and then afterwards. Opponents charge their own
+        # cost now, so read them back out of the table.
+        from game.combat.npc import OPPONENTS
+
+        text = self.guide("fighting")
+
+        for opponent in OPPONENTS:
+            with self.subTest(opponent=opponent.key):
+                self.assertIn(str(opponent.energy_cost), text)
+                self.assertIn(
+                    f"£{opponent.cash_min}\u2013{opponent.cash_max}",
+                    text,
+                )
 
     def test_every_pistol_and_round_is_listed_at_its_real_price(self):
         text = self.guide("guns-and-ammunition")

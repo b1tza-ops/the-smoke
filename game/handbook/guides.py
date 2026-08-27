@@ -50,7 +50,7 @@ GUIDES = (
                 "Join **Average Joe's Camden** for £100. It trains 20% "
                 "harder than the free gym and pays that back quickly.",
                 "Fight the **Market Runner** when you have energy spare. "
-                "It costs 10 energy and pays £30–55 plus 15 XP.",
+                "It costs 5 energy and pays £30–55 plus 15 XP.",
                 "Put anything you are not about to spend in the "
                 "[bank](/bank). Cash on you can be taken; cash in the "
                 "bank cannot.",
@@ -314,22 +314,26 @@ GUIDES = (
         icon="pvp",
         blocks=(
             Text(
-                "Every fight costs **10 energy**. What you bring to it is "
-                "your stats plus whatever you have equipped."
+                "A fight costs **energy** rather than nerve, so it "
+                "stacks on top of everything you earn from crime. A "
+                "harder opponent costs more of it — 5, 10 or 15. What "
+                "you bring is your stats plus whatever you have "
+                "equipped."
             ),
             Heading("Street opponents"),
             Table(
-                headers=("Opponent", "District", "Pays", "XP", "Strength"),
+                headers=("Opponent", "District", "Energy", "Pays", "XP"),
                 rows=(
-                    ("Market Runner", "Camden", "£30–55", "15", "7"),
-                    ("Canal Yard Enforcer", "Camden", "£70–125", "35", "13"),
-                    ("Soho Door Enforcer", "Soho", "£250–400", "80", "25"),
+                    ("Market Runner", "Camden", "5", "£30–55", "15"),
+                    ("Canal Yard Enforcer", "Camden", "10", "£70–125", "35"),
+                    ("Soho Door Enforcer", "Soho", "15", "£120–200", "80"),
                 ),
             ),
             Text(
-                "Street opponents are the steadiest income in the game. "
-                "They cost energy rather than nerve, so they stack on top "
-                "of everything you earn from crime."
+                "Street opponents pay best while they can still hurt "
+                "you. **Once you outgrow one, their purse shrinks** — "
+                "rolling someone far beneath you is not lucrative, and "
+                "it falls away to a sixth of the full amount."
             ),
             Heading("Player fights"),
             Text(
