@@ -87,7 +87,7 @@
                             <div><dt>Defence</dt><dd>{{ player.defence }}</dd></div>
                             <div><dt>Speed</dt><dd>{{ player.speed }}</dd></div>
                             <div><dt>Dexterity</dt><dd>{{ player.dexterity }}</dd></div>
-                            <div class="overview-list__total"><dt>Total</dt><dd>{{ player.strength + player.defence + player.speed + player.dexterity }}</dd></div>
+                            <div class="overview-list__total"><dt>Total</dt><dd>{{ "%.2f"|format(player.strength + player.defence + player.speed + player.dexterity) }}</dd></div>
                         </dl>
                     </details>
 
