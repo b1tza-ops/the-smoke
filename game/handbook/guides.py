@@ -344,6 +344,64 @@ GUIDES = (
                 "fight puts you in hospital, where you can do nothing until "
                 "you heal."
             ),
+            Heading("Taking a turn"),
+            Text(
+                "A player fight runs a turn at a time. Each turn you "
+                "pick what to swing, they answer, and you pick again — "
+                "up to **25 turns**, after which whoever is in better "
+                "shape has won. A draw goes to the defender, so starting "
+                "something you cannot finish pays nothing."
+            ),
+            Table(
+                headers=("Slot", "What goes in it", "Runs out?"),
+                rows=(
+                    ("Primary", "The bigger firearm", "Costs a round"),
+                    ("Secondary", "A backup sidearm", "Costs a round"),
+                    ("Melee", "Blades, bats, hammers", "Never"),
+                    ("Throwable", "Bricks, bottles, petrol bombs",
+                     "Gone when thrown"),
+                    ("Fists", "Always available", "Never"),
+                ),
+            ),
+            Note(
+                "A throwable hits harder than a small pistol and is gone "
+                "the moment it leaves your hand — that is the trade. "
+                "Bricks and bottles come from any corner shop; the made "
+                "ones are only at the Kingsland Arms.",
+                tone="tip",
+            ),
+            Text(
+                "The whole fight costs **25 energy**, charged once when "
+                "you start it rather than per turn, so a long fight is "
+                "not a more expensive one. You can walk away at any "
+                "point; you keep nothing, and you do not get the energy "
+                "back."
+            ),
+            Heading("Once they are down"),
+            Text(
+                "Winning does not decide what happens next — you do. "
+                "The fight ends with them on the floor and three things "
+                "you can do about it."
+            ),
+            Table(
+                headers=("Choice", "What it does"),
+                rows=(
+                    ("Leave", "Nothing. They keep their money and walk "
+                              "away when they have healed."),
+                    ("Mug", "Takes 5–10% of the cash they are carrying, "
+                            "up to £500. Banked money is safe."),
+                    ("Hospitalise",
+                     "Puts them in hospital for 15 minutes. They lose "
+                     "no money, but they lose the time."),
+                ),
+            ),
+            Note(
+                "**You get one of the three, not two.** Robbing someone "
+                "and putting them out of action are different prizes: "
+                "take the money, or take them off the board. Decide "
+                "within five minutes or they get up and walk off.",
+                tone="tip",
+            ),
             Note(
                 "An equipped gun with no ammunition contributes **nothing**. "
                 "It sits in the slot marked inert and you fight as though "

@@ -211,7 +211,20 @@ from database.repositories.pvp_contracts import (
     get_contract_board,
     record_contract_fight,
 )
+from game.combat.pvp import PVP_HOSPITAL_SECONDS
+from game.player.progression import award_xp
+from game.player.status import send_to_hospital
+from game.combat.turns import MAXIMUM_TURNS, TurnError
+from database.repositories.fights import (
+    flee as flee_fight,
+    get_open_fight,
+    start_fight,
+    take_fight_turn,
+    weapons_for,
+)
 from database.repositories.pvp import (
+    get_pending_aftermath,
+    settle_aftermath,
     AttackReservationError,
     get_attack_limits,
     get_pvp_targets,
@@ -305,8 +318,10 @@ from game.inventory import (
     InventoryError,
     add_item,
     equip_item,
+    get_equipment,
     get_equipment_summary,
     get_item,
+    loaded_rounds,
     remove_item,
     spend_ammo,
     unequip_item,
@@ -620,6 +635,55 @@ def internal_server_error(error):
             "Please try again shortly."
         ),
     ), 500
+
+
+def build_weapon_column(player_id, equipment):
+    """The loadout as the attack screen draws it, down the left.
+
+    One tile per firearm slot plus fists, which are always there and
+    never run out. A slot with nothing in it still gets a tile -- the
+    gap is information, the same way Torn shows an empty throwable
+    slot.
+
+    Ammunition is counted per calibre, so two pistols sharing a calibre
+    correctly show the same pool rather than implying two of them.
+    """
+    rounds = loaded_rounds(player_id)
+    unloaded = set(getattr(equipment, "unloaded", ()) or ())
+    column = []
+
+    for slot in ("primary", "secondary"):
+        item = equipment.items.get(slot) if equipment else None
+        if item is None:
+            column.append({
+                "slot": slot,
+                "name": None,
+                "empty": True,
+            })
+            continue
+
+        ammo_key = getattr(item, "ammo_key", None)
+        column.append({
+            "slot": slot,
+            "name": item.name,
+            "key": item.key,
+            "empty": False,
+            "ammo_key": ammo_key,
+            "rounds": rounds.get(ammo_key, 0) if ammo_key else None,
+            "unloaded": item.key in unloaded,
+        })
+
+    column.append({
+        "slot": "fists",
+        "name": "Fists",
+        "key": "fists",
+        "empty": False,
+        "ammo_key": None,
+        "rounds": None,
+        "unloaded": False,
+    })
+
+    return column
 
 
 def build_pvp_playback(result):
@@ -3301,6 +3365,83 @@ def fight():
 
 
 
+def _settle_fight(player, defender, fight, outcome):
+    """Book a finished turn-by-turn fight the way a one-shot one was.
+
+    Rating, contracts, the activity feed and the aftermath all read a
+    result object, so the fight is turned back into one rather than
+    teaching four callers about a new shape. The cash is zero here on
+    purpose -- what the winner takes is still their choice, settled
+    afterwards.
+    """
+    victory = bool(outcome.victory)
+    xp_reward = 0
+
+    if victory:
+        xp_reward = (
+            0
+            if fight.reward_multiplier <= 0
+            else max(5, int((20 + defender.level * 4)
+                            * fight.reward_multiplier))
+        )
+        award_xp(player, xp_reward)
+    else:
+        player.health = 0
+        send_to_hospital(player, PVP_HOSPITAL_SECONDS)
+
+    player.health = outcome.attacker_health if victory else 0
+    if victory:
+        defender.health = 0
+
+    save_player(player)
+    save_player(defender)
+
+    result = SimpleNamespace(
+        victory=victory,
+        attacker_health=outcome.attacker_health,
+        defender_health=outcome.defender_health,
+        cash_stolen=0,
+        xp_reward=xp_reward,
+        rounds=tuple(
+            SimpleNamespace(
+                round_number=entry["turn"],
+                actor="attacker" if entry["attacker_event"] == "hit" else "defender",
+                event=entry["attacker_event"],
+                damage=entry["attacker_damage"],
+                attacker_health=entry["attacker"],
+                defender_health=entry["defender"],
+            )
+            for entry in fight.log
+        ),
+        hospital_until=None,
+        attacker_start_health=fight.attacker_max_health,
+        attacker_max_health=fight.attacker_max_health,
+        defender_start_health=fight.defender_max_health,
+        defender_max_health=fight.defender_max_health,
+    )
+
+    rating_update = record_pvp_attack(
+        player.id, defender.id, fight.approach,
+        result, fight.reward_multiplier,
+    )
+    record_contract_fight(
+        player.id, result, fight.approach, rated=rating_update.rated
+    )
+    record_player_action(
+        "pvp_combat",
+        f"{'Defeated' if victory else 'Lost to'} {defender.name}.",
+        {
+            "defender_id": defender.id,
+            "victory": victory,
+            "turns": outcome.turn,
+            "xp_reward": xp_reward,
+            "approach": fight.approach,
+        },
+    )
+
+    return result, rating_update
+
+
 @app.route("/pvp", methods=["GET", "POST"])
 def pvp():
     if "user_id" not in session:
@@ -3324,7 +3465,59 @@ def pvp():
     if selected_approach == "balanced":
         selected_approach = "defensive"
 
-    if request.method == "POST":
+    aftermath = None
+
+    if request.method == "POST" and request.form.get("action") == "aftermath":
+        # A fight that has already been won; this only decides what
+        # happens to the person on the floor.
+        try:
+            aftermath = settle_aftermath(
+                int(request.form.get("attack_id", "0")),
+                player.id,
+                request.form.get("choice", ""),
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (PvpError, ValueError) as settle_error:
+            error = str(settle_error)
+
+    elif request.method == "POST" and request.form.get("action") == "flee":
+        try:
+            walked = get_open_fight(player.id)
+            flee_fight(int(request.form.get("fight_id", "0")), player.id)
+            if walked is not None:
+                # The reservation is only cleared when an attack is
+                # recorded. Walking away records nothing, so without
+                # this the target stays locked to a fight that ended.
+                release_pvp_attack(player.id, walked.defender_id)
+        except (PvpError, ValueError) as flee_error:
+            error = str(flee_error)
+
+    elif request.method == "POST" and request.form.get("action") == "turn":
+        # One swing. The fight is already open; this only advances it.
+        try:
+            fight = get_open_fight(player.id)
+            if fight is None:
+                raise PvpError("You are not in a fight.")
+
+            defender = Player(*get_player_by_user_id(
+                get_target_user_id(fight.defender_id)
+            ))
+            outcome, fight = take_fight_turn(
+                fight.id,
+                player,
+                defender,
+                request.form.get("weapon", ""),
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+
+            if outcome.finished:
+                result, rating_update = _settle_fight(
+                    player, defender, fight, outcome
+                )
+        except (PvpError, TurnError, ValueError, TypeError) as turn_error:
+            error = str(turn_error)
+
+    elif request.method == "POST":
         try:
             target_id = int(request.form.get("target_id", "0"))
             target_user_id = get_target_user_id(target_id)
@@ -3337,49 +3530,21 @@ def pvp():
             update_travel(defender)
             update_player_status(defender)
 
+            block = get_pvp_block(player, defender)
+            if block is not None:
+                raise PvpError(block)
+
             limits = reserve_pvp_attack(player.id, defender.id)
 
-            attacker_equipment = get_equipment_summary(player.id)
-            defender_equipment = get_equipment_summary(defender.id)
-
-            result = fight_player(
+            start_fight(
                 player,
-                defender,
-                attacker_equipment,
-                defender_equipment,
+                defender.id,
+                defender.health,
+                defender.max_health,
                 selected_approach,
                 reward_multiplier=limits.reward_multiplier,
             )
-            rounds_spent = spend_ammo(player, attacker_equipment)
-            save_player(player)
-            save_player(defender)
-            rating_update = record_pvp_attack(
-                player.id,
-                defender.id,
-                selected_approach,
-                result,
-                limits.reward_multiplier,
-            )
-            record_contract_fight(
-                player.id,
-                result,
-                selected_approach,
-                rated=rating_update.rated,
-            )
-            record_player_action(
-                "pvp_combat",
-                (
-                    f"{'Defeated' if result.victory else 'Lost to'} "
-                    f"{defender.name}."
-                ),
-                {
-                    "defender_id": defender.id,
-                    "victory": result.victory,
-                    "cash_stolen": result.cash_stolen,
-                    "xp_reward": result.xp_reward,
-                    "approach": selected_approach,
-                },
-            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
         except (PvpError, AttackReservationError, ValueError) as pvp_error:
             error = str(pvp_error)
             if defender is not None:
@@ -3416,8 +3581,32 @@ def pvp():
     if notifications:
         mark_pvp_notifications_read(player.id)
 
+    # Squaring up to somebody: the attack screen before a punch is
+    # thrown. A plain link with a target on it, so it costs nothing and
+    # survives a refresh.
+    # Not while a fight is already going: the START FIGHT form posts to
+    # the current URL, which still carries ?target_id, so without this
+    # the staging screen renders on top of the fight it just started.
+    open_fight = get_open_fight(player.id)
+    staged_target = None
+    if result is None and open_fight is None:
+        try:
+            staged_id = int(request.args.get("target_id", "0"))
+        except ValueError:
+            staged_id = 0
+        if staged_id:
+            staged_target = next(
+                (
+                    target for target in targets
+                    if target["id"] == staged_id
+                    and not target["restricted"]
+                ),
+                None,
+            )
+
     return render_template(
         "pvp.html",
+        staged_target=staged_target,
         player=player,
         targets=targets,
         approaches=APPROACHES,
@@ -3436,6 +3625,11 @@ def pvp():
         pvp_profile=pvp_profile,
         streak_progress=get_streak_progress(pvp_profile["streak"]),
         rating_update=rating_update,
+        weapons=weapons_for(player.id),
+        fight=open_fight,
+        maximum_turns=MAXIMUM_TURNS,
+        pending_aftermath=get_pending_aftermath(player.id),
+        aftermath=aftermath,
     )
 
 

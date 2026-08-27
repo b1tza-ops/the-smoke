@@ -16,6 +16,7 @@ from game.inventory.equipment import (
     equip_item,
     get_equipment,
     get_equipment_summary,
+    loaded_rounds,
     unequip_item,
 )
 from game.inventory.service import (
@@ -63,6 +64,7 @@ __all__ = [
     "equip_item",
     "get_equipment",
     "get_equipment_summary",
+    "loaded_rounds",
     "get_item",
     "is_ammo",
     "weapons_using",

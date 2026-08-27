@@ -84,7 +84,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            tuple(range(1, 45)),
+            tuple(range(1, 50)),
         )
 
         with closing(
@@ -276,6 +276,11 @@ class MigrationTests(unittest.TestCase):
                     (42, "operations_controls"),
                     (43, "housing_facilities"),
                     (44, "housing_upkeep"),
+                    (45, "pvp_aftermath"),
+                    (46, "weapon_slots"),
+                    (47, "melee_slot"),
+                    (48, "player_fights"),
+                    (49, "throwable_items"),
                 ],
             )
 
@@ -315,7 +320,12 @@ class MigrationTests(unittest.TestCase):
                 """
             ).fetchall()
 
-            self.assertEqual(len(item_rows), 44)
+            # Counted rather than pinned: the catalogue grows, and
+            # the point here is that the upgrade path registers every
+            # item, not that there are exactly N of them.
+            from game.inventory import ITEMS
+
+            self.assertEqual(len(item_rows), len(ITEMS))
 
             starter_inventory = conn.execute(
                 """
@@ -560,7 +570,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            tuple(range(1, 45)),
+            tuple(range(1, 50)),
         )
         self.assertEqual(second_run, ())
 
@@ -595,7 +605,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 44)
+            self.assertEqual(migration_count, 49)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -614,7 +624,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=45,
+            version=50,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -664,7 +674,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                list(range(1, 45)),
+                list(range(1, 50)),
             )
             self.assertEqual(money, 777)
 
@@ -699,7 +709,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                list(range(1, 45)),
+                list(range(1, 50)),
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)

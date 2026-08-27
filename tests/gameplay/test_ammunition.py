@@ -100,7 +100,7 @@ class UnloadedWeaponTests(AmmunitionTestCase):
         summary = self.summary()
 
         # It is still in the slot, so the character sheet can explain why.
-        self.assertEqual(summary.items["primary"].key, "derringer_22")
+        self.assertEqual(summary.items["secondary"].key, "derringer_22")
         self.assertEqual(summary.strength_bonus, 0)
 
     def test_melee_weapons_never_need_feeding(self):

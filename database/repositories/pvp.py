@@ -1,8 +1,22 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import json
+import random
 
 from database.core.connection import get_connection
+from game.combat.pvp import (
+    AFTERMATH_CHOICES,
+    AFTERMATH_HOSPITALISE,
+    AFTERMATH_LEAVE,
+    AFTERMATH_MUG,
+    AFTERMATH_WINDOW_SECONDS,
+    MUG_MAXIMUM_PERCENT,
+    MUG_MINIMUM_PERCENT,
+    PVP_HOSPITAL_SECONDS,
+    Aftermath,
+    PvpError,
+    mug_takings,
+)
 from game.combat.rating import (
     DEFAULT_PVP_RATING,
     calculate_rating_change,
@@ -648,3 +662,175 @@ def _write_rating(connection, player_id, rating, win, previous, now):
             streak, best, now.isoformat(),
         ),
     )
+
+
+# ------------------------------------------------- what happens after
+#
+# A won fight leaves `aftermath` NULL: the winner has not yet said what
+# they are doing with the person on the floor. Everything below settles
+# that, and it is the only place the choice is applied, so a fight
+# cannot be cashed twice.
+
+
+@dataclass(frozen=True)
+class PendingAftermath:
+    attack_id: int
+    defender_id: int
+    defender_name: str
+    defender_money: int
+    reward_multiplier: float
+    seconds_left: int
+
+
+def get_pending_aftermath(attacker_id, now=None):
+    """The winner's most recent fight still awaiting a decision.
+
+    None once it is settled or the window has closed, which is what
+    stops a player banking a win and mugging days later when their
+    victim has money worth taking.
+    """
+    now = _normalise_now(now)
+    connection = get_connection()
+    try:
+        row = connection.execute(
+            """
+            SELECT a.id, a.defender_id, p.name, p.money,
+                   a.reward_multiplier, a.created_at
+            FROM player_pvp_attacks AS a
+            JOIN players AS p ON p.id = a.defender_id
+            WHERE a.attacker_id = ?
+              AND a.outcome = 'victory'
+              AND a.aftermath IS NULL
+            ORDER BY a.id DESC
+            LIMIT 1
+            """,
+            (attacker_id,),
+        ).fetchone()
+    finally:
+        connection.close()
+
+    if row is None:
+        return None
+
+    left = _seconds_left(row[5], now)
+    if left <= 0:
+        return None
+
+    return PendingAftermath(
+        attack_id=row[0],
+        defender_id=row[1],
+        defender_name=row[2],
+        defender_money=row[3],
+        reward_multiplier=row[4],
+        seconds_left=left,
+    )
+
+
+def _seconds_left(created_at, now):
+    started = parse_timestamp(created_at)
+    if started is None:
+        return 0
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+
+    elapsed = (now - started).total_seconds()
+
+    return max(0, int(AFTERMATH_WINDOW_SECONDS - elapsed))
+
+
+def settle_aftermath(attack_id, attacker_id, choice, rng=None, now=None):
+    """Apply the winner's choice, once.
+
+    The whole thing runs inside one immediate transaction: the row is
+    re-read and re-checked under the write lock, so two requests racing
+    each other cannot both mug the same beaten player.
+    """
+    if choice not in AFTERMATH_CHOICES:
+        raise PvpError("That is not something you can do.")
+
+    rng = rng or random.SystemRandom()
+    now = _normalise_now(now)
+    connection = get_connection()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            """
+            SELECT defender_id, reward_multiplier, created_at
+            FROM player_pvp_attacks
+            WHERE id = ? AND attacker_id = ?
+              AND outcome = 'victory' AND aftermath IS NULL
+            """,
+            (attack_id, attacker_id),
+        ).fetchone()
+
+        if row is None:
+            raise PvpError("That fight has already been settled.")
+
+        defender_id, reward_multiplier, created_at = row
+
+        if _seconds_left(created_at, now) <= 0:
+            # Too late to take anything, but the fight still has to
+            # stop being pending or it hangs around for ever.
+            connection.execute(
+                "UPDATE player_pvp_attacks SET aftermath = ? WHERE id = ?",
+                (AFTERMATH_LEAVE, attack_id),
+            )
+            connection.commit()
+            raise PvpError("They got away before you decided.")
+
+        taken = 0
+
+        if choice == AFTERMATH_MUG:
+            money = connection.execute(
+                "SELECT money FROM players WHERE id = ?",
+                (defender_id,),
+            ).fetchone()[0]
+            taken = mug_takings(
+                money,
+                rng.randint(MUG_MINIMUM_PERCENT, MUG_MAXIMUM_PERCENT),
+                reward_multiplier,
+            )
+            if taken:
+                moved = connection.execute(
+                    """
+                    UPDATE players SET money = money - ?
+                    WHERE id = ? AND money >= ?
+                    """,
+                    (taken, defender_id, taken),
+                ).rowcount
+                if moved != 1:
+                    # They spent it between the read and the write.
+                    taken = 0
+                else:
+                    connection.execute(
+                        "UPDATE players SET money = money + ? WHERE id = ?",
+                        (taken, attacker_id),
+                    )
+
+        elif choice == AFTERMATH_HOSPITALISE:
+            until = now + timedelta(seconds=PVP_HOSPITAL_SECONDS)
+            connection.execute(
+                """
+                UPDATE players
+                SET hospital_until = ?, health = 0
+                WHERE id = ?
+                """,
+                (format_timestamp(until), defender_id),
+            )
+
+        connection.execute(
+            """
+            UPDATE player_pvp_attacks
+            SET aftermath = ?, cash_stolen = ?
+            WHERE id = ? AND aftermath IS NULL
+            """,
+            (choice, taken, attack_id),
+        )
+        connection.commit()
+
+        return Aftermath(choice=choice, cash_stolen=taken)
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()

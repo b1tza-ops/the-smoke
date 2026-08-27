@@ -41,7 +41,14 @@ class PvpCombatTests(unittest.TestCase):
             defence_bonus=0,
         )
 
-    def test_attack_spends_energy_and_awards_only_carried_cash(self):
+    def test_attack_spends_energy_and_wins(self):
+        """The fight settles who won and nothing beyond that.
+
+        It used to mug the loser and hospitalise them automatically.
+        Both are now the winner's choice, made after the fight and
+        applied by `apply_aftermath` -- see
+        tests/production/test_pvp_aftermath.py.
+        """
         attacker = player(1, strength=80, dexterity=80)
         defender = player(2, money=1000, strength=1, defence=1)
         rng = Mock()
@@ -55,12 +62,43 @@ class PvpCombatTests(unittest.TestCase):
 
         self.assertTrue(result.victory)
         self.assertEqual(attacker.energy, 100 - PVP_ENERGY_COST)
-        self.assertGreater(result.cash_stolen, 0)
-        self.assertLessEqual(result.cash_stolen, 500)
-        self.assertEqual(
-            attacker.money, 500 + result.cash_stolen
+        self.assertGreater(result.xp_reward, 0)
+
+    def test_winning_leaves_the_loser_intact_until_you_decide(self):
+        attacker = player(1, strength=80, dexterity=80)
+        defender = player(2, money=1000, strength=1, defence=1)
+        rng = Mock()
+        rng.randint.side_effect = lambda low, high: low
+
+        result = fight_player(
+            attacker, defender,
+            self.empty_equipment, self.empty_equipment,
+            "aggressive", rng=rng,
         )
-        self.assertIsNotNone(defender.hospital_until)
+
+        self.assertTrue(result.victory)
+        self.assertEqual(result.cash_stolen, 0)
+        self.assertEqual(defender.money, 1000)
+        self.assertIsNone(defender.hospital_until)
+
+    def test_the_winner_can_then_take_the_cash(self):
+        from game.combat.pvp import apply_aftermath
+
+        attacker = player(1, strength=80, dexterity=80)
+        defender = player(2, money=1000, strength=1, defence=1)
+        rng = Mock()
+        rng.randint.side_effect = lambda low, high: low
+
+        fight_player(
+            attacker, defender,
+            self.empty_equipment, self.empty_equipment,
+            "aggressive", rng=rng,
+        )
+        taken = apply_aftermath(attacker, defender, "mug", rng=rng)
+
+        self.assertGreater(taken.cash_stolen, 0)
+        self.assertLessEqual(taken.cash_stolen, 500)
+        self.assertEqual(attacker.money, 500 + taken.cash_stolen)
 
     def test_reduced_multiplier_reduces_rewards(self):
         attacker = player(1, strength=80, dexterity=80)
@@ -72,7 +110,8 @@ class PvpCombatTests(unittest.TestCase):
             self.empty_equipment, self.empty_equipment,
             "aggressive", reward_multiplier=0.0, rng=rng,
         )
-        self.assertEqual(result.cash_stolen, 0)
+        # Cash is no longer decided here at all; what a nil multiplier
+        # is worth when mugging is covered in the aftermath tests.
         self.assertEqual(result.xp_reward, 0)
 
     def test_work_hospital_travel_and_jail_block_attacks(self):

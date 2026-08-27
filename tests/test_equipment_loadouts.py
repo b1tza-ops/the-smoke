@@ -17,12 +17,12 @@ class EquipmentLoadoutTests(unittest.TestCase):
         helmet = get_item("motorcycle_helmet")
 
         assert EQUIPMENT_SLOTS == (
-            "primary", "secondary", "head", "body",
-            "hands", "legs", "feet",
+            "primary", "secondary", "melee", "throwable",
+            "head", "body", "hands", "legs", "feet",
         )
-        assert knife.equipment_slot == "secondary"
+        assert knife.equipment_slot == "melee"
         assert knife.strength_bonus == 5
-        assert machete.equipment_slot == "primary"
+        assert machete.equipment_slot == "melee"
         assert jacket.equipment_slot == "body"
         assert jacket.defence_bonus == 5
         assert gloves.equipment_slot == "hands"
