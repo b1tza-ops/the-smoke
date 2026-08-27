@@ -118,3 +118,25 @@ def crime_progression_for(player, crime, happiness_penalty=0):
         min_reward=min_reward,
         max_reward=max_reward,
     )
+
+
+# How much heat sharpens the odds of getting caught. At a clean sheet
+# the crime's own chance stands; at the 100 cap it is half again as
+# likely. Deliberately gentle -- heat is meant to pace a run of big
+# jobs, not to end it.
+MAX_HEAT_JAIL_INCREASE = 0.5
+
+
+def jail_chance_with_heat(base_chance, wanted_level, maximum=100):
+    """A crime's jail chance once the police are already looking.
+
+    This is what makes a big score cost something other than dead time:
+    it does not punish the job you just pulled, it makes the next one
+    riskier, and the heat bleeds off while you do anything else.
+    """
+    heat = min(max(0, int(wanted_level or 0)), maximum) / maximum
+
+    return min(
+        100,
+        round(base_chance * (1 + MAX_HEAT_JAIL_INCREASE * heat)),
+    )

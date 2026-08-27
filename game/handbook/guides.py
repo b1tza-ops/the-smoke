@@ -69,8 +69,8 @@ GUIDES = (
                 "and hospital both cost time, not money, but being broke "
                 "means you cannot buy your way out of a bad run.",
                 "Do not attempt the **Hackney canal handover** because it "
-                "pays £700–1,500. It succeeds 28% of the time and the "
-                "failures cost you five days in jail.",
+                "pays £700–1,500. It costs 12 nerve — a whole hour of it "
+                "— succeeds 28% of the time, and needs level 7 to reach.",
                 "Do not buy a gun before level 7. They are only sold in "
                 "Hackney, and Hackney needs level 7 to reach.",
             )),
@@ -141,28 +141,56 @@ GUIDES = (
                 headers=("Crime", "District", "Nerve", "Pays", "Success", "Jail if caught"),
                 rows=(
                     ("Shoplift", "Camden", "2", "£20–60", "80%", "10%, 10 min"),
-                    ("Market stall", "Camden", "4", "£60–140", "65%", "15%, 1 hour"),
-                    ("Phone snatch", "Brixton", "3", "£40–100", "72%", "12%, 30 min"),
-                    ("Warehouse", "Brixton", "7", "£180–480", "42%", "25%, 12 hours"),
-                    ("Pickpocket", "Soho", "4", "£50–150", "65%", "15%, 30 min"),
-                    ("Nightclub office", "Soho", "8", "£250–650", "38%", "30%, 3 days"),
-                    ("Gallery lift", "Shoreditch", "6", "£180–420", "55%", "22%, 90 min"),
-                    ("Server room", "Shoreditch", "10", "£400–900", "34%", "35%, 4 days"),
-                    ("Canal lock-up", "Hackney", "9", "£350–750", "45%", "28%, 2 days"),
-                    ("Canal handover", "Hackney", "12", "£700–1,500", "28%", "40%, 5 days"),
+                    ("Market stall", "Camden", "4", "£60–140", "65%", "15%, 20 min"),
+                    ("Phone snatch", "Brixton", "3", "£40–100", "72%", "12%, 15 min"),
+                    ("Warehouse", "Brixton", "7", "£180–480", "42%", "25%, 35 min"),
+                    ("Pickpocket", "Soho", "4", "£50–150", "65%", "15%, 20 min"),
+                    ("Nightclub office", "Soho", "8", "£250–650", "38%", "30%, 40 min"),
+                    ("Gallery lift", "Shoreditch", "6", "£180–420", "55%", "22%, 30 min"),
+                    ("Server room", "Shoreditch", "10", "£400–900", "34%", "35%, 50 min"),
+                    ("Canal lock-up", "Hackney", "9", "£350–750", "45%", "28%, 45 min"),
+                    ("Canal handover", "Hackney", "12", "£700–1,500", "28%", "40%, 1 hour"),
                 ),
             ),
-            Heading("The big jobs are worse than they look"),
+            Heading("Read the table by the hour"),
             Text(
-                "Read that table by the hour, not by the payout. A Camden "
-                "shoplift is six an hour at 80%, which is roughly **£190 an "
-                "hour**. The Soho nightclub office pays five times more per "
-                "job — but at 8 nerve, 38% success and a **three-day** "
-                "sentence, it works out around £12 an hour."
+                "Nerve is what you are really spending. At 12 nerve an "
+                "hour a 2-nerve shoplift is six jobs an hour and a "
+                "12-nerve canal handover is one. Judge a crime on what it "
+                "returns **per point of nerve**, not on the headline."
+            ),
+            Text(
+                "Done that way the ladder is close: the small Camden jobs "
+                "sit around **£220 an hour** and the big Hackney and "
+                "Shoreditch jobs around **£280–350**. The heavy jobs are "
+                "worth doing — you just cannot do them all day, because "
+                "of heat."
+            ),
+            Heading("Heat"),
+            Text(
+                "Every crime raises your **wanted level**, and a wanted "
+                "player is easier to catch: at the 100 cap you are about "
+                "**half again as likely** to be taken in on any job. It "
+                "falls by **6 a hour** on its own, whatever you are doing."
+            ),
+            Text(
+                "That is the real cost of a big score. The small Camden "
+                "jobs generate heat at exactly the rate it drops, so they "
+                "can be run indefinitely. Everything above builds it — a "
+                "canal handover at twice the rate it clears."
             ),
             Note(
-                "Jail time is real time. A five-day sentence is five days "
-                "in which you cannot commit crimes, train, fight or travel.",
+                "So run the big jobs while you are cold, then go and do "
+                "something else — a shift, the gym, the tables — while "
+                "the heat comes off. Lying low is a strategy, not a "
+                "punishment.",
+                tone="tip",
+            ),
+            Note(
+                "Jail time is real time — no crimes, no training, no "
+                "fighting and no travel while you are inside. "
+                "Sentences run from **10 minutes to an hour**: five "
+                "minutes for every point of nerve the job asked of you.",
                 tone="warning",
             ),
             Heading("Loot"),
@@ -589,6 +617,25 @@ GUIDES = (
                 "in the tent and **three and a half** in the penthouse. "
                 "Over a week that is most of an extra day of playing."
             ),
+            Text(
+                "A home also decides how many **different items** you "
+                "can carry: **20** in the tent, rising to **100** in "
+                "the penthouse. Stacks of the same item never count "
+                "against it, only the number of kinds."
+            ),
+            Table(
+                headers=("Home", "Carries"),
+                rows=(
+                    ("Tent", "20 items"),
+                    ("Hostel Room", "24 items"),
+                    ("Converted Van", "28 items"),
+                    ("Council Flat", "34 items"),
+                    ("Council House", "42 items"),
+                    ("City Apartment", "55 items"),
+                    ("Modern House", "75 items"),
+                    ("Penthouse", "100 items"),
+                ),
+            ),
             Note(
                 "Every home is a better deal than the one below it on "
                 "every figure. There are no trap purchases on this "
@@ -634,9 +681,10 @@ GUIDES = (
                 "yet:"
             ),
             Bullets((
-                "**Storage, safe capacity and garage space** are listed "
-                "on every property and are not yet read by anything. "
-                "Your inventory limit does not change when you move.",
+                "**Safe capacity and garage space** are listed on "
+                "every property and are not yet read by anything. "
+                "There is nowhere to keep cash safe and no vehicle to "
+                "put in a garage.",
                 "**Comfort** is shown but has no effect, so the "
                 "superior interior and the open bar are decoration for "
                 "now.",

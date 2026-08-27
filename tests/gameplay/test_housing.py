@@ -29,7 +29,7 @@ class ResidenceDefinitionTests(unittest.TestCase):
 
         self.assertEqual(residence.name, "Council Flat")
         self.assertEqual(residence.comfort, 4)
-        self.assertEqual(residence.storage_capacity, 20)
+        self.assertEqual(residence.storage_capacity, 34)
         self.assertEqual(
             residence.energy_recovery_bonus_percent,
             10,
