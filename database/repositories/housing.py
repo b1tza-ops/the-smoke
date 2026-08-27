@@ -13,14 +13,17 @@ committed but the payment is not.
 """
 
 import sqlite3
+from datetime import datetime, timezone
 
 from database.core.connection import get_connection
 from game.housing.service import (
     HousingError,
     InsufficientCashError,
     UnknownResidenceError,
+    daily_upkeep,
     facility_for,
     get_residence,
+    upkeep_owed,
 )
 
 
@@ -153,6 +156,165 @@ def move_house(user_id, residence_key):
         )
         connection.commit()
         return residence, remaining
+    except (HousingError, sqlite3.Error):
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+TIMESTAMP = "%Y-%m-%d %H:%M:%S"
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _stamp(moment):
+    return moment.strftime(TIMESTAMP)
+
+
+def _read_stamp(text):
+    if not text:
+        return None
+
+    parsed = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed
+
+
+def _settle(connection, player_id, residence_key, now):
+    """Bring the rent up to date and return what is outstanding.
+
+    Lazy accrual, the same way the loan shark and every resource clock
+    work: nothing is scheduled, the bill is simply worked out from when
+    it was last settled.
+    """
+    residence = get_residence(residence_key)
+
+    if daily_upkeep(residence) <= 0:
+        # A free home. Clear any record so moving down the ladder does
+        # not leave a bill behind for somewhere they no longer live.
+        connection.execute(
+            "DELETE FROM player_housing_upkeep WHERE player_id = ?",
+            (player_id,),
+        )
+        return 0
+
+    row = connection.execute(
+        """
+        SELECT settled_at, arrears
+        FROM player_housing_upkeep
+        WHERE player_id = ?
+        """,
+        (player_id,),
+    ).fetchone()
+
+    if row is None:
+        connection.execute(
+            """
+            INSERT INTO player_housing_upkeep (player_id, settled_at)
+            VALUES (?, ?)
+            """,
+            (player_id, _stamp(now)),
+        )
+        return 0
+
+    settled_at, arrears = row
+    accrued = upkeep_owed(residence, now - _read_stamp(settled_at))
+    total = arrears + accrued
+
+    connection.execute(
+        """
+        UPDATE player_housing_upkeep
+        SET settled_at = ?, arrears = ?
+        WHERE player_id = ?
+        """,
+        (_stamp(now), total, player_id),
+    )
+
+    return total
+
+
+def upkeep_for(user_id):
+    """What this player owes on their home right now."""
+    connection = get_connection()
+
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT id, residence_key FROM players WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+
+        if row is None:
+            connection.rollback()
+            return {"owed": 0, "daily": 0, "in_arrears": False}
+
+        player_id, residence_key = row
+        owed = _settle(connection, player_id, residence_key, _now())
+        connection.commit()
+
+        return {
+            "owed": owed,
+            "daily": daily_upkeep(get_residence(residence_key)),
+            "in_arrears": owed > 0,
+        }
+    except sqlite3.Error:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def pay_upkeep(user_id, amount=None):
+    """Clear the rent, or as much of it as the player asks to.
+
+    Returns what was actually taken and what is left owing.
+    """
+    connection = get_connection()
+
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            """
+            SELECT id, residence_key, money
+            FROM players WHERE user_id = ?
+            """,
+            (user_id,),
+        ).fetchone()
+
+        if row is None:
+            raise HousingError("Player not found.")
+
+        player_id, residence_key, money = row
+        owed = _settle(connection, player_id, residence_key, _now())
+
+        if owed <= 0:
+            raise HousingError("You are straight with the landlord.")
+
+        paying = owed if amount is None else min(int(amount), owed)
+
+        if paying < 1:
+            raise HousingError("Pay something.")
+
+        if paying > money:
+            raise InsufficientCashError("Not enough carried cash.")
+
+        connection.execute(
+            "UPDATE players SET money = money - ? WHERE id = ?",
+            (paying, player_id),
+        )
+        connection.execute(
+            "UPDATE player_housing_upkeep SET arrears = ? WHERE player_id = ?",
+            (owed - paying, player_id),
+        )
+        connection.commit()
+
+        return paying, owed - paying
     except (HousingError, sqlite3.Error):
         connection.rollback()
         raise

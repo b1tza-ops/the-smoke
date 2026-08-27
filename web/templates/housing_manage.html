@@ -4,5 +4,14 @@
 <section class="game-page__header"><div><p class="eyebrow">Current property</p><h1>{{ residence.name }}</h1><p>{{ residence.description }}</p></div></section>
 {% if residence.key in artwork %}<img src="{{ url_for('static', filename='images/housing/' + residence.key + '.webp') }}" alt="{{ residence.name }}" class="property-art property-art--wide">{% else %}<div class="property-art property-art--wide property-art--placeholder" role="img" aria-label="{{ residence.name }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#housing"></use></svg></div>{% endif %}
 <section class="crime-list"><article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Property options</p><a class="crime-button" href="{{ url_for('housing') }}">Change property</a></div></article>
-<article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Facilities & modifications</p><h2>Make this place yours</h2>{% if notice %}<p>{{ notice }}</p>{% endif %}{% if error %}<p>{{ error }}</p>{% endif %}{% for key, facility in facilities.items() %}<form method="post"><input type="hidden" name="facility_key" value="{{ key }}"><button class="crime-button" {% if key in owned_facilities or player.money < facility[1] %}disabled{% endif %}>{{ facility[0] }} · £{{ "{:,}".format(facility[1]) }} · {{ facility[2] }}{% if key in owned_facilities %} — installed{% endif %}</button></form>{% endfor %}</div></article></section>
+<article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Facilities & modifications</p><h2>Make this place yours</h2>{% if upkeep.daily %}<section class="shark-panel">
+<div class="shark-panel__head"><h2>Rent</h2><span>£{{ "{:,}".format(upkeep.daily) }} a day</span></div>
+{% if upkeep.in_arrears %}
+<div class="game-notice game-notice--error">You owe <strong>£{{ "{:,}".format(upkeep.owed) }}</strong>. Until it is paid this home does nothing for you — no faster recovery and no extra carrying space. You keep the place and everything in it.</div>
+<form method="post"><input type="hidden" name="action" value="pay_upkeep">
+<button class="work-button" type="submit"><span>Pay £{{ "{:,}".format(upkeep.owed) }}</span><span>&rarr;</span></button></form>
+{% else %}
+<p class="handbook-summary">Paid up. Rent accrues at £{{ "{:,}".format(upkeep.daily) }} a day whether you play or not.</p>
+{% endif %}
+</section>{% endif %}{% if notice %}<p>{{ notice }}</p>{% endif %}{% if error %}<p>{{ error }}</p>{% endif %}{% for key, facility in facilities.items() %}<form method="post"><input type="hidden" name="facility_key" value="{{ key }}"><button class="crime-button" {% if key in owned_facilities or player.money < facility[1] %}disabled{% endif %}>{{ facility[0] }} · £{{ "{:,}".format(facility[1]) }} · {{ facility[2] }}{% if key in owned_facilities %} — installed{% endif %}</button></form>{% endfor %}</div></article></section>
 </main></div></body></html>
