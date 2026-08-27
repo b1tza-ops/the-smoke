@@ -1,6 +1,7 @@
 """Housing definitions, purchases, and playable menu."""
 
 from game.housing.service import (
+    FACILITIES,
     RESIDENCES,
     RESIDENCES_BY_KEY,
     AlreadyLivingThereError,
@@ -13,10 +14,12 @@ from game.housing.service import (
     get_residence,
     housing_menu,
     purchase_residence,
+    facility_for,
 )
 
 __all__ = [
     "RESIDENCES",
+    "FACILITIES",
     "RESIDENCES_BY_KEY",
     "AlreadyLivingThereError",
     "HousingError",
@@ -28,4 +31,5 @@ __all__ = [
     "get_residence",
     "housing_menu",
     "purchase_residence",
+    "facility_for",
 ]

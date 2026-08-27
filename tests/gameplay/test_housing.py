@@ -165,5 +165,82 @@ class HousingEngineTests(unittest.TestCase):
             get_player_residence(player)
 
 
+class ResidenceLadderTests(unittest.TestCase):
+    """No rung of the ladder may be worse than the one below it.
+
+    The page lists these in order and prices them upwards, so a player
+    reads position as improvement. The Converted Van shipped at £1,800
+    sitting above the £1,000 Council Flat while being worse at comfort,
+    storage, energy recovery and safe capacity -- a trap that costs a
+    new player money for a downgrade. This makes that unmergeable
+    rather than something to be spotted by eye.
+    """
+
+    LADDER = (
+        "purchase_price",
+        "comfort",
+        "storage_capacity",
+        "energy_recovery_bonus_percent",
+        "nerve_recovery_bonus_percent",
+        "safe_cash_capacity",
+        "garage_capacity",
+    )
+
+    def test_the_ladder_is_listed_in_price_order(self):
+        prices = [home.purchase_price for home in RESIDENCES]
+
+        self.assertEqual(
+            prices,
+            sorted(prices),
+            "residences are shown in list order, so a cheaper home "
+            "must not appear below a dearer one",
+        )
+
+    def test_no_residence_is_beaten_by_a_cheaper_one(self):
+        for below, above in zip(RESIDENCES, RESIDENCES[1:]):
+            for attribute in self.LADDER:
+                with self.subTest(
+                    paying_more_for=above.key,
+                    than=below.key,
+                    attribute=attribute,
+                ):
+                    self.assertGreaterEqual(
+                        getattr(above, attribute),
+                        getattr(below, attribute),
+                        f"{above.name} costs more than {below.name} "
+                        f"but has less {attribute}",
+                    )
+
+    def test_every_residence_earns_its_price(self):
+        # Equal on every axis would be monotonic and still pointless.
+        for below, above in zip(RESIDENCES, RESIDENCES[1:]):
+            with self.subTest(residence=above.key):
+                self.assertTrue(
+                    any(
+                        getattr(above, attribute)
+                        > getattr(below, attribute)
+                        for attribute in self.LADDER[1:]
+                    ),
+                    f"{above.name} costs more than {below.name} and "
+                    f"is better at nothing",
+                )
+
+    def test_every_residence_has_artwork(self):
+        from pathlib import Path as _Path
+
+        images = (
+            _Path(__file__).resolve().parents[2]
+            / "web" / "static" / "images" / "housing"
+        )
+
+        for home in RESIDENCES:
+            with self.subTest(residence=home.key):
+                self.assertTrue(
+                    (images / f"{home.key}.png").is_file(),
+                    f"{home.key}.png is missing, so the housing page "
+                    f"would show a broken image",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

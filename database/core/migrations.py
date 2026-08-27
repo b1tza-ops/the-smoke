@@ -1797,6 +1797,34 @@ def migrate_042_operations_controls(cursor):
     )
 
 
+def migrate_043_housing_facilities(cursor):
+    """What a player has had fitted at home.
+
+    One row per facility owned rather than a column per facility, so
+    adding a new one to the catalogue needs no schema change at all.
+
+    Deliberately no `installed_at`: nothing reads it, and because this
+    runs as CREATE TABLE IF NOT EXISTS, a column added now would be
+    missing from any database that already applied this migration --
+    the same two-shapes drift that broke registration in #140.
+
+    The primary key is what stops a facility being installed twice: the
+    purchase checks first, but the constraint is what holds if two
+    requests ever get past that check together.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_housing_facilities (
+            player_id INTEGER NOT NULL,
+            facility_key TEXT NOT NULL,
+
+            PRIMARY KEY (player_id, facility_key),
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2007,6 +2035,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=42,
         name="operations_controls",
         apply=migrate_042_operations_controls,
+    ),
+    Migration(
+        version=43,
+        name="housing_facilities",
+        apply=migrate_043_housing_facilities,
     ),
 )
 

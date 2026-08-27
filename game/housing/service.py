@@ -1,5 +1,13 @@
 from dataclasses import dataclass
 
+FACILITIES = {
+    "interior": ("Superior interior", 1500, "+2 comfort"),
+    "hot_tub": ("Hot tub", 3000, "+5% energy recovery"),
+    "sauna": ("Sauna", 2500, "+5% nerve recovery"),
+    "pool": ("Swimming pool", 8000, "+2% gym gains"),
+    "open_bar": ("Open bar", 5000, "+3 comfort"),
+}
+
 
 class HousingError(Exception):
     """Base exception for housing operations."""
@@ -71,6 +79,20 @@ RESIDENCES = (
         garage_capacity=0,
     ),
     ResidenceDefinition(
+        key="van",
+        name="Converted Van",
+        description=(
+            "A discreet van with a bed, lockbox and a quick exit."
+        ),
+        purchase_price=600,
+        comfort=3,
+        storage_capacity=14,
+        energy_recovery_bonus_percent=7,
+        nerve_recovery_bonus_percent=8,
+        safe_cash_capacity=1000,
+        garage_capacity=1,
+    ),
+    ResidenceDefinition(
         key="council_flat",
         name="Council Flat",
         description=(
@@ -84,6 +106,63 @@ RESIDENCES = (
         nerve_recovery_bonus_percent=10,
         safe_cash_capacity=2000,
         garage_capacity=1,
+    ),
+    ResidenceDefinition(
+        key="council_house",
+        name="Council House",
+        description=(
+            "A solid brick house with a small garden and room to grow."
+        ),
+        purchase_price=4500,
+        comfort=5,
+        storage_capacity=32,
+        energy_recovery_bonus_percent=15,
+        nerve_recovery_bonus_percent=15,
+        safe_cash_capacity=5000,
+        garage_capacity=1,
+    ),
+    ResidenceDefinition(
+        key="apartment",
+        name="City Apartment",
+        description=(
+            "A secure apartment above the noise of the street."
+        ),
+        purchase_price=12000,
+        comfort=6,
+        storage_capacity=45,
+        energy_recovery_bonus_percent=20,
+        nerve_recovery_bonus_percent=20,
+        safe_cash_capacity=12000,
+        garage_capacity=1,
+    ),
+    ResidenceDefinition(
+        key="modern_house",
+        name="Modern House",
+        description=(
+            "A contemporary London home with proper privacy and space."
+        ),
+        purchase_price=30000,
+        comfort=8,
+        storage_capacity=65,
+        energy_recovery_bonus_percent=30,
+        nerve_recovery_bonus_percent=25,
+        safe_cash_capacity=30000,
+        garage_capacity=2,
+    ),
+    ResidenceDefinition(
+        key="penthouse",
+        name="Penthouse",
+        description=(
+            "A skyline penthouse: secure, spacious and unmistakably "
+            "successful."
+        ),
+        purchase_price=85000,
+        comfort=10,
+        storage_capacity=100,
+        energy_recovery_bonus_percent=40,
+        nerve_recovery_bonus_percent=35,
+        safe_cash_capacity=100000,
+        garage_capacity=3,
     ),
 )
 
@@ -143,6 +222,15 @@ def purchase_residence(player, residence_key):
         amount_paid=residence.purchase_price,
         cash_balance=player.money,
     )
+
+def facility_for(facility_key):
+    """The definition behind a facility key, or a refusal."""
+    facility = FACILITIES.get(facility_key)
+
+    if facility is None:
+        raise HousingError("Unknown facility.")
+
+    return facility
 
 
 def housing_menu(player):
