@@ -47,8 +47,12 @@ class Player:
         district_reputation=None,
         unlocked_gyms=None,
         inventory=None,
+        housing_suspended=False,
     ):
 
+        # True while the rent is unpaid: the home is still theirs,
+        # it simply stops doing anything for them until they settle.
+        self.housing_suspended = housing_suspended
         self.id = player_id
         self.user_id = user_id
         self.name = name

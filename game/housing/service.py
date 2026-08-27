@@ -382,3 +382,55 @@ def housing_menu(player):
                 result.cash_balance
             )
         )
+
+
+# What a home costs to keep, as a share of what it cost to buy, per day.
+# The tent is free forever, so a new player never meets this at all, and
+# it only becomes a real number once someone has chosen to own something
+# expensive. At 0.3% the penthouse runs about £255 a day -- a fifth of
+# what a developed player earns in three hours.
+UPKEEP_DAILY_RATE = 0.003
+
+# Arrears are capped so a player who stops playing for a month does not
+# come back to a bill they cannot clear. Two weeks of a penthouse is
+# about £3,500.
+MAXIMUM_UPKEEP_ARREARS_DAYS = 14
+
+
+def daily_upkeep(residence):
+    """What this home costs to keep for a day."""
+    if residence is None or residence.purchase_price <= 0:
+        return 0
+
+    return round(residence.purchase_price * UPKEEP_DAILY_RATE)
+
+
+def upkeep_owed(residence, elapsed):
+    """Rent accrued over an elapsed period, charged by the second.
+
+    The same lazy accrual the loan shark and every resource clock use:
+    nothing is scheduled, it is simply worked out from the last time it
+    was settled.
+    """
+    daily = daily_upkeep(residence)
+
+    if daily <= 0 or elapsed.total_seconds() <= 0:
+        return 0
+
+    days = min(
+        elapsed.total_seconds() / 86_400,
+        MAXIMUM_UPKEEP_ARREARS_DAYS,
+    )
+
+    return int(daily * days)
+
+
+def is_in_arrears(owed):
+    """Whether the landlord has stopped doing you any favours.
+
+    Falling behind suspends what the home does for you -- the recovery
+    bonus and the extra carrying space -- and nothing else. You are not
+    evicted, you lose no items, and paying up restores it immediately.
+    A sink that can take your things away is not a sink, it is a trap.
+    """
+    return owed > 0

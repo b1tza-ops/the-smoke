@@ -84,7 +84,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            tuple(range(1, 44)),
+            tuple(range(1, 45)),
         )
 
         with closing(
@@ -275,6 +275,7 @@ class MigrationTests(unittest.TestCase):
                     (41, "loan_shark"),
                     (42, "operations_controls"),
                     (43, "housing_facilities"),
+                    (44, "housing_upkeep"),
                 ],
             )
 
@@ -559,7 +560,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            tuple(range(1, 44)),
+            tuple(range(1, 45)),
         )
         self.assertEqual(second_run, ())
 
@@ -594,7 +595,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 43)
+            self.assertEqual(migration_count, 44)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -613,7 +614,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=44,
+            version=45,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -663,7 +664,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                list(range(1, 44)),
+                list(range(1, 45)),
             )
             self.assertEqual(money, 777)
 
@@ -698,7 +699,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                list(range(1, 44)),
+                list(range(1, 45)),
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)

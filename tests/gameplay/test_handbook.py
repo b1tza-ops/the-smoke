@@ -330,6 +330,39 @@ class HousingGuideTests(unittest.TestCase):
                         "—" if not actual else f"+{actual}%",
                     )
 
+    def test_the_rent_table_matches_the_residences(self):
+        from game.housing import RESIDENCES
+        from game.housing.service import daily_upkeep
+
+        quoted = {}
+        for block in self.guide.blocks:
+            if isinstance(block, Table) and block.headers == (
+                "Home",
+                "Rent a day",
+            ):
+                quoted = {row[0]: row[1] for row in block.rows}
+                break
+
+        self.assertEqual(len(quoted), len(RESIDENCES))
+
+        for home in RESIDENCES:
+            with self.subTest(residence=home.key):
+                rent = daily_upkeep(home)
+                self.assertEqual(
+                    quoted[home.name],
+                    "Free" if not rent else f"£{rent:,}",
+                )
+
+    def test_it_promises_arrears_never_take_anything(self):
+        # The guide has to be straight about this or the first player
+        # who falls behind assumes they have lost the house.
+        prose = " ".join(
+            str(getattr(block, "text", ""))
+            for block in self.guide.blocks
+        )
+
+        self.assertIn("not evicted", prose)
+
     def test_the_fittings_match_the_catalogue(self):
         from game.housing import FACILITIES
 

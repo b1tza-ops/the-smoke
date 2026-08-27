@@ -272,6 +272,8 @@ from database.repositories.housing import (
     facilities_for,
     install_facility,
     move_house,
+    pay_upkeep,
+    upkeep_for,
 )
 from game.economy.bank import (
     BankError,
@@ -2654,13 +2656,21 @@ def manage_housing():
 
     if request.method == "POST":
         try:
-            facility, _remaining = install_facility(
-                session["user_id"],
-                request.form.get("facility_key", ""),
-            )
-            notice = (
-                f"Installed {facility[0]} for £{facility[1]:,}."
-            )
+            if request.form.get("action") == "pay_upkeep":
+                paid, left = pay_upkeep(session["user_id"])
+                notice = (
+                    f"Rent paid, £{paid:,}."
+                    if not left
+                    else f"£{paid:,} paid, £{left:,} still owing."
+                )
+            else:
+                facility, _remaining = install_facility(
+                    session["user_id"],
+                    request.form.get("facility_key", ""),
+                )
+                notice = (
+                    f"Installed {facility[0]} for £{facility[1]:,}."
+                )
             player = Player(
                 *get_player_by_user_id(session["user_id"])
             )
@@ -2674,6 +2684,7 @@ def manage_housing():
         artwork=_HOUSING_ARTWORK,
         facilities=FACILITIES,
         owned_facilities=facilities_for(session["user_id"]),
+        upkeep=upkeep_for(session["user_id"]),
         notice=notice,
         error=error,
     )

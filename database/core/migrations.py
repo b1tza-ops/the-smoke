@@ -1825,6 +1825,32 @@ def migrate_043_housing_facilities(cursor):
     """)
 
 
+def migrate_044_housing_upkeep(cursor):
+    """When each player last settled the rent on their home.
+
+    A separate table rather than a column on `players`, deliberately.
+    That table is read positionally -- `Player(*player_data)` -- so a
+    new column there is a standing hazard, and this needs no join on
+    the pages that do not care about rent.
+
+    A row only appears once a player owns something that costs money to
+    keep. Everyone starts in the tent, which is free, so nobody who has
+    not chosen to pay rent ever meets this.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_housing_upkeep (
+            player_id INTEGER PRIMARY KEY,
+            settled_at TEXT NOT NULL,
+            arrears INTEGER NOT NULL DEFAULT 0
+                CHECK (arrears >= 0),
+
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2040,6 +2066,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=43,
         name="housing_facilities",
         apply=migrate_043_housing_facilities,
+    ),
+    Migration(
+        version=44,
+        name="housing_upkeep",
+        apply=migrate_044_housing_upkeep,
     ),
 )
 

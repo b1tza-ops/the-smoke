@@ -4,9 +4,11 @@ import sqlite3
 
 from database.core.connection import get_connection
 from game.housing.service import (
+    daily_upkeep,
     faster_tick,
     get_residence,
     recovery_bonus,
+    upkeep_owed,
 )
 from game.player.regeneration import (
     ENERGY_POINTS_PER_TICK,
@@ -117,6 +119,45 @@ def _facility_keys(cursor, player_id):
     return frozenset(row[0] for row in cursor.fetchall())
 
 
+def _rent_owed(cursor, player_id, residence, now):
+    """What is outstanding on the rent, without settling it.
+
+    Read only on purpose. The figure is the stored arrears plus whatever
+    has accrued since, so it is exact without moving the marker -- and
+    the marker is only worth moving when the player is actually looking
+    at the housing page or paying. This runs on every page load; it does
+    not need to write on every page load.
+    """
+    if daily_upkeep(residence) <= 0:
+        return 0
+
+    try:
+        cursor.execute(
+            """
+            SELECT settled_at, arrears
+            FROM player_housing_upkeep
+            WHERE player_id = ?
+            """,
+            (player_id,),
+        )
+    except sqlite3.OperationalError:
+        # A database that has not reached migration 44 yet.
+        return 0
+
+    row = cursor.fetchone()
+
+    if row is None:
+        return 0
+
+    settled_at, arrears = row
+    settled = parse_timestamp(settled_at) if settled_at else None
+
+    if settled is None:
+        return arrears
+
+    return arrears + upkeep_owed(residence, now - settled)
+
+
 def get_player_by_user_id(user_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -183,6 +224,16 @@ def get_player_by_user_id(user_id):
     # caller because this is the only place the clocks are settled.
     residence = get_residence(player_data[25])
     facilities = _facility_keys(cursor, player_data[0])
+
+    # Behind on the rent means the home stops doing anything for you --
+    # not eviction, not losing anything, just no bonus until it is paid.
+    housing_suspended = (
+        _rent_owed(cursor, player_data[0], residence, now) > 0
+    )
+
+    if housing_suspended:
+        residence = None
+        facilities = frozenset()
 
     energy, energy_update = regenerate_resource(
         current_value=player_data[6],
@@ -330,6 +381,7 @@ def get_player_by_user_id(user_id):
         district_reputation,
         unlocked_gyms,
         inventory,
+        housing_suspended,
     ])
 
     return tuple(player_data)

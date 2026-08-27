@@ -656,6 +656,41 @@ GUIDES = (
                 ("images/housing/penthouse.webp",
                  "**Penthouse** — £85,000, and the view."),
             )),
+            Heading("Rent"),
+            Text(
+                "A home costs money to keep. Rent accrues at a fixed "
+                "rate a day whether you are playing or not, and you "
+                "settle it on the [management page](/housing/manage). "
+                "**The tent is free**, so nothing here applies until "
+                "you have chosen to own something."
+            ),
+            Table(
+                headers=("Home", "Rent a day"),
+                rows=(
+                    ("Tent", "Free"),
+                    ("Hostel Room", "£1"),
+                    ("Converted Van", "£2"),
+                    ("Council Flat", "£3"),
+                    ("Council House", "£14"),
+                    ("City Apartment", "£36"),
+                    ("Modern House", "£90"),
+                    ("Penthouse", "£255"),
+                ),
+            ),
+            Note(
+                "Falling behind **suspends what the home does for you** "
+                "— no faster recovery and no extra carrying space — and "
+                "nothing else. You are not evicted, you lose no items "
+                "and no fittings, and paying up restores everything "
+                "immediately.",
+                tone="warning",
+            ),
+            Text(
+                "Arrears stop building after "
+                "**14 days**, so going away "
+                "for a month does not leave you a bill you cannot pay. "
+                "Moving back to the tent clears what is owed."
+            ),
             Heading("Fitting the place out"),
             Text(
                 "Once you have somewhere of your own, "

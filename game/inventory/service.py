@@ -78,6 +78,11 @@ def slot_capacity(player):
     """
     from game.housing.service import get_residence
 
+    if getattr(player, "housing_suspended", False):
+        # Behind on the rent: the home is still theirs, it simply is not
+        # doing anything for them until they settle up.
+        return INVENTORY_SLOT_CAPACITY
+
     residence = get_residence(
         getattr(player, "residence_key", None)
     )
