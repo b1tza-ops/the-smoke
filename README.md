@@ -125,6 +125,34 @@ mints or destroys money silently and no player will report getting richer.
 
 ---
 
+### 7. Production runs a newer Python than your sandbox
+
+**Production is on Python 3.14. A dev container may well be on 3.11.** That gap
+is not cosmetic — it silently hid a live 500 on `/fight` in August 2026.
+
+Gym training stores fractional stats on purpose (`round(gain, 2)`, so strength
+is 84.35, not 84), and combat hands those to `random.randint`. Until Python 3.12,
+`randrange` accepted a float that happened to be whole, so `randint(0, 47.0)`
+worked and `randint(0, 47.9)` raised. **3.12 removed the allowance; 3.14 raises
+`TypeError` on both.** Every fight passed locally while real players got a 500.
+
+`game/combat/stats.py:whole()` settles stats to integers at the top of each
+fight. More importantly, `tests/gameplay/test_fractional_stats.py` defines
+`StrictRandom`, which enforces 3.12+ rules **on whatever interpreter the suite is
+running**, so this class of bug fails here rather than in production. Do not relax
+it to make a test pass — it stands in for the live interpreter.
+
+To sweep the whole suite under those rules:
+
+```python
+# monkeypatch random.Random.randint to reject non-int args, then
+# unittest.defaultTestLoader.discover("tests")
+```
+
+> **Before trusting "all green", check `python3 -V` against the server.** Anything
+> version-sensitive — `random`, `datetime` parsing, `int`/`float` coercion — can
+> pass here and fail there.
+
 ## What changed recently
 
 Newest first. Every entry is a merged PR; `git log` has the detail.
