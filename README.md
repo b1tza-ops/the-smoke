@@ -103,12 +103,17 @@ backup API and includes the WAL. `deployment/README.md` says this too.
 The journal mode is applied **once per process**, not per connection — the pragma
 costs ~200µs against ~40µs to open the connection, and a page load opens several.
 
-### 5. The CSS cache-bust is currently inconsistent
+### 5. The CSS cache-bust must be bumped in every template at once
 
-Templates link `style.css` with a `v=` query string. Right now 36 templates say
-`casino-5` and 4 say `loans-1`. **If you edit `style.css`, bump the version in
-every template**, or the un-bumped pages will serve stale CSS to returning
-players. Unifying these on one token would be a welcome small cleanup.
+Templates link `style.css` with a `v=` query string. All 43 now agree on one
+token (`landing-1`), which they did not always. **If you edit `style.css`, bump
+the version in every template**, or the un-bumped pages will serve stale CSS to
+returning players:
+
+```bash
+find web/templates -name '*.html' -exec \
+  sed -i "s/style\.css', v='[^']*'/style.css', v='NEW-TOKEN'/g" {} +
+```
 
 ### 6. The economics were solved numerically, not guessed
 

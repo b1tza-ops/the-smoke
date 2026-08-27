@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+
+    <title>The Smoke — a text-based London crime RPG</title>
+    <meta name="description" content="A free browser-based London crime RPG. Start with nothing in Camden, commit crimes, train at the gym, fight for a reputation and work your way across five districts of the city.">
+    <link rel="canonical" href="{{ url_for('home', _external=True) }}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="The Smoke">
+    <meta property="og:title" content="The Smoke — a text-based London crime RPG">
+    <meta property="og:description" content="Start with nothing in Camden. Commit crimes, train, fight and build a name across five districts of London. Free to play in your browser.">
+    <meta property="og:url" content="{{ url_for('home', _external=True) }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="The Smoke — a text-based London crime RPG">
+    <meta name="twitter:description" content="Start with nothing in Camden. Commit crimes, train, fight and build a name across five districts of London.">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='landing-1') }}">
+</head>
+
+<body class="auth-page">
+    <div class="atmosphere atmosphere--one" aria-hidden="true"></div>
+    <div class="atmosphere atmosphere--two" aria-hidden="true"></div>
+
+    <main class="auth-shell landing-shell">
+        <section class="auth-intro" aria-labelledby="landing-title">
+            <a class="brand" href="{{ url_for('home') }}" aria-label="The Smoke">
+                <span class="brand__mark">TS</span>
+                <span class="brand__name">The Smoke</span>
+            </a>
+
+            <div class="auth-intro__copy">
+                <p class="eyebrow">A persistent London crime RPG</p>
+                <h1 id="landing-title">Own the city.<br>Build your name.</h1>
+                <p class="lede">
+                    <strong>The Smoke</strong> is a free text-based crime RPG set in
+                    London. You start with nothing in Camden — no money worth the
+                    name and no reputation at all — and work your way up through
+                    five districts of a city that keeps moving while you are away.
+                </p>
+            </div>
+
+            <div class="city-status" aria-label="Game status">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span>London is active</span>
+                <span class="city-status__time">Persistent world</span>
+            </div>
+
+            <div class="landing-actions">
+                <a class="primary-button primary-button--link"
+                   href="{{ url_for('register') }}">
+                    <span>Create an account</span>
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+                <p class="auth-switch">
+                    Already playing?
+                    <a href="{{ url_for('login') }}">Sign in</a>
+                </p>
+            </div>
+        </section>
+
+        <section class="auth-card landing-card" aria-labelledby="landing-what">
+            <div class="auth-card__header">
+                <p class="eyebrow">What you do</p>
+                <h2 id="landing-what">Five districts, and no shortcuts</h2>
+            </div>
+
+            <ul class="landing-list">
+                <li>
+                    <strong>Crime</strong> — ten jobs across Camden, Brixton, Soho,
+                    Shoreditch and Hackney, from shoplifting to a canal handover.
+                    Every one can put you in a cell.
+                </li>
+                <li>
+                    <strong>Training</strong> — fourteen gyms and four stats, with
+                    weight classes that decide what you can realistically fight.
+                </li>
+                <li>
+                    <strong>Fighting</strong> — opponents in every district, plus
+                    rated player-versus-player with streaks and a leaderboard.
+                </li>
+                <li>
+                    <strong>Money</strong> — a bank, a global item market, a
+                    black-market fence, a loan shark in Soho, and a casino in
+                    Golden Square with the odds published.
+                </li>
+                <li>
+                    <strong>Property</strong> — eight homes from a tent to a
+                    penthouse, each with rent, storage and recovery to match.
+                </li>
+            </ul>
+
+            <p class="landing-note">
+                Nothing here needs an app, a download or a payment. It runs in a
+                browser, it works without JavaScript, and your progress carries on
+                whether you are logged in or not.
+            </p>
+
+            <div class="landing-guides">
+                <p class="eyebrow">Read before you start</p>
+                <ul>
+                    {% for guide in guides %}
+                        <li>
+                            <a href="{{ url_for('forum_guide', slug=guide.slug) }}">
+                                {{ guide.title }}
+                            </a>
+                            <span>{{ guide.summary }}</span>
+                        </li>
+                    {% endfor %}
+                    <li>
+                        <a href="{{ url_for('rules') }}">The Rules</a>
+                        <span>What gets you banned, and what does not.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
