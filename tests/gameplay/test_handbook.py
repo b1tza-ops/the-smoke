@@ -274,5 +274,106 @@ class HandbookLinkTests(unittest.TestCase):
         self.assertTrue(self.resolves("/forum/the-casino"))
 
 
+class HousingGuideTests(unittest.TestCase):
+    """The guide quotes figures, so the figures have to be the real ones.
+
+    A wiki that drifts from the game is worse than no wiki: players
+    plan around it. These pin the housing page's numbers and pictures
+    to what the code actually does.
+    """
+
+    def setUp(self):
+        self.guide = get_guide("housing")
+
+    def rows_of(self, headers_start):
+        for block in self.guide.blocks:
+            if isinstance(block, Table) and block.headers[0] == headers_start:
+                return block.rows
+        self.fail(f"no table starting {headers_start!r}")
+
+    def test_the_ladder_matches_the_residences(self):
+        from game.housing import RESIDENCES
+        from game.housing.service import recovery_bonus
+
+        quoted = {
+            row[0]: (row[1], row[2], row[3])
+            for row in self.rows_of("Home")
+        }
+
+        self.assertEqual(len(quoted), len(RESIDENCES))
+
+        for home in RESIDENCES:
+            with self.subTest(residence=home.key):
+                price, energy, nerve = quoted[home.name]
+
+                self.assertEqual(
+                    price,
+                    "Free" if not home.purchase_price
+                    else f"£{home.purchase_price:,}",
+                )
+                for shown, actual in (
+                    (energy, recovery_bonus(home, (), "energy")),
+                    (nerve, recovery_bonus(home, (), "nerve")),
+                ):
+                    self.assertEqual(
+                        shown,
+                        "—" if not actual else f"+{actual}%",
+                    )
+
+    def test_the_fittings_match_the_catalogue(self):
+        from game.housing import FACILITIES
+
+        quoted = {
+            row[0]: row[1] for row in self.rows_of("Fitting")
+        }
+
+        self.assertEqual(len(quoted), len(FACILITIES))
+
+        for name, price, _effect in FACILITIES.values():
+            with self.subTest(fitting=name):
+                self.assertEqual(quoted[name], f"£{price:,}")
+
+    def test_every_picture_it_shows_exists(self):
+        from pathlib import Path as _Path
+
+        from game.handbook.blocks import Gallery
+        from utils.images import is_renderable_image
+
+        static = (
+            _Path(__file__).resolve().parents[2] / "web" / "static"
+        )
+        shown = [
+            filename
+            for block in self.guide.blocks
+            if isinstance(block, Gallery)
+            for filename, _caption in block.images
+        ]
+
+        self.assertTrue(shown, "the guide shows no pictures at all")
+
+        missing = [
+            filename
+            for filename in shown
+            if not is_renderable_image(static / filename)
+        ]
+
+        self.assertEqual(missing, [], f"unrenderable: {missing}")
+
+    def test_it_admits_what_is_not_wired_up(self):
+        # Storage, comfort and garage are shown on the property page and
+        # read by nothing. While that is true the guide has to say so,
+        # or it is selling something the game does not deliver.
+        prose = " ".join(
+            str(item)
+            for block in self.guide.blocks
+            if isinstance(block, Bullets)
+            for item in block.items
+        )
+
+        for unwired in ("Storage", "Comfort", "Gym gains"):
+            with self.subTest(attribute=unwired):
+                self.assertIn(unwired, prose)
+
+
 if __name__ == "__main__":
     unittest.main()

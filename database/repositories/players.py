@@ -1,6 +1,13 @@
 from datetime import datetime, timezone
 
+import sqlite3
+
 from database.core.connection import get_connection
+from game.housing.service import (
+    faster_tick,
+    get_residence,
+    recovery_bonus,
+)
 from game.player.regeneration import (
     ENERGY_POINTS_PER_TICK,
     ENERGY_TICK_SECONDS,
@@ -88,6 +95,28 @@ def create_player(user_id, name):
     return player_id
 
 
+def _facility_keys(cursor, player_id):
+    """What this player has had fitted, on the connection already open.
+
+    Reusing the loader's cursor keeps this off the connection pool on a
+    query that runs for every page view.
+    """
+    try:
+        cursor.execute(
+            """
+            SELECT facility_key
+            FROM player_housing_facilities
+            WHERE player_id = ?
+            """,
+            (player_id,),
+        )
+    except sqlite3.OperationalError:
+        # A database that has not reached migration 43 yet.
+        return frozenset()
+
+    return frozenset(row[0] for row in cursor.fetchall())
+
+
 def get_player_by_user_id(user_id):
     conn = get_connection()
     cursor = conn.cursor()
@@ -149,12 +178,21 @@ def get_player_by_user_id(user_id):
     player_data = list(player_data)
     now = datetime.now(timezone.utc)
 
+    # Where the player lives, and what they have had fitted, shortens
+    # the energy and nerve ticks. Read here rather than left to the
+    # caller because this is the only place the clocks are settled.
+    residence = get_residence(player_data[25])
+    facilities = _facility_keys(cursor, player_data[0])
+
     energy, energy_update = regenerate_resource(
         current_value=player_data[6],
         maximum_value=player_data[12],
         last_update=player_data[14],
         points_per_tick=ENERGY_POINTS_PER_TICK,
-        tick_seconds=ENERGY_TICK_SECONDS,
+        tick_seconds=faster_tick(
+            ENERGY_TICK_SECONDS,
+            recovery_bonus(residence, facilities, "energy"),
+        ),
         now=now
     )
 
@@ -163,7 +201,10 @@ def get_player_by_user_id(user_id):
         maximum_value=player_data[13],
         last_update=player_data[15],
         points_per_tick=NERVE_POINTS_PER_TICK,
-        tick_seconds=NERVE_TICK_SECONDS,
+        tick_seconds=faster_tick(
+            NERVE_TICK_SECONDS,
+            recovery_bonus(residence, facilities, "nerve"),
+        ),
         now=now
     )
 

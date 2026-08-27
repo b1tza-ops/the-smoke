@@ -223,6 +223,58 @@ def purchase_residence(player, residence_key):
         cash_balance=player.money,
     )
 
+# Which fittings speed which resource up, and by how much. Kept beside
+# the FACILITIES catalogue so the effect a player is sold and the effect
+# they get come from one place -- the descriptions above were display
+# text for a while, promising bonuses nothing applied.
+FACILITY_RECOVERY = {
+    "energy": {"hot_tub": 5},
+    "nerve": {"sauna": 5},
+}
+
+
+def recovery_bonus(residence, facilities, resource):
+    """How much faster a resource refills at home, as a percentage.
+
+    Adds the residence's own bonus to anything fitted inside it, so a
+    penthouse with a hot tub beats a penthouse without one.
+    """
+    if resource not in FACILITY_RECOVERY:
+        raise HousingError(f"No recovery bonus for {resource!r}.")
+
+    from_home = getattr(
+        residence,
+        f"{resource}_recovery_bonus_percent",
+        0,
+    ) if residence else 0
+
+    from_fittings = sum(
+        percent
+        for key, percent in FACILITY_RECOVERY[resource].items()
+        if key in (facilities or ())
+    )
+
+    return from_home + from_fittings
+
+
+def faster_tick(tick_seconds, bonus_percent):
+    """Shorten a regeneration tick by a percentage bonus.
+
+    The bonus shortens the interval rather than fattening the points
+    each tick pays, because points are whole numbers and a percentage of
+    them is not -- five points a tick plus 8% is five points a tick.
+    Time divides cleanly and the caller's arithmetic already carries the
+    remainder between loads.
+    """
+    if bonus_percent <= 0:
+        return tick_seconds
+
+    return max(
+        1,
+        round(tick_seconds * 100 / (100 + bonus_percent)),
+    )
+
+
 def facility_for(facility_key):
     """The definition behind a facility key, or a refusal."""
     facility = FACILITIES.get(facility_key)

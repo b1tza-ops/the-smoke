@@ -29,6 +29,15 @@
                 </tbody>
             </table>
         </div>
+    {% elif kind == "Gallery" %}
+        <div class="handbook-gallery">
+            {% for filename, caption in block.images %}
+            <figure>
+                <img src="{{ url_for('static', filename=filename) }}" alt="" loading="lazy">
+                <figcaption>{{ inline(caption) }}</figcaption>
+            </figure>
+            {% endfor %}
+        </div>
     {% elif kind == "Note" %}
         <aside class="handbook-note handbook-note--{{ block.tone }}">
             {{ inline(block.text) }}

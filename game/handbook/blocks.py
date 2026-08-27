@@ -46,6 +46,33 @@ class Note:
     tone: str = "info"
 
 
+# A gallery names files inside this site's own static folder. The
+# pattern is what keeps it that way: no leading slash, no scheme, and
+# no `..`, so a guide cannot point the page at somewhere else.
+_STATIC_FILE = re.compile(r"[A-Za-z0-9][A-Za-z0-9/_\-]*\.(?:webp|png|svg)")
+
+
+@dataclass(frozen=True)
+class Gallery:
+    """Pictures with captions, laid out as a strip.
+
+    Each entry is a (filename, caption) pair. The filename is checked
+    when the guide is defined rather than when the page is rendered, so
+    a bad path fails at import and never reaches a reader.
+    """
+
+    images: tuple
+
+    def __post_init__(self):
+        for entry in self.images:
+            filename, _caption = entry
+
+            if not _STATIC_FILE.fullmatch(filename):
+                raise ValueError(
+                    f"{filename!r} is not a static file this site owns"
+                )
+
+
 # **bold**, `code` and [label](/path). Nothing else -- a handbook page
 # does not need more, and every addition is another thing to get wrong.
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
