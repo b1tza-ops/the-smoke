@@ -122,6 +122,7 @@ from game.gym import (
 )
 from flask import (
     Flask,
+    Response,
     jsonify,
     render_template,
     request,
@@ -129,6 +130,7 @@ from flask import (
     session,
     url_for,
 )
+from markupsafe import escape
 from database.core.connection import get_connection
 from database.core.setup import create_tables
 from database.repositories.activity import (
@@ -1239,7 +1241,17 @@ def admin_logout():
 @app.route("/")
 def home():
     if "user_id" not in session:
-        return redirect("/login")
+        # A public landing page rather than a bounce to /login.
+        #
+        # This used to 302 straight to the login form, which meant the
+        # one URL people search for and link to -- the bare domain --
+        # had no content of its own. A crawler arriving here found a
+        # password field and nothing describing what the site is, and a
+        # curious visitor found the same.
+        return render_template(
+            "landing.html",
+            guides=HANDBOOK_GUIDES,
+        )
 
     prologue = get_or_create_prologue(session["user_id"])
 
@@ -1885,6 +1897,90 @@ def loan_shark():
             and player.jail_until is None
             and player.hospital_until is None
         ),
+    )
+
+
+# ------------------------------------------------------------ crawling
+#
+# The game had neither of these, which is most of why searching for
+# play.the-smoke.com returned nothing: the public pages are the eleven
+# guides and the rules, and nothing anywhere advertised that they exist.
+#
+# Neither file makes Google index the site -- only submitting the domain
+# in Search Console and earning some inbound links does that. These just
+# make sure that once a crawler does arrive, it can find everything.
+
+SEO_PUBLIC_PATHS = (
+    ("/", "1.0", "daily"),
+    ("/forum", "0.9", "weekly"),
+    ("/rules", "0.7", "monthly"),
+    ("/register", "0.6", "monthly"),
+    ("/login", "0.4", "monthly"),
+)
+
+
+@app.route("/robots.txt")
+def robots():
+    """Let everything public be crawled, keep the private half out.
+
+    Disallow here is about crawl budget and tidiness, not security --
+    every one of these paths is already behind a session check. A
+    crawler that ignores this file still gets a redirect to /login.
+    """
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin",
+        "Disallow: /logout",
+        "Disallow: /verify-email",
+        "Disallow: /reset-password",
+        "Disallow: /healthz",
+        "",
+        f"Sitemap: {url_for('sitemap', _external=True)}",
+    ]
+    return Response(
+        "\n".join(lines) + "\n",
+        mimetype="text/plain",
+    )
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+    """Every public URL, including all eleven guides.
+
+    The guides are the only substantial prose on the site and the only
+    thing that could plausibly rank for anything, so they are listed
+    individually rather than left to be discovered by following links.
+    """
+    urls = [
+        (url_for("home", _external=True).rstrip("/") + path
+         if path != "/" else url_for("home", _external=True),
+         priority, frequency)
+        for path, priority, frequency in SEO_PUBLIC_PATHS
+    ]
+    urls.extend(
+        (
+            url_for("forum_guide", slug=guide.slug, _external=True),
+            "0.8",
+            "monthly",
+        )
+        for guide in HANDBOOK_GUIDES
+    )
+
+    entries = "".join(
+        "<url>"
+        f"<loc>{escape(location)}</loc>"
+        f"<changefreq>{frequency}</changefreq>"
+        f"<priority>{priority}</priority>"
+        "</url>"
+        for location, priority, frequency in urls
+    )
+
+    return Response(
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"{entries}</urlset>",
+        mimetype="application/xml",
     )
 
 

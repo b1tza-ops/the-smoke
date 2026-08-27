@@ -1732,3 +1732,101 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .handbook-gallery img{display:block;width:100%;height:130px;object-fit:cover}
 .handbook-gallery figcaption{padding:.55rem .7rem;font-size:.78rem;color:var(--muted);line-height:1.45}
 .handbook-gallery figcaption strong{color:#e7ecef}
+
+
+/* ------------------------------------------------- the landing page
+ *
+ * The bare domain used to redirect to /login, so the one URL people
+ * search for and share had no content of its own. This is that page.
+ * It reuses the auth shell so the two read as the same site, and only
+ * adds what the marketing half needs.
+ */
+
+.landing-shell {
+    align-items: start;
+    padding: clamp(2rem, 6vw, 4rem) 0;
+}
+
+.landing-shell .auth-intro {
+    min-height: auto;
+    gap: 2rem;
+    position: sticky;
+    top: 3rem;
+}
+
+.landing-actions {
+    display: grid;
+}
+
+.landing-actions .primary-button--link {
+    margin-top: 0;
+}
+
+.landing-card {
+    display: grid;
+    gap: 1.6rem;
+}
+
+.landing-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    gap: .9rem;
+    list-style: none;
+}
+
+.landing-list li {
+    border-left: 2px solid rgba(185, 243, 75, .3);
+    padding-left: .9rem;
+    color: #c1c7c5;
+    font-size: .92rem;
+    line-height: 1.5;
+}
+
+.landing-list strong {
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.landing-note {
+    margin: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 1.4rem;
+    color: var(--muted);
+    font-size: .86rem;
+}
+
+.landing-guides ul {
+    display: grid;
+    margin: .8rem 0 0;
+    padding: 0;
+    gap: .7rem;
+    list-style: none;
+}
+
+.landing-guides li {
+    display: grid;
+    gap: .15rem;
+}
+
+.landing-guides a {
+    color: #e7ece9;
+    font-weight: 800;
+    font-size: .9rem;
+    text-underline-offset: .2em;
+}
+
+.landing-guides a:hover {
+    color: var(--accent);
+}
+
+.landing-guides span {
+    color: var(--muted);
+    font-size: .78rem;
+}
+
+@media (max-width: 900px) {
+    .landing-shell .auth-intro {
+        position: static;
+    }
+}
