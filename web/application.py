@@ -257,6 +257,7 @@ from auth.validation import (
     validate_username,
 )
 from utils.rate_limit import FixedWindowRateLimiter
+from utils.images import is_png
 from utils.security import (
     hash_password,
     verify_password,
@@ -2583,6 +2584,25 @@ def jail():
     )
 
 
+# Which properties have artwork a browser can actually render. The
+# first eight shipped as unreadable bytes with a .png extension, so
+# "the file is there" is not the question worth asking. Resolved once
+# at import; the page falls back to a drawn placeholder for the rest.
+HOUSING_ARTWORK_DIRECTORY = "images/housing"
+
+
+def _usable_housing_artwork():
+    folder = Path(app.static_folder) / HOUSING_ARTWORK_DIRECTORY
+    return frozenset(
+        residence.key
+        for residence in RESIDENCES
+        if is_png(folder / f"{residence.key}.png")
+    )
+
+
+_HOUSING_ARTWORK = _usable_housing_artwork()
+
+
 @app.route("/housing", methods=["GET", "POST"])
 def housing():
     if "user_id" not in session:
@@ -2616,6 +2636,7 @@ def housing():
         "housing.html",
         player=player,
         residences=RESIDENCES,
+        artwork=_HOUSING_ARTWORK,
         notice=notice,
         error=error,
     )
@@ -2650,6 +2671,7 @@ def manage_housing():
         "housing_manage.html",
         player=player,
         residence=get_residence(player.residence_key),
+        artwork=_HOUSING_ARTWORK,
         facilities=FACILITIES,
         owned_facilities=facilities_for(session["user_id"]),
         notice=notice,

@@ -31,6 +31,10 @@
   <symbol id="gym" viewBox="0 0 24 24">
     <path d="M4 9v6M7 6v12M17 6v12M20 9v6M7 12h10"/>
   </symbol>
+  <symbol id="housing" viewBox="0 0 24 24">
+    <path d="M3.5 10.5 12 4l8.5 6.5V20h-5v-5.5h-7V20h-5Z"/>
+    <path d="M15.8 8.6a1.9 1.9 0 1 0 2.7 2.7l2.6-2.6-1-1-.8.8-.9-.9-.8.8.9.9-.8.8Z" class="icon-cut"/>
+  </symbol>
   <symbol id="home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3Z"/></symbol>
   <symbol id="character" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 22c0-5 3-8 8-8s8 3 8 8"/></symbol>
   <symbol id="crimes" viewBox="0 0 24 24"><path d="M5 20 19 6M14 5l5 1 1 5M4 15l1 5 5 1"/></symbol>

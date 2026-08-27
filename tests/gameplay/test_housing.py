@@ -225,21 +225,51 @@ class ResidenceLadderTests(unittest.TestCase):
                     f"is better at nothing",
                 )
 
-    def test_every_residence_has_artwork(self):
+    def test_any_housing_artwork_present_is_a_real_image(self):
+        """The invariant that survives the artwork not existing yet.
+
+        All eight properties shipped as unreadable bytes carrying a
+        .png extension. The guard at the time asked whether the file
+        existed, which it did, so the suite stayed green while every
+        card on the page rendered as a broken-image icon.
+
+        The files are gone and the page draws a placeholder instead, so
+        there is nothing to assert about art that is not there. What
+        must hold is that anything put in that folder from now on is
+        something a browser can render.
+        """
         from pathlib import Path as _Path
+
+        from utils.images import png_dimensions
 
         images = (
             _Path(__file__).resolve().parents[2]
             / "web" / "static" / "images" / "housing"
         )
 
+        if not images.is_dir():
+            return
+
+        unreadable = [
+            path.name
+            for path in sorted(images.glob("*.png"))
+            if png_dimensions(path) is None
+        ]
+
+        self.assertEqual(
+            unreadable,
+            [],
+            "these are named .png but are not PNGs, so they would "
+            "render as broken images: " + ", ".join(unreadable),
+        )
+
+    def test_a_residence_without_artwork_still_has_a_name_to_show(self):
+        # The placeholder is labelled with the residence name, so a
+        # property with no art is still identifiable on the page.
         for home in RESIDENCES:
             with self.subTest(residence=home.key):
-                self.assertTrue(
-                    (images / f"{home.key}.png").is_file(),
-                    f"{home.key}.png is missing, so the housing page "
-                    f"would show a broken image",
-                )
+                self.assertTrue(home.name.strip())
+                self.assertTrue(home.description.strip())
 
 
 if __name__ == "__main__":
