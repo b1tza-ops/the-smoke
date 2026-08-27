@@ -257,7 +257,7 @@ from auth.validation import (
     validate_username,
 )
 from utils.rate_limit import FixedWindowRateLimiter
-from utils.images import is_png
+from utils.images import is_renderable_image
 from utils.security import (
     hash_password,
     verify_password,
@@ -2585,7 +2585,7 @@ def jail():
 
 
 # Which properties have artwork a browser can actually render. The
-# first eight shipped as unreadable bytes with a .png extension, so
+# first set shipped as unreadable bytes carrying an image extension, so
 # "the file is there" is not the question worth asking. Resolved once
 # at import; the page falls back to a drawn placeholder for the rest.
 HOUSING_ARTWORK_DIRECTORY = "images/housing"
@@ -2596,7 +2596,7 @@ def _usable_housing_artwork():
     return frozenset(
         residence.key
         for residence in RESIDENCES
-        if is_png(folder / f"{residence.key}.png")
+        if is_renderable_image(folder / f"{residence.key}.webp")
     )
 
 

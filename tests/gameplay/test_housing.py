@@ -166,6 +166,15 @@ class HousingEngineTests(unittest.TestCase):
 
 
 class ResidenceLadderTests(unittest.TestCase):
+    @staticmethod
+    def artwork_directory():
+        from pathlib import Path as _Path
+
+        return (
+            _Path(__file__).resolve().parents[2]
+            / "web" / "static" / "images" / "housing"
+        )
+
     """No rung of the ladder may be worse than the one below it.
 
     The page lists these in order and prices them upwards, so a player
@@ -225,43 +234,46 @@ class ResidenceLadderTests(unittest.TestCase):
                     f"is better at nothing",
                 )
 
-    def test_any_housing_artwork_present_is_a_real_image(self):
-        """The invariant that survives the artwork not existing yet.
+    def test_every_residence_has_artwork_a_browser_can_render(self):
+        """Not "the file is there" -- that was the version that lied.
 
-        All eight properties shipped as unreadable bytes carrying a
-        .png extension. The guard at the time asked whether the file
+        Eight properties once shipped as unreadable bytes carrying an
+        image extension. The guard at the time asked whether the file
         existed, which it did, so the suite stayed green while every
-        card on the page rendered as a broken-image icon.
-
-        The files are gone and the page draws a placeholder instead, so
-        there is nothing to assert about art that is not there. What
-        must hold is that anything put in that folder from now on is
-        something a browser can render.
+        card on the page rendered as a broken-image icon. Ask the
+        format instead.
         """
-        from pathlib import Path as _Path
+        from utils.images import is_renderable_image
 
-        from utils.images import png_dimensions
-
-        images = (
-            _Path(__file__).resolve().parents[2]
-            / "web" / "static" / "images" / "housing"
-        )
-
-        if not images.is_dir():
-            return
-
-        unreadable = [
-            path.name
-            for path in sorted(images.glob("*.png"))
-            if png_dimensions(path) is None
+        broken = [
+            f"{home.key}.webp"
+            for home in RESIDENCES
+            if not is_renderable_image(
+                self.artwork_directory() / f"{home.key}.webp"
+            )
         ]
 
         self.assertEqual(
-            unreadable,
+            broken,
             [],
-            "these are named .png but are not PNGs, so they would "
-            "render as broken images: " + ", ".join(unreadable),
+            "the page falls back to a placeholder for these, so nothing "
+            "is broken on screen -- but they are not the artwork they "
+            "are named after: " + ", ".join(broken),
         )
+
+    def test_nothing_unreadable_is_sitting_in_the_artwork_folder(self):
+        # Catches a file that is not claimed by any residence, so a
+        # rename or a bad export cannot quietly leave rubbish behind.
+        from utils.images import is_renderable_image
+
+        folder = self.artwork_directory()
+        unreadable = [
+            path.name
+            for path in sorted(folder.iterdir())
+            if path.is_file() and not is_renderable_image(path)
+        ]
+
+        self.assertEqual(unreadable, [], f"unreadable files in {folder}")
 
     def test_a_residence_without_artwork_still_has_a_name_to_show(self):
         # The placeholder is labelled with the residence name, so a
