@@ -166,6 +166,15 @@ class HousingEngineTests(unittest.TestCase):
 
 
 class ResidenceLadderTests(unittest.TestCase):
+    @staticmethod
+    def artwork_directory():
+        from pathlib import Path as _Path
+
+        return (
+            _Path(__file__).resolve().parents[2]
+            / "web" / "static" / "images" / "housing"
+        )
+
     """No rung of the ladder may be worse than the one below it.
 
     The page lists these in order and prices them upwards, so a player
@@ -225,21 +234,54 @@ class ResidenceLadderTests(unittest.TestCase):
                     f"is better at nothing",
                 )
 
-    def test_every_residence_has_artwork(self):
-        from pathlib import Path as _Path
+    def test_every_residence_has_artwork_a_browser_can_render(self):
+        """Not "the file is there" -- that was the version that lied.
 
-        images = (
-            _Path(__file__).resolve().parents[2]
-            / "web" / "static" / "images" / "housing"
+        Eight properties once shipped as unreadable bytes carrying an
+        image extension. The guard at the time asked whether the file
+        existed, which it did, so the suite stayed green while every
+        card on the page rendered as a broken-image icon. Ask the
+        format instead.
+        """
+        from utils.images import is_renderable_image
+
+        broken = [
+            f"{home.key}.webp"
+            for home in RESIDENCES
+            if not is_renderable_image(
+                self.artwork_directory() / f"{home.key}.webp"
+            )
+        ]
+
+        self.assertEqual(
+            broken,
+            [],
+            "the page falls back to a placeholder for these, so nothing "
+            "is broken on screen -- but they are not the artwork they "
+            "are named after: " + ", ".join(broken),
         )
 
+    def test_nothing_unreadable_is_sitting_in_the_artwork_folder(self):
+        # Catches a file that is not claimed by any residence, so a
+        # rename or a bad export cannot quietly leave rubbish behind.
+        from utils.images import is_renderable_image
+
+        folder = self.artwork_directory()
+        unreadable = [
+            path.name
+            for path in sorted(folder.iterdir())
+            if path.is_file() and not is_renderable_image(path)
+        ]
+
+        self.assertEqual(unreadable, [], f"unreadable files in {folder}")
+
+    def test_a_residence_without_artwork_still_has_a_name_to_show(self):
+        # The placeholder is labelled with the residence name, so a
+        # property with no art is still identifiable on the page.
         for home in RESIDENCES:
             with self.subTest(residence=home.key):
-                self.assertTrue(
-                    (images / f"{home.key}.png").is_file(),
-                    f"{home.key}.png is missing, so the housing page "
-                    f"would show a broken image",
-                )
+                self.assertTrue(home.name.strip())
+                self.assertTrue(home.description.strip())
 
 
 if __name__ == "__main__":

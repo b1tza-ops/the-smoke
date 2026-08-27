@@ -39,6 +39,7 @@ UBIQUITOUS = (
     Destination("prologue", "Operations", "operations", "The debt campaign."),
     Destination("jobs", "Job", "job", "Shift work for steady money."),
     Destination("bank", "Bank", "bank", "Put cash somewhere it earns."),
+    Destination("housing", "Housing", "housing", "Where you live, and what it does for you."),
     Destination("item_market", "Item Market", "shop", "Buy and sell with other players."),
     Destination("travel", "Travel Agency", "travel", "Walk, bus or Underground."),
     Destination("hospital", "Hospital", "hospital", "Where losing a fight puts you."),

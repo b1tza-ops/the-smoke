@@ -8,7 +8,15 @@ is on whoever edits the rule.
 
 from dataclasses import dataclass
 
-from game.handbook.blocks import Bullets, Heading, Note, Steps, Table, Text
+from game.handbook.blocks import (
+    Bullets,
+    Gallery,
+    Heading,
+    Note,
+    Steps,
+    Table,
+    Text,
+)
 
 
 @dataclass(frozen=True)
@@ -534,6 +542,123 @@ GUIDES = (
                 "Ronnie keeps one on you.",
                 tone="warning",
             ),
+        ),
+    ),
+    Guide(
+        slug="housing",
+        title="Where You Live",
+        summary="Eight rungs, and what climbing them actually buys.",
+        section="Around London",
+        icon="housing",
+        blocks=(
+            Text(
+                "You start in a **tent** on the edge of Camden. Every "
+                "player does. The property ladder runs from there to a "
+                "penthouse over the City, and the thing it buys you is "
+                "**time**: a better home refills your energy and nerve "
+                "faster, every hour of every day, whether you are "
+                "playing or not."
+            ),
+            Gallery((
+                ("images/housing/tent.webp",
+                 "**Tent** — free, and worth exactly that."),
+                ("images/housing/hostel.webp",
+                 "**Hostel Room** — £250, and the first roof."),
+                ("images/housing/van.webp",
+                 "**Converted Van** — £600, and a lockbox."),
+                ("images/housing/council_flat.webp",
+                 "**Council Flat** — £1,000, and a front door."),
+            )),
+            Heading("The ladder"),
+            Table(
+                headers=("Home", "Price", "Energy", "Nerve"),
+                rows=(
+                    ("Tent", "Free", "—", "—"),
+                    ("Hostel Room", "£250", "+5%", "+5%"),
+                    ("Converted Van", "£600", "+7%", "+8%"),
+                    ("Council Flat", "£1,000", "+10%", "+10%"),
+                    ("Council House", "£4,500", "+15%", "+15%"),
+                    ("City Apartment", "£12,000", "+20%", "+20%"),
+                    ("Modern House", "£30,000", "+30%", "+25%"),
+                    ("Penthouse", "£85,000", "+40%", "+35%"),
+                ),
+                caption="How much faster each resource comes back.",
+            ),
+            Text(
+                "In plain terms: a full energy bar takes **five hours** "
+                "in the tent and **three and a half** in the penthouse. "
+                "Over a week that is most of an extra day of playing."
+            ),
+            Note(
+                "Every home is a better deal than the one below it on "
+                "every figure. There are no trap purchases on this "
+                "ladder — if it costs more, it is better.",
+                tone="tip",
+            ),
+            Gallery((
+                ("images/housing/council_house.webp",
+                 "**Council House** — £4,500, and a garden."),
+                ("images/housing/apartment.webp",
+                 "**City Apartment** — £12,000, and a locked lobby."),
+                ("images/housing/modern_house.webp",
+                 "**Modern House** — £30,000, and privacy."),
+                ("images/housing/penthouse.webp",
+                 "**Penthouse** — £85,000, and the view."),
+            )),
+            Heading("Fitting the place out"),
+            Text(
+                "Once you have somewhere of your own, "
+                "[manage it](/housing/manage) to install extras. They "
+                "are permanent, they stay with you when you move, and "
+                "each can only be bought once."
+            ),
+            Table(
+                headers=("Fitting", "Price", "Effect"),
+                rows=(
+                    ("Hot tub", "£3,000", "+5% energy recovery"),
+                    ("Sauna", "£2,500", "+5% nerve recovery"),
+                    ("Superior interior", "£1,500", "+2 comfort"),
+                    ("Open bar", "£5,000", "+3 comfort"),
+                    ("Swimming pool", "£8,000", "+2% gym gains"),
+                ),
+            ),
+            Text(
+                "The **hot tub** and **sauna** add to whatever your "
+                "home already gives you, so a penthouse with a hot tub "
+                "refills energy 45% faster than a tent does."
+            ),
+            Heading("What is not working yet"),
+            Text(
+                "Being straight with you, because the property page "
+                "shows these figures and they are not doing anything "
+                "yet:"
+            ),
+            Bullets((
+                "**Storage, safe capacity and garage space** are listed "
+                "on every property and are not yet read by anything. "
+                "Your inventory limit does not change when you move.",
+                "**Comfort** is shown but has no effect, so the "
+                "superior interior and the open bar are decoration for "
+                "now.",
+                "**Gym gains** are not affected yet, so the swimming "
+                "pool is decoration too.",
+            )),
+            Note(
+                "Buy on the recovery figures alone. Those are real, "
+                "they are in the table above, and they are the reason "
+                "to climb. The rest will follow.",
+                tone="warning",
+            ),
+            Heading("Worth knowing"),
+            Bullets((
+                "You can buy a home **from anywhere** — there is no "
+                "district to travel to.",
+                "Moving is a straight swap. You do not sell the old "
+                "place, and there is no refund, so climb one rung at a "
+                "time only if the money is spare.",
+                "The recovery bonus applies immediately, including to "
+                "time you were offline before you bought it.",
+            )),
         ),
     ),
 )
