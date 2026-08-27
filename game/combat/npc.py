@@ -137,11 +137,16 @@ def combat_power(strength, defence, speed, dexterity):
     return strength + defence + speed + dexterity
 
 
-def payout_share(player, opponent, equipment=None):
+def payout_share(player, opponent):
     """How much of an opponent's purse is still worth taking.
 
     Full price while they are your equal or better; falling away as you
     outgrow them, never quite to nothing.
+
+    Measured on trained stats alone, deliberately. Counting the loadout
+    too would mean equipping your best gun cut your own income, which
+    would have players fighting barehanded to earn more -- gear is what
+    you brought, not who you are.
     """
     theirs = combat_power(
         opponent.strength,
@@ -150,8 +155,8 @@ def payout_share(player, opponent, equipment=None):
         opponent.dexterity,
     )
     mine = combat_power(
-        player.strength + getattr(equipment, "strength_bonus", 0),
-        player.defence + getattr(equipment, "defence_bonus", 0),
+        player.strength,
+        player.defence,
         player.speed,
         player.dexterity,
     )
@@ -260,7 +265,7 @@ def fight_opponent(player, equipment, opponent, rng=None, now=None):
     if victory:
         cash_reward = round(
             rng.randint(opponent.cash_min, opponent.cash_max)
-            * payout_share(player, opponent, equipment)
+            * payout_share(player, opponent)
         )
         player.money += cash_reward
         award_xp(player, opponent.xp_reward)
