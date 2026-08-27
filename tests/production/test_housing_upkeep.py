@@ -46,19 +46,49 @@ class UpkeepArithmeticTests(unittest.TestCase):
             0,
         )
 
+    def test_the_cheapest_room_still_costs_real_money(self):
+        """The floor is the point of the ladder.
+
+        Rent used to be 0.3% of the purchase price, which made the
+        hostel room £1 a day. That is not a sink, it is a rounding
+        error: a player could hold it forever and never notice.
+
+        £150 is about a quarter of a new player's three-hour day of
+        Camden crime, which is the same bite the penthouse takes out of
+        a developed player's.
+        """
+        self.assertEqual(daily_upkeep(get_residence("hostel")), 150)
+
+    def test_every_home_you_pay_for_costs_at_least_the_floor(self):
+        from game.housing import RESIDENCES
+
+        for home in RESIDENCES:
+            if home.purchase_price == 0:
+                continue
+            with self.subTest(residence=home.key):
+                self.assertGreaterEqual(daily_upkeep(home), 150)
+
+    def test_the_ladder_never_goes_backwards(self):
+        """A dearer home must never be cheaper to keep."""
+        from game.housing import RESIDENCES
+
+        rents = [daily_upkeep(home) for home in RESIDENCES]
+
+        self.assertEqual(rents, sorted(rents))
+
     def test_rent_scales_with_what_you_bought(self):
         cheap = daily_upkeep(get_residence("council_flat"))
         dear = daily_upkeep(get_residence("penthouse"))
 
         self.assertGreater(dear, cheap)
-        self.assertEqual(dear, 255)
+        self.assertEqual(dear, 550)
 
     def test_it_is_charged_by_the_second(self):
         home = get_residence("penthouse")
 
-        self.assertEqual(upkeep_owed(home, timedelta(days=1)), 255)
+        self.assertEqual(upkeep_owed(home, timedelta(days=1)), 550)
         # Half a day costs half, rather than nothing until a day ticks.
-        self.assertEqual(upkeep_owed(home, timedelta(hours=12)), 127)
+        self.assertEqual(upkeep_owed(home, timedelta(hours=12)), 275)
 
     def test_a_long_absence_cannot_produce_a_bill_nobody_can_pay(self):
         home = get_residence("penthouse")
@@ -135,7 +165,7 @@ class UpkeepThroughTheGameTests(unittest.TestCase):
 
         state = upkeep_for(self.user_id)
 
-        self.assertEqual(state["daily"], 255)
+        self.assertEqual(state["daily"], 550)
         self.assertEqual(state["owed"], 0)
 
     def test_rent_builds_up_over_time(self):
@@ -143,7 +173,7 @@ class UpkeepThroughTheGameTests(unittest.TestCase):
         upkeep_for(self.user_id)
         self.owe_rent_for(3)
 
-        self.assertEqual(upkeep_for(self.user_id)["owed"], 765)
+        self.assertEqual(upkeep_for(self.user_id)["owed"], 1650)
 
     def test_paying_clears_the_bill_and_takes_the_money(self):
         move_house(self.user_id, "penthouse")
@@ -153,9 +183,9 @@ class UpkeepThroughTheGameTests(unittest.TestCase):
 
         paid, left = pay_upkeep(self.user_id)
 
-        self.assertEqual(paid, 510)
+        self.assertEqual(paid, 1100)
         self.assertEqual(left, 0)
-        self.assertEqual(self.player().money, before - 510)
+        self.assertEqual(self.player().money, before - 1100)
         self.assertFalse(upkeep_for(self.user_id)["in_arrears"])
 
     def test_paying_when_straight_is_refused(self):

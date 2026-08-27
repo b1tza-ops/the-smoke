@@ -668,14 +668,22 @@ GUIDES = (
                 headers=("Home", "Rent a day"),
                 rows=(
                     ("Tent", "Free"),
-                    ("Hostel Room", "£1"),
-                    ("Converted Van", "£2"),
-                    ("Council Flat", "£3"),
-                    ("Council House", "£14"),
-                    ("City Apartment", "£36"),
-                    ("Modern House", "£90"),
-                    ("Penthouse", "£255"),
+                    ("Hostel Room", "£150"),
+                    ("Converted Van", "£175"),
+                    ("Council Flat", "£200"),
+                    ("Council House", "£250"),
+                    ("City Apartment", "£310"),
+                    ("Modern House", "£400"),
+                    ("Penthouse", "£550"),
                 ),
+            ),
+            Text(
+                "These are real money. The cheapest room costs about a "
+                "**quarter of a three-hour day** of Camden crime, and "
+                "the penthouse about **half** of the same day in "
+                "Shoreditch. Buy the home you can keep, not the one you "
+                "can just about afford the deposit on — the tent is "
+                "free and always will be."
             ),
             Note(
                 "Falling behind **suspends what the home does for you** "
@@ -686,10 +694,11 @@ GUIDES = (
                 tone="warning",
             ),
             Text(
-                "Arrears stop building after "
-                "**14 days**, so going away "
-                "for a month does not leave you a bill you cannot pay. "
-                "Moving back to the tent clears what is owed."
+                "Arrears stop building after **14 days**, so going "
+                "away for a month does not leave you a bill you cannot "
+                "pay. The worst it can ever reach is £7,700, and that "
+                "is only if you own the penthouse. Moving back to the "
+                "tent clears what is owed."
             ),
             Heading("Fitting the place out"),
             Text(

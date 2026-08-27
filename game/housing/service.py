@@ -31,6 +31,7 @@ class ResidenceDefinition:
     name: str
     description: str
     purchase_price: int
+    daily_rent: int
     comfort: int
     storage_capacity: int
     energy_recovery_bonus_percent: int
@@ -56,6 +57,7 @@ RESIDENCES = (
             "It offers little comfort, but it is free."
         ),
         purchase_price=0,
+        daily_rent=0,
         comfort=1,
         storage_capacity=20,
         energy_recovery_bonus_percent=0,
@@ -71,6 +73,7 @@ RESIDENCES = (
             "and somewhere warm to sleep."
         ),
         purchase_price=250,
+        daily_rent=150,
         comfort=2,
         storage_capacity=24,
         energy_recovery_bonus_percent=5,
@@ -85,6 +88,7 @@ RESIDENCES = (
             "A discreet van with a bed, lockbox and a quick exit."
         ),
         purchase_price=600,
+        daily_rent=175,
         comfort=3,
         storage_capacity=28,
         energy_recovery_bonus_percent=7,
@@ -100,6 +104,7 @@ RESIDENCES = (
             "and space for a small vehicle."
         ),
         purchase_price=1000,
+        daily_rent=200,
         comfort=4,
         storage_capacity=34,
         energy_recovery_bonus_percent=10,
@@ -114,6 +119,7 @@ RESIDENCES = (
             "A solid brick house with a small garden and room to grow."
         ),
         purchase_price=4500,
+        daily_rent=250,
         comfort=5,
         storage_capacity=42,
         energy_recovery_bonus_percent=15,
@@ -128,6 +134,7 @@ RESIDENCES = (
             "A secure apartment above the noise of the street."
         ),
         purchase_price=12000,
+        daily_rent=310,
         comfort=6,
         storage_capacity=55,
         energy_recovery_bonus_percent=20,
@@ -142,6 +149,7 @@ RESIDENCES = (
             "A contemporary London home with proper privacy and space."
         ),
         purchase_price=30000,
+        daily_rent=400,
         comfort=8,
         storage_capacity=75,
         energy_recovery_bonus_percent=30,
@@ -157,6 +165,7 @@ RESIDENCES = (
             "successful."
         ),
         purchase_price=85000,
+        daily_rent=550,
         comfort=10,
         storage_capacity=100,
         energy_recovery_bonus_percent=40,
@@ -389,20 +398,37 @@ def housing_menu(player):
 # it only becomes a real number once someone has chosen to own something
 # expensive. At 0.3% the penthouse runs about £255 a day -- a fifth of
 # what a developed player earns in three hours.
-UPKEEP_DAILY_RATE = 0.003
-
 # Arrears are capped so a player who stops playing for a month does not
 # come back to a bill they cannot clear. Two weeks of a penthouse is
-# about £3,500.
+# £7,700 -- about eight three-hour days of Shoreditch work, which is a
+# real setback but not a wall.
 MAXIMUM_UPKEEP_ARREARS_DAYS = 14
 
 
 def daily_upkeep(residence):
-    """What this home costs to keep for a day."""
-    if residence is None or residence.purchase_price <= 0:
+    """What this home costs to keep for a day.
+
+    Read from the residence rather than derived from its price, because
+    the two ladders have genuinely different shapes and forcing one out
+    of the other gave nonsense at both ends.
+
+    House prices span 340x, from a £250 hostel room to an £85,000
+    penthouse. Income spans about 1.7x: roughly £585 for a three-hour
+    day of Camden crime against £990 for the same in Shoreditch. Rent
+    proportional to price therefore cannot start at a figure that means
+    anything to a new player without ending at one nobody can pay --
+    the old 0.3% rate charged £1 a day at the bottom, which was noise.
+
+    So the ladder is chosen against what a player at each rung actually
+    earns: £150 a day for the cheapest room, a quarter of a new
+    player's playing day, rising to £550 for the penthouse, over half
+    of a developed player's. Owning better costs a larger share of your
+    time, which is the point of a sink.
+    """
+    if residence is None:
         return 0
 
-    return round(residence.purchase_price * UPKEEP_DAILY_RATE)
+    return residence.daily_rent
 
 
 def upkeep_owed(residence, elapsed):
