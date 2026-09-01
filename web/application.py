@@ -349,10 +349,35 @@ from game.player.regeneration import player_regeneration_forecast
 from game.player.status import update_player_status
 
 
+def _session_secret():
+    """The key that signs session cookies.
+
+    Falling back to a random key is right for development and wrong
+    everywhere else: each Gunicorn worker would generate a different
+    one, so a player's session would work or not depending on which
+    worker answered, and every restart would sign everybody out. That
+    reads as a flaky site rather than as the misconfiguration it is.
+
+    So it is only a fallback when nothing is at stake.
+    """
+    configured = os.environ.get("THE_SMOKE_SECRET_KEY")
+
+    if configured:
+        return configured
+
+    if os.environ.get("THE_SMOKE_ENVIRONMENT") == "production":
+        raise RuntimeError(
+            "THE_SMOKE_SECRET_KEY must be set in production; refusing "
+            "to start with a per-worker random key."
+        )
+
+    return secrets.token_hex(32)
+
+
 app = Flask(__name__)
 
 app.config.update(
-    SECRET_KEY=os.environ.get("THE_SMOKE_SECRET_KEY") or secrets.token_hex(32),
+    SECRET_KEY=_session_secret(),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=(
@@ -396,12 +421,68 @@ app.jinja_env.globals.update(
 )
 
 rate_limiter = FixedWindowRateLimiter()
+# A real bcrypt hash of a value nobody can supply, compared against
+# when the username does not exist so that a failed sign-in costs the
+# same either way. Generated once at import; the password it encodes is
+# random and immediately discarded.
+ABSENT_USER_PASSWORD_HASH = hash_password(secrets.token_urlsafe(32))
+
+
 SENSITIVE_LIMITS = {
     "/login": (10, 60),
     "/register": (5, 300),
     "/forgot-password": (5, 300),
     "/resend-verification": (3, 300),
+    # Staff sign-in was the only login in the building with no limit on
+    # it, which made the most valuable password on the site the easiest
+    # one to grind. Tighter than the player limit because nobody signs
+    # in here often and a wrong guess is far more interesting.
+    "/admin/login": (5, 900),
 }
+
+
+
+@app.after_request
+def set_security_headers(response):
+    """Headers the app should send on every response.
+
+    Cloudflare may add some of these, but the origin should not depend
+    on a proxy for them -- anything that reaches the app directly, or a
+    future move off Cloudflare, would quietly lose them.
+
+    The CSP allows inline scripts and styles because this project uses
+    both throughout (the casino animations, the fight playback, every
+    page's `style` attribute). Tightening that means nonces on roughly
+    eighteen inline blocks, which is worth doing and is not a one-line
+    change; `frame-ancestors` and the rest still hold today.
+    """
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "img-src 'self' data:; "
+        "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "frame-src https://challenges.cloudflare.com; "
+        "form-action 'self'; "
+        "base-uri 'none'; "
+        "frame-ancestors 'none'",
+    )
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault(
+        "Referrer-Policy", "strict-origin-when-cross-origin"
+    )
+    response.headers.setdefault(
+        "Permissions-Policy", "geolocation=(), microphone=(), camera=()"
+    )
+
+    if request.is_secure:
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=31536000; includeSubDomains",
+        )
+
+    return response
 
 
 def configure_logging():
@@ -4072,11 +4153,15 @@ def login():
 
         user = get_user_by_username(username)
 
-        if user is None:
-            error = "User not found."
-
-        elif not verify_password(password, user[3]):
-            error = "Incorrect password."
+        # One message for both, and the same work done either way.
+        # Saying "user not found" hands over a list of real accounts,
+        # and returning early does it again through timing: skipping
+        # bcrypt answers in a millisecond where a real account takes
+        # nearly three hundred.
+        if user is None or not verify_password(password, user[3]):
+            if user is None:
+                verify_password(password, ABSENT_USER_PASSWORD_HASH)
+            error = "Those details do not match an account."
 
         elif is_user_suspended(user[0]):
             error = (
