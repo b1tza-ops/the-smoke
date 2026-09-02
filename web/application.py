@@ -216,6 +216,18 @@ from game.combat.pvp import PVP_HOSPITAL_SECONDS
 from game.player.progression import award_xp
 from game.player.status import send_to_hospital
 from game.combat.turns import MAXIMUM_TURNS, TurnError
+from database.repositories.safe import (
+    burgle,
+    deposit as safe_deposit,
+    safe_for,
+    withdraw as safe_withdraw,
+)
+from game.crime.burglary import (
+    BURGLARY_NERVE_COST,
+    BurglaryError,
+    odds_against,
+)
+from game.housing.safe import SafeError
 from database.repositories.fights import (
     flee as flee_fight,
     get_open_fight,
@@ -2898,7 +2910,25 @@ def manage_housing():
 
     if request.method == "POST":
         try:
-            if request.form.get("action") == "pay_upkeep":
+            if request.form.get("action") == "safe_deposit":
+                left = safe_deposit(
+                    session["user_id"],
+                    int(request.form.get("amount", "0")),
+                )
+                notice = f"Put away. The safe holds £{left:,}."
+                player = Player(
+                    *get_player_by_user_id(session["user_id"])
+                )
+            elif request.form.get("action") == "safe_withdraw":
+                left = safe_withdraw(
+                    session["user_id"],
+                    int(request.form.get("amount", "0")),
+                )
+                notice = f"Taken out. The safe holds £{left:,}."
+                player = Player(
+                    *get_player_by_user_id(session["user_id"])
+                )
+            elif request.form.get("action") == "pay_upkeep":
                 paid, left = pay_upkeep(session["user_id"])
                 notice = (
                     f"Rent paid, £{paid:,}."
@@ -2916,7 +2946,7 @@ def manage_housing():
             player = Player(
                 *get_player_by_user_id(session["user_id"])
             )
-        except HousingError as housing_error:
+        except (HousingError, SafeError, ValueError) as housing_error:
             error = str(housing_error)
 
     return render_template(
@@ -2927,6 +2957,7 @@ def manage_housing():
         facilities=FACILITIES,
         owned_facilities=facilities_for(session["user_id"]),
         upkeep=upkeep_for(session["user_id"]),
+        safe=safe_for(session["user_id"]),
         notice=notice,
         error=error,
     )
@@ -3549,6 +3580,7 @@ def pvp():
         selected_approach = "defensive"
 
     aftermath = None
+    burglary = None
 
     if request.method == "POST" and request.form.get("action") == "aftermath":
         # A fight that has already been won; this only decides what
@@ -3562,6 +3594,18 @@ def pvp():
             player = Player(*get_player_by_user_id(session["user_id"]))
         except (PvpError, ValueError) as settle_error:
             error = str(settle_error)
+
+    elif request.method == "POST" and request.form.get("action") == "burgle":
+        # Crime-shaped, not combat-shaped: nerve, not energy, and a
+        # cell rather than a hospital bed when it goes wrong.
+        try:
+            burglary = burgle(
+                session["user_id"],
+                int(request.form.get("target_id", "0")),
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except (BurglaryError, ValueError) as break_in_error:
+            error = str(break_in_error)
 
     elif request.method == "POST" and request.form.get("action") == "flee":
         try:
@@ -3713,6 +3757,9 @@ def pvp():
         maximum_turns=MAXIMUM_TURNS,
         pending_aftermath=get_pending_aftermath(player.id),
         aftermath=aftermath,
+        burglary=burglary,
+        burglary_nerve=BURGLARY_NERVE_COST,
+        burglary_odds=odds_against,
     )
 
 

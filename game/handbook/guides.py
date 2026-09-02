@@ -791,6 +791,56 @@ GUIDES = (
                 "is only if you own the penthouse. Moving back to the "
                 "tent clears what is owed."
             ),
+            Heading("The safe"),
+            Text(
+                "There are three places to keep money and they are not "
+                "interchangeable. **The bank cannot be touched by "
+                "anybody, and it earns nothing.** Cash in your pockets "
+                "is what a mugger takes when you lose a fight. The safe "
+                "at home sits between them: it pays interest, and "
+                "another player can break in and take a share of it."
+            ),
+            Table(
+                headers=("Where", "Earns", "Can be taken?"),
+                rows=(
+                    ("Bank", "Nothing", "Never"),
+                    ("Safe at home", "0.25% a day",
+                     "By a burglar, a fifth at a time"),
+                    ("Your pockets", "Nothing",
+                     "By a mugger, when you lose a fight"),
+                ),
+            ),
+            Text(
+                "The safe holds more the better your address — £500 in "
+                "a hostel room, £100,000 in the penthouse. Interest is "
+                "worked out when you next open it and stops accruing "
+                "after 30 days, so nothing builds up while you are gone "
+                "for a season."
+            ),
+            Note(
+                "A full penthouse safe earns about **£250 a day** "
+                "against **£550** of rent. Keeping cash at home softens "
+                "the rent without ever covering it — and it is the only "
+                "money anybody can come and take.",
+                tone="tip",
+            ),
+            Heading("Somebody breaking into yours"),
+            Text(
+                "Breaking in costs **8 nerve**, not energy — it is a "
+                "job, not a fight. A better address is harder to get "
+                "into, and a lockpick, glass cutter or bolt cutters "
+                "help. Get it wrong and there is a good chance of a "
+                "cell."
+            ),
+            Note(
+                "A burglar takes **a fifth of the safe, up to £5,000** "
+                "— never the lot. Nobody under three days old can be "
+                "robbed, a safe holding less than £250 is not worth the "
+                "nerve, and the same house cannot be done twice inside "
+                "four hours. You are told either way, even when they "
+                "fail to get in.",
+                tone="warning",
+            ),
             Heading("Fitting the place out"),
             Text(
                 "Once you have somewhere of your own, "

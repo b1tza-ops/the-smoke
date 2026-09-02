@@ -2079,6 +2079,103 @@ def migrate_049_throwable_items(cursor):
         )
 
 
+def migrate_050_player_safe(cursor):
+    """Cash kept at home, and when its interest was last worked out.
+
+    Its own table rather than columns on `players`, for the reason
+    written up in the README: that row is splatted positionally into
+    `Player`, so anything added there is a standing hazard, and most
+    pages have no interest in the safe.
+
+    A row appears the first time somebody puts money in. Everyone else
+    has no row and an implied balance of nothing, which is also the
+    answer to "is this player worth burgling".
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_safe (
+            player_id INTEGER PRIMARY KEY,
+            balance INTEGER NOT NULL DEFAULT 0
+                CHECK (balance >= 0),
+            settled_at TEXT NOT NULL,
+
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+
+
+def migrate_051_burglaries(cursor):
+    """Every break-in attempt, for the cooldown and the victim's notice.
+
+    Kept whether or not it came off: a failed attempt still has to put
+    the house out of reach for a while, or a burglar could simply retry
+    until the dice went their way.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_burglaries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            burglar_id INTEGER NOT NULL,
+            victim_id INTEGER NOT NULL,
+            succeeded INTEGER NOT NULL DEFAULT 0,
+            taken INTEGER NOT NULL DEFAULT 0
+                CHECK (taken >= 0),
+            created_at TEXT NOT NULL,
+
+            FOREIGN KEY (burglar_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (victim_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS player_burglaries_recent
+        ON player_burglaries (burglar_id, victim_id, created_at)
+    """)
+
+
+def migrate_052_notifications_without_an_attack(cursor):
+    """Let a notice exist that is not about a fight.
+
+    `pvp_notifications.attack_id` is NOT NULL with a foreign key into
+    the attacks table, which was right when being attacked was the only
+    thing another player could do to you. A burglary is not an attack
+    and has no row there to point at.
+
+    SQLite cannot drop a NOT NULL in place, so the table is rebuilt --
+    the same move migrations 017 and 046 make. Existing notices keep
+    their attack, and the column simply becomes optional.
+    """
+    cursor.execute(
+        "ALTER TABLE pvp_notifications RENAME TO pvp_notifications_old"
+    )
+    cursor.execute("""
+        CREATE TABLE pvp_notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            attack_id INTEGER,
+            message TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            read_at TEXT,
+
+            FOREIGN KEY (player_id)
+                REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (attack_id)
+                REFERENCES player_pvp_attacks(id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        INSERT INTO pvp_notifications (
+            id, player_id, attack_id, message, created_at, read_at
+        )
+        SELECT id, player_id, attack_id, message, created_at, read_at
+        FROM pvp_notifications_old
+    """)
+    cursor.execute("DROP TABLE pvp_notifications_old")
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2324,6 +2421,21 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=49,
         name="throwable_items",
         apply=migrate_049_throwable_items,
+    ),
+    Migration(
+        version=50,
+        name="player_safe",
+        apply=migrate_050_player_safe,
+    ),
+    Migration(
+        version=51,
+        name="burglaries",
+        apply=migrate_051_burglaries,
+    ),
+    Migration(
+        version=52,
+        name="notifications_without_an_attack",
+        apply=migrate_052_notifications_without_an_attack,
     ),
 )
 
