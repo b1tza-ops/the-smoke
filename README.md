@@ -43,7 +43,7 @@ adding a third.
 - **All money moves inside `BEGIN IMMEDIATE`.** No exceptions. See
   `database/repositories/casino.py` or `loans.py` for the shape.
 - **Migrations are ordered and idempotent** (`database/core/migrations.py`,
-  currently at 41). `create_tables()` runs at import of `web/application.py`, so a
+  currently at 53). `create_tables()` runs at import of `web/application.py`, so a
   service restart applies them. Never edit a migration that has shipped — add a
   new one.
 - **Nothing is scheduled.** Energy, nerve, happiness, health, wanted level and
@@ -158,6 +158,15 @@ To sweep the whole suite under those rules:
 Newest first. Every entry is a merged PR; `git log` has the detail.
 
 **Live fixes**
+- **#155** — four holes found auditing the live site: the admin login had no rate
+  limit, a missing account answered faster than a wrong password (279ms against
+  1ms, which enumerates the user list), the session secret could fall back to a
+  fixed string, and the app served no security headers.
+- **#153** — fighting crashed for anybody who had trained. Trained stats are
+  floats; Python 3.12 stopped letting `randint` take one. The local suite passed
+  on 3.11 while production 500'd on 3.14 — Trap 7, in the wild.
+- **#152** — the `/fight` page 500'd for exactly the players who could not use it:
+  every guard handled a missing opponent except the last one.
 - **#141** — SQLite moved to write-ahead logging. Every page load writes (the
   loader settles regeneration clocks), so on the default rollback journal the
   whole site serialised behind whoever was committing. Measured 794 → 2,820 page
@@ -166,11 +175,33 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
+- **#156** — the bounty board. Anybody can put £500–£250,000 on any player's
+  head; the stake is escrowed on posting, the fixer takes 10% on top as a sink,
+  and it is collected by whoever beats that player and chooses *hospitalise*.
+  Unclaimed after seven days it lapses and the stake goes back. This is also
+  what fixed the aftermath screen: mugging used to strictly dominate, because it
+  paid and the other two choices did not.
+- **#155** — the safe and the burglar. Three places to keep money and only one
+  of them grows: the bank is untouchable and earns nothing, the safe pays 0.25%
+  a day and can be broken into, pockets are what a mugger takes. Plus the five
+  crime tools that had sat in the shop doing nothing since launch.
+- **#154** — player fights rebuilt as a turn-by-turn attack screen: you pick a
+  weapon each turn from your real loadout, with ammunition and throwables spent
+  as you use them, and dedicated melee and throwable slots to carry them in.
+- **#152** — the two economy gaps. Crime rewards were flat across the ladder
+  (1.72× from bottom to top, now 3.38×), and the daily contract board was paying
+  £0 because it only counted rated player fights on a server with almost no
+  players. The gym ladder was re-priced in the same PR: the top gym went from
+  1,284 days of income to 205.
+- **#150** — rent. Housing had been a one-off purchase; now every home charges
+  £150–£550 a day, accrued from elapsed time like every other clock here.
+- **#149** — a reason to leave Camden. **#151** — the landing page, `robots.txt`
+  and a sitemap, because the site was not in the index at all.
 - **#140** — Ronnie Dell, the loan shark in Soho. £5,000 a level from level 3 at
   2.5%/day, interest accrued by the second, payment due every three days. Missing
   one is a hospital stay that escalates 30min → 2h → 6h → 12h while the debt stays
   put. Collection runs on every request so it cannot be dodged.
-- **#139** — the handbook: 10 guides at `/forum`, rules at `/rules`, both public.
+- **#139** — the handbook: guides at `/forum`, rules at `/rules`, both public.
   Reachable from a burger menu beside the brand on every page.
 - **#135–#138** — the Golden Square casino: slots, keno and blackjack, with reel
   and card animations, and the result held back until the animation reaches it.
@@ -184,7 +215,7 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   stat, fourteen gyms re-tiered by price, plus Shoreditch and Hackney.
 
 **Shape of the world**: five districts — Camden, Brixton, Soho, Shoreditch,
-Hackney — 44 items, 10 guides, 41 migrations.
+Hackney — 48 items, 11 guides, 53 migrations.
 
 ---
 
