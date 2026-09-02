@@ -15,19 +15,17 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 571 tests
-```
-
-**The suite is bigger than it looks.** `tests/auth/` has **no `__init__.py`**, so
-`unittest discover` silently skips all five files in it. This is deliberate, it is
-easy to miss, and it means "all green" from discovery alone is not all green:
-
-```bash
-for f in tests/auth/test_*.py; do
-  python3 -m unittest "$(echo "$f" | sed 's|/|.|g; s|\.py$||')"
-done
+python3 -m unittest discover -s tests -t .       # 991 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
+
+**Note the `-t .`, and do not drop it.** It roots discovery at the project
+rather than at `tests/`, which is what lets `tests/auth/` be a package instead
+of a shadow of the real `auth/` one. Without it those thirty-six tests — every
+check on password hashing, login timing and the admin rate limit — are skipped
+in silence, which is how they went a year without running on a push.
+`tests/test_suite_integrity.py` fails if discovery ever stops reaching a file
+again.
 
 Only two dependencies — `bcrypt` and `Flask` — and that is on purpose. Catalogues
 are structured Python, not YAML or JSON loaded at runtime. Think hard before
@@ -43,7 +41,7 @@ adding a third.
 - **All money moves inside `BEGIN IMMEDIATE`.** No exceptions. See
   `database/repositories/casino.py` or `loans.py` for the shape.
 - **Migrations are ordered and idempotent** (`database/core/migrations.py`,
-  currently at 53). `create_tables()` runs at import of `web/application.py`, so a
+  currently at 54). `create_tables()` runs at import of `web/application.py`, so a
   service restart applies them. Never edit a migration that has shipped — add a
   new one.
 - **Nothing is scheduled.** Energy, nerve, happiness, health, wanted level and
@@ -175,12 +173,20 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
-- **#156** — the bounty board. Anybody can put £500–£250,000 on any player's
-  head; the stake is escrowed on posting, the fixer takes 10% on top as a sink,
-  and it is collected by whoever beats that player and chooses *hospitalise*.
-  Unclaimed after seven days it lapses and the stake goes back. This is also
-  what fixed the aftermath screen: mugging used to strictly dominate, because it
-  paid and the other two choices did not.
+- **#156** — two things that give the rest of the game something to push
+  against.
+  **The bounty board**: anybody can put £500–£250,000 on any player's head;
+  the stake is escrowed on posting, the fixer takes 10% on top as a sink, and
+  it is collected by whoever beats that player and chooses *hospitalise*.
+  Unclaimed after seven days it lapses and the stake goes back. This also fixed
+  the aftermath screen, where mugging used to strictly dominate because it paid
+  and the other two choices did not.
+  **Coldharbour Motors**: seven vehicles in Brixton, kept in the garage the
+  property page had been advertising since housing shipped. A car is faster
+  than the bus, cheaper than the fare and reaches Hackney where the tube does
+  not — but it is the only way across London the police can stop, on odds of
+  your wanted level against how much the car shows off. Heat now has a second
+  consequence.
 - **#155** — the safe and the burglar. Three places to keep money and only one
   of them grows: the bank is untouchable and earns nothing, the safe pays 0.25%
   a day and can be broken into, pockets are what a mugger takes. Plus the five
@@ -215,7 +221,7 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   stat, fourteen gyms re-tiered by price, plus Shoreditch and Hackney.
 
 **Shape of the world**: five districts — Camden, Brixton, Soho, Shoreditch,
-Hackney — 48 items, 11 guides, 53 migrations.
+Hackney — 48 items, 7 vehicles, 11 guides, 54 migrations.
 
 ---
 
