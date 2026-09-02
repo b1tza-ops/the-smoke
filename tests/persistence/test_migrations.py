@@ -84,7 +84,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            tuple(range(1, 50)),
+            tuple(range(1, 53)),
         )
 
         with closing(
@@ -281,6 +281,9 @@ class MigrationTests(unittest.TestCase):
                     (47, "melee_slot"),
                     (48, "player_fights"),
                     (49, "throwable_items"),
+                    (50, "player_safe"),
+                    (51, "burglaries"),
+                    (52, "notifications_without_an_attack"),
                 ],
             )
 
@@ -570,7 +573,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            tuple(range(1, 50)),
+            tuple(range(1, 53)),
         )
         self.assertEqual(second_run, ())
 
@@ -605,7 +608,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 49)
+            self.assertEqual(migration_count, 52)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -624,7 +627,7 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=50,
+            version=53,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -674,7 +677,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                list(range(1, 50)),
+                list(range(1, 53)),
             )
             self.assertEqual(money, 777)
 
@@ -709,7 +712,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                list(range(1, 50)),
+                list(range(1, 53)),
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)

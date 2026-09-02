@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Player fights · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='turns-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='safe-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar">{% include "_topbar_menu.html" %}<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('fight') }}">NPC fights</a></header>
 {% include "_player_hud.html" %}
@@ -61,6 +61,19 @@
   {% endfor %}
 </div>
 {% endmacro %}
+
+{% if burglary %}
+<div class="game-notice {{ '' if burglary.succeeded else 'game-notice--error' }}">
+  {% if burglary.succeeded %}
+    You got into {{ burglary.victim_name }}'s place and took
+    <strong>&pound;{{ "{:,}".format(burglary.taken) }}</strong> from the safe.
+  {% elif burglary.jailed %}
+    {{ burglary.victim_name }}'s place was locked up tight, and somebody called it in. You are in a cell.
+  {% else %}
+    You could not get into {{ burglary.victim_name }}'s place. Nobody saw you leave.
+  {% endif %}
+</div>
+{% endif %}
 
 {% if aftermath %}
 <div class="game-notice attack-settled">
@@ -200,6 +213,17 @@
 <button class="work-button" type="button" disabled><span>Attack {{ target.name }}</span><span>&rarr;</span></button>
 {% else %}
 <a class="work-button" href="{{ url_for('pvp', target_id=target.id) }}"><span>Attack {{ target.name }}</span><span>&rarr;</span></a>
+{% endif %}
+{% if not target.restricted and not target.beginner_protection_seconds %}
+<form method="post" class="burgle-form">
+  <input type="hidden" name="action" value="burgle">
+  <input type="hidden" name="target_id" value="{{ target.id }}">
+  <button class="burgle-button" type="submit"
+          {{ 'disabled' if player.nerve < burglary_nerve }}>
+    Burgle their home
+    <small>{{ burglary_nerve }} nerve · {{ burglary_odds(player.inventory, target.residence_key).chance }}%</small>
+  </button>
+</form>
 {% endif %}
 {% if target.limits.reward_multiplier < 1 %}<small class="combat-warning">Repeat-target rewards reduced to {{ (target.limits.reward_multiplier * 100)|int }}%.</small>{% endif %}
 </article>

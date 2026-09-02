@@ -168,6 +168,37 @@ GUIDES = (
                 "you just cannot run the heavy jobs all day, because "
                 "of heat."
             ),
+            Heading("Bring the right kit"),
+            Text(
+                "Five tools turn up as loot and sell for very little. "
+                "Hold on to them instead: each one suits particular "
+                "jobs, and carrying suitable kit makes the job **4 "
+                "percentage points** more likely to come off. Two tools "
+                "is the most any job counts, so a full toolbox is worth "
+                "no more than a well-chosen pair."
+            ),
+            Table(
+                headers=("Tool", "Good for"),
+                rows=(
+                    ("Basic Lockpick",
+                     "Market stalls, nightclub offices, server rooms"),
+                    ("Bolt Cutters", "Warehouses, canal lock-ups"),
+                    ("Glass Cutter",
+                     "Gallery lifts, server rooms, lock-ups"),
+                    ("Duct Tape",
+                     "Market stalls, nightclubs, galleries, handovers"),
+                    ("Burner Phone",
+                     "Phone snatches, pickpocketing, handovers"),
+                ),
+            ),
+            Note(
+                "Nothing **needs** a tool — every job on the ladder can "
+                "be done empty-handed. But a job that goes wrong with "
+                "kit in your hands leaves one behind about a quarter of "
+                "the time, which is why the fence is not always the "
+                "best home for a lockpick.",
+                tone="tip",
+            ),
             Heading("Heat"),
             Text(
                 "Every crime raises your **wanted level**, and a wanted "
@@ -759,6 +790,56 @@ GUIDES = (
                 "pay. The worst it can ever reach is £7,700, and that "
                 "is only if you own the penthouse. Moving back to the "
                 "tent clears what is owed."
+            ),
+            Heading("The safe"),
+            Text(
+                "There are three places to keep money and they are not "
+                "interchangeable. **The bank cannot be touched by "
+                "anybody, and it earns nothing.** Cash in your pockets "
+                "is what a mugger takes when you lose a fight. The safe "
+                "at home sits between them: it pays interest, and "
+                "another player can break in and take a share of it."
+            ),
+            Table(
+                headers=("Where", "Earns", "Can be taken?"),
+                rows=(
+                    ("Bank", "Nothing", "Never"),
+                    ("Safe at home", "0.25% a day",
+                     "By a burglar, a fifth at a time"),
+                    ("Your pockets", "Nothing",
+                     "By a mugger, when you lose a fight"),
+                ),
+            ),
+            Text(
+                "The safe holds more the better your address — £500 in "
+                "a hostel room, £100,000 in the penthouse. Interest is "
+                "worked out when you next open it and stops accruing "
+                "after 30 days, so nothing builds up while you are gone "
+                "for a season."
+            ),
+            Note(
+                "A full penthouse safe earns about **£250 a day** "
+                "against **£550** of rent. Keeping cash at home softens "
+                "the rent without ever covering it — and it is the only "
+                "money anybody can come and take.",
+                tone="tip",
+            ),
+            Heading("Somebody breaking into yours"),
+            Text(
+                "Breaking in costs **8 nerve**, not energy — it is a "
+                "job, not a fight. A better address is harder to get "
+                "into, and a lockpick, glass cutter or bolt cutters "
+                "help. Get it wrong and there is a good chance of a "
+                "cell."
+            ),
+            Note(
+                "A burglar takes **a fifth of the safe, up to £5,000** "
+                "— never the lot. Nobody under three days old can be "
+                "robbed, a safe holding less than £250 is not worth the "
+                "nerve, and the same house cannot be done twice inside "
+                "four hours. You are told either way, even when they "
+                "fail to get in.",
+                tone="warning",
             ),
             Heading("Fitting the place out"),
             Text(

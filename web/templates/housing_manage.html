@@ -1,9 +1,33 @@
 <!doctype html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ residence.name }} · Housing</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='turns-1') }}"></head>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ residence.name }} · Housing</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='safe-1') }}"></head>
 <body class="dashboard-page"><div class="app-shell">{% include "_player_hud.html" %}<main class="dashboard-main game-page">
 <section class="game-page__header"><div><p class="eyebrow">Current property</p><h1>{{ residence.name }}</h1><p>{{ residence.description }}</p></div></section>
 {% if residence.key in artwork %}<img src="{{ url_for('static', filename='images/housing/' + residence.key + '.webp') }}" alt="{{ residence.name }}" class="property-art property-art--wide">{% else %}<div class="property-art property-art--wide property-art--placeholder" role="img" aria-label="{{ residence.name }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#housing"></use></svg></div>{% endif %}
 <section class="crime-list"><article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Property options</p><a class="crime-button" href="{{ url_for('housing') }}">Change property</a></div></article>
+{% if notice %}<div class="game-notice">{{ notice }}</div>{% endif %}
+{% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+<section class="safe-panel">
+<div class="shark-panel__head"><h2>The safe</h2><span>holds £{{ "{:,}".format(safe.capacity) }}</span></div>
+<p class="safe-panel__balance"><strong>&pound;{{ "{:,}".format(safe.balance) }}</strong> at home
+  {%- if safe.interest_earned %} <em>+&pound;{{ "{:,}".format(safe.interest_earned) }} interest</em>{% endif %}</p>
+<p class="handbook-summary">Money at home earns interest. Money in the bank does not — and cannot be stolen. Whatever is in your pockets goes when you lose a fight.</p>
+{% if safe.capacity %}
+<div class="safe-panel__forms">
+  <form method="post">
+    <input type="hidden" name="action" value="safe_deposit">
+    <label>Put away<input type="number" name="amount" min="1" max="{{ safe.room }}" placeholder="£"></label>
+    <button class="work-button" type="submit"><span>Into the safe</span><span>&rarr;</span></button>
+  </form>
+  <form method="post">
+    <input type="hidden" name="action" value="safe_withdraw">
+    <label>Take out<input type="number" name="amount" min="1" max="{{ safe.balance }}" placeholder="£"></label>
+    <button class="work-button" type="submit"><span>Out of the safe</span><span>&rarr;</span></button>
+  </form>
+</div>
+{% if safe.full %}<p class="combat-warning">The safe is full. A bigger place holds more.</p>{% endif %}
+{% endif %}
+</section>
+
 <article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Facilities & modifications</p><h2>Make this place yours</h2>{% if upkeep.daily %}<section class="shark-panel">
 <div class="shark-panel__head"><h2>Rent</h2><span>£{{ "{:,}".format(upkeep.daily) }} a day</span></div>
 {% if upkeep.in_arrears %}
@@ -13,5 +37,5 @@
 {% else %}
 <p class="handbook-summary">Paid up. Rent accrues at £{{ "{:,}".format(upkeep.daily) }} a day whether you play or not.</p>
 {% endif %}
-</section>{% endif %}{% if notice %}<p>{{ notice }}</p>{% endif %}{% if error %}<p>{{ error }}</p>{% endif %}{% for key, facility in facilities.items() %}<form method="post"><input type="hidden" name="facility_key" value="{{ key }}"><button class="crime-button" {% if key in owned_facilities or player.money < facility[1] %}disabled{% endif %}>{{ facility[0] }} · £{{ "{:,}".format(facility[1]) }} · {{ facility[2] }}{% if key in owned_facilities %} — installed{% endif %}</button></form>{% endfor %}</div></article></section>
+</section>{% endif %}{% for key, facility in facilities.items() %}<form method="post"><input type="hidden" name="facility_key" value="{{ key }}"><button class="crime-button" {% if key in owned_facilities or player.money < facility[1] %}disabled{% endif %}>{{ facility[0] }} · £{{ "{:,}".format(facility[1]) }} · {{ facility[2] }}{% if key in owned_facilities %} — installed{% endif %}</button></form>{% endfor %}</div></article></section>
 </main></div></body></html>

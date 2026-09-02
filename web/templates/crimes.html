@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>Crimes · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='turns-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='safe-1') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -62,6 +62,20 @@
                         <div><dt>XP</dt><dd>{{ crime.xp_reward }}</dd></div>
                         <div><dt>Wanted</dt><dd>+{{ crime.wanted_gain }}</dd></div>
                     </dl>
+                    {% set suits = crime_tools(crime.key) %}
+                    {% if suits %}
+                    <p class="crime-kit">
+                        <span class="crime-kit__label">Kit</span>
+                        {% for tool in suits %}
+                            {% set carried = (player.inventory or {}).get(tool.key, 0) > 0 %}
+                            <span class="crime-kit__tool {{ 'is-carried' if carried }}"
+                                  title="{{ tool.blurb }}">{{ tool.name }}</span>
+                        {% endfor %}
+                        {% if progression.tool_bonus %}
+                            <b>+{{ progression.tool_bonus }}%</b>
+                        {% endif %}
+                    </p>
+                    {% endif %}
                     <p class="crime-sentence">
                         Mastery {{ progression.crime_xp }} XP
                         {% if progression.next_mastery_xp %}

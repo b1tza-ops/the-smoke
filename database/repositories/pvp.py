@@ -78,7 +78,8 @@ def get_pvp_targets(attacker_id, district, now=None):
                 players.travel_destination, players.travel_until,
                 players.shift_until, users.created_at,
                 COALESCE(rating.rating, 1000),
-                players.max_health
+                players.max_health,
+                players.residence_key
             FROM players
             JOIN users ON users.id = players.user_id
             LEFT JOIN player_pvp_ratings AS rating
@@ -112,6 +113,9 @@ def get_pvp_targets(attacker_id, district, now=None):
             "level": row[3],
             "health": row[4],
             "max_health": row[17],
+            # Appended to the SELECT rather than inserted, so none of
+            # the indices above move.
+            "residence_key": row[-1],
             "money": row[5],
             "strength": row[6],
             "defence": row[7],
