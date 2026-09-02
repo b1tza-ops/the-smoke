@@ -2,7 +2,12 @@
 
 Run the complete automated suite from the repository root:
 
-    python3 -m unittest discover -s tests -v
+    python3 -m unittest discover -s tests -t . -v
+
+The `-t .` is load-bearing: it roots discovery at the project so that
+`tests/auth/` is a package rather than something that shadows the real `auth/`
+package. Drop it and thirty-six authentication tests are skipped without a
+word. `tests/test_suite_integrity.py` fails if that ever happens again.
 
 The same command runs for every push and pull request in GitHub Actions.
 Tests that touch SQLite patch the configured database path and use temporary
@@ -29,6 +34,6 @@ game database.
 
 Run:
 
-    python3 -m unittest discover -s tests -v
+    python3 -m unittest discover -s tests -t . -v
     python3 -m compileall -q app.py main.py auth cli database game tests web
     git diff --check
