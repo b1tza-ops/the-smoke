@@ -2379,3 +2379,27 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 }
 
 .burgle-button:disabled { cursor: not-allowed; opacity: .4; }
+
+/* ------------------------------------------------------ bounty board */
+.bounty-post{margin:1rem 0;border:1px solid var(--border);border-radius:14px;background:#0d1114;padding:1rem}
+.bounty-post h2{margin:0 0 .8rem;font-size:1rem}
+.bounty-form{display:grid;gap:.8rem}
+.bounty-cost{margin:0;color:#9aa5aa;font-size:.8rem}
+.bounty-cost strong{color:var(--accent)}
+.bounty-rules{margin:1rem 0 0;padding-left:1.1rem;color:#8f9a9f;font-size:.75rem;line-height:1.6}
+.bounty-rules strong{color:#d7dcda}
+.bounty-board{margin:1.2rem 0}
+.bounty-board h2{margin:0 0 .6rem;font-size:1rem}
+.bounty-row{display:grid;grid-template-columns:minmax(0,1fr) auto 6rem 3.5rem;gap:.6rem;align-items:center;border:1px solid var(--border);border-top:0;background:#0b0f11;padding:.7rem .85rem}
+.bounty-row:first-of-type{border-top:1px solid var(--border);border-radius:12px 12px 0 0}
+.bounty-row:last-of-type{border-radius:0 0 12px 12px}
+.bounty-row--head{color:#7c868b;font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.bounty-row small{display:block;color:#7c868b;font-size:.68rem}
+.bounty-row__cash{color:var(--accent);font-weight:900;white-space:nowrap}
+.bounty-row.is-yours{border-left:2px solid var(--accent)}
+.bounty-row--mine{grid-template-columns:minmax(0,1fr) auto}
+.bounty-empty{border:1px dashed var(--border);border-radius:12px;color:#7c868b;padding:1.2rem;text-align:center;font-size:.8rem}
+.pvp-target__bounty{color:var(--accent)!important;font-weight:800}
+.bounty-link{display:block;margin-top:.45rem;color:#8f9a9f;text-align:center;font-size:.7rem;font-weight:700;text-decoration:none}
+.bounty-link:hover{color:var(--accent)}
+@media(max-width:560px){.bounty-row{grid-template-columns:minmax(0,1fr) auto;row-gap:.3rem}.bounty-row span:nth-child(3),.bounty-row span:nth-child(4){font-size:.68rem;color:#7c868b}.bounty-row--head{display:none}}

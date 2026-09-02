@@ -833,6 +833,27 @@ Possible PvP outcomes later:
 
 New-player protection, cooldowns and reduced rewards for extreme power differences should prevent abuse.
 
+### Bounties
+
+Any player may put money on any other player's head. The stake is escrowed
+when the bounty is posted, so a bounty is never worth more than somebody
+actually put up, and a fixer's cut is charged on top as a sink.
+
+The bounty is collected by whoever beats that player and chooses
+**hospitalise**. That is what makes the aftermath a real decision: mugging
+takes their pockets and leaves the price standing, hospitalising takes the
+price and leaves their money alone. You cannot collect a bounty you posted
+yourself, which is what stops the board being a way to move money between
+two accounts for less than the item market charges.
+
+An unclaimed bounty lapses after a week and the stake is returned; the fee
+is not. Settlement is lazy, from elapsed time, like every other clock here.
+
+The point of the mechanic is that it works asynchronously. A game with few
+players online at once still gives them a reason to matter to each other,
+because neither party has to be awake for a bounty to be posted, seen or
+collected.
+
 ---
 
 ## Gangs

@@ -84,7 +84,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            tuple(range(1, 53)),
+            tuple(range(1, 54)),
         )
 
         with closing(
@@ -284,6 +284,7 @@ class MigrationTests(unittest.TestCase):
                     (50, "player_safe"),
                     (51, "burglaries"),
                     (52, "notifications_without_an_attack"),
+                    (53, "player_bounties"),
                 ],
             )
 
@@ -573,7 +574,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            tuple(range(1, 53)),
+            tuple(range(1, 54)),
         )
         self.assertEqual(second_run, ())
 
@@ -608,7 +609,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 52)
+            self.assertEqual(migration_count, 53)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -627,7 +628,10 @@ class MigrationTests(unittest.TestCase):
             raise RuntimeError("Migration failed")
 
         failing_migration = Migration(
-            version=53,
+            # One past the end, worked out rather than written down:
+            # pinning a number here silently turns this test into a
+            # no-op the moment a real migration takes that version.
+            version=MIGRATIONS[-1].version + 1,
             name="deliberately_broken_migration",
             apply=broken_migration,
         )
@@ -677,7 +681,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                list(range(1, 53)),
+                list(range(1, 54)),
             )
             self.assertEqual(money, 777)
 
@@ -712,7 +716,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                list(range(1, 53)),
+                list(range(1, 54)),
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)

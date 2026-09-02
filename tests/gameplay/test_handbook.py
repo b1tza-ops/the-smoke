@@ -421,7 +421,7 @@ class HousingGuideTests(unittest.TestCase):
         self.assertEqual(missing, [], f"unrenderable: {missing}")
 
     def test_it_admits_what_is_not_wired_up(self):
-        # Storage, comfort and garage are shown on the property page and
+        # Comfort and garage space are shown on the property page and
         # read by nothing. While that is true the guide has to say so,
         # or it is selling something the game does not deliver.
         prose = " ".join(
@@ -431,9 +431,26 @@ class HousingGuideTests(unittest.TestCase):
             for item in block.items
         )
 
-        for unwired in ("Safe capacity", "Comfort", "Gym gains"):
+        for unwired in ("Garage space", "Comfort", "Gym gains"):
             with self.subTest(attribute=unwired):
                 self.assertIn(unwired, prose)
+
+    def test_it_no_longer_calls_the_safe_decoration(self):
+        """The other half of the same rule.
+
+        Safe capacity was on the not-wired-up list, and stayed there
+        after the safe shipped -- so the same page both explained the
+        interest rate and said the number did nothing. A guide that
+        contradicts itself is worse than one that is merely behind.
+        """
+        prose = " ".join(
+            str(item)
+            for block in self.guide.blocks
+            if isinstance(block, Bullets)
+            for item in block.items
+        )
+
+        self.assertNotIn("Safe capacity", prose)
 
 
 class CrimeGuideTests(unittest.TestCase):

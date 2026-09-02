@@ -422,16 +422,48 @@ GUIDES = (
                     ("Mug", "Takes 5–10% of the cash they are carrying, "
                             "up to £500. Banked money is safe."),
                     ("Hospitalise",
-                     "Puts them in hospital for 15 minutes. They lose "
-                     "no money, but they lose the time."),
+                     "Puts them in hospital for 15 minutes, and "
+                     "collects every bounty on their head."),
                 ),
             ),
             Note(
-                "**You get one of the three, not two.** Robbing someone "
-                "and putting them out of action are different prizes: "
-                "take the money, or take them off the board. Decide "
-                "within five minutes or they get up and walk off.",
+                "**You get one of the three, not two.** Their pockets "
+                "or their price — a mug leaves any bounty standing, and "
+                "a hospital bed leaves their money alone. Decide within "
+                "five minutes or they get up and walk off.",
                 tone="tip",
+            ),
+            Heading("Bounties"),
+            Text(
+                "Anybody can put money on anybody else. Go to the "
+                "[bounty board](/pvp/bounties), type a name and a sum, "
+                "and it is on their head until somebody collects it."
+            ),
+            Bullets((
+                "**£500 minimum, £250,000 maximum** per bounty. Several "
+                "people can stack prices on the same head, and whoever "
+                "collects takes the lot.",
+                "**The fixer takes 10% on top.** Putting £10,000 on a "
+                "head costs you £11,000, and the extra £1,000 is gone.",
+                "**The stake leaves your wallet immediately.** There is "
+                "no cancelling. Unclaimed after 7 days it lapses and "
+                "the stake comes back — the fee does not.",
+                "**Only a hospital bed collects it.** Beat them and "
+                "choose Hospitalise. Mugging or walking away leaves the "
+                "money where it is.",
+                "**You cannot collect your own.** Hunting the head you "
+                "paid for pays you nothing, so a bounty is not a way to "
+                "move money between two accounts.",
+                "Players in their **first 72 hours** cannot be named, "
+                "the same protection that covers fights and burglaries.",
+            )),
+            Note(
+                "A price on your head is public and so is who put it "
+                "there. Both of you get told when it is collected. If "
+                "you are carrying one, the safest place to be is "
+                "somewhere nobody can reach you — and the safest place "
+                "for your cash is the bank.",
+                tone="warning",
             ),
             Note(
                 "An equipped gun with no ammunition contributes **nothing**. "
@@ -870,10 +902,9 @@ GUIDES = (
                 "yet:"
             ),
             Bullets((
-                "**Safe capacity and garage space** are listed on "
-                "every property and are not yet read by anything. "
-                "There is nowhere to keep cash safe and no vehicle to "
-                "put in a garage.",
+                "**Garage space** is listed on every property and is "
+                "not yet read by anything. There is no vehicle to put "
+                "in a garage.",
                 "**Comfort** is shown but has no effect, so the "
                 "superior interior and the open bar are decoration for "
                 "now.",

@@ -44,6 +44,7 @@
 - Weapons and armour
 - PvP protections
 - Mugging/hospitalisation
+- Bounties
 - Gangs
 - Gang upgrades
 - Gang operations

@@ -294,6 +294,10 @@ class Aftermath:
     choice: str
     cash_stolen: int = 0
     hospital_until: str | None = None
+    # Only ever set by hospitalising, and only when somebody had
+    # already paid to see it happen.
+    bounty_collected: int = 0
+    bounty_count: int = 0
 
 
 def mug_takings(defender_money, percent, reward_multiplier=1.0):

@@ -235,6 +235,24 @@ from database.repositories.fights import (
     take_fight_turn,
     weapons_for,
 )
+from database.repositories.bounties import (
+    bounties_posted_by,
+    find_target,
+    get_board,
+    open_bounty_totals,
+    post_bounty,
+    sweep,
+    total_open,
+)
+from game.combat.bounties import (
+    BOUNTY_FEE_PERCENT,
+    BOUNTY_LIFETIME_DAYS,
+    BOUNTY_MAXIMUM,
+    BOUNTY_MINIMUM,
+    BountyError,
+    posting_fee,
+    total_cost,
+)
 from database.repositories.pvp import (
     get_pending_aftermath,
     settle_aftermath,
@@ -3691,10 +3709,14 @@ def pvp():
         target["limits"] = get_attack_limits(player.id, target["id"])
 
     pvp_profile = get_pvp_profile(player.id)
+    # One query for the whole list rather than one per row: the board is
+    # small, but this page already reads a lot per target.
+    bounties = open_bounty_totals(target["id"] for target in targets)
     for target in targets:
         target["matchmaking"] = matchmaking_label(
             pvp_profile["rating"], target["rating"]
         )
+        target["bounty"] = bounties.get(target["id"], {}).get("total", 0)
     targets.sort(
         key=lambda target: (
             target["restricted"]
@@ -3792,6 +3814,69 @@ def pvp_contracts():
         "pvp_contracts.html",
         player=player,
         board=get_contract_board(player.id),
+        message=message,
+        error=error,
+    )
+
+
+@app.route("/pvp/bounties", methods=["GET", "POST"])
+def pvp_bounties():
+    if "user_id" not in session:
+        return redirect("/login")
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+    player = Player(*player_data)
+    message = None
+    error = None
+
+    if request.method == "POST":
+        try:
+            named = request.form.get("name", "").strip()
+            target_id = find_target(named)
+            if target_id is None:
+                raise BountyError(
+                    f"Nobody in London goes by \u201c{named}\u201d."
+                    if named else "Name somebody."
+                )
+            posted = post_bounty(
+                session["user_id"],
+                target_id,
+                int(request.form.get("amount", "0")),
+            )
+            message = (
+                f"£{posted.amount:,} is on {posted.target_name}. "
+                f"The fixer took £{posted.fee:,}."
+            )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+            record_player_action(
+                "bounty_posted",
+                f"Put £{posted.amount:,} on {posted.target_name}.",
+                {"amount": posted.amount},
+            )
+        except BountyError as bounty_error:
+            error = str(bounty_error)
+        except ValueError:
+            error = "Name a whole number of pounds."
+
+    # One settlement per page view, and the readers below filter
+    # lapsed bounties out themselves -- so what this decides is when a
+    # poster gets their stake back, not what the board shows.
+    sweep()
+
+    return render_template(
+        "pvp_bounties.html",
+        player=player,
+        board=get_board(player.id),
+        mine=bounties_posted_by(player.id),
+        standing=total_open(),
+        prefill=request.args.get("name", ""),
+        minimum=BOUNTY_MINIMUM,
+        maximum=BOUNTY_MAXIMUM,
+        fee_percent=BOUNTY_FEE_PERCENT,
+        lifetime_days=BOUNTY_LIFETIME_DAYS,
+        total_cost=total_cost,
+        posting_fee=posting_fee,
         message=message,
         error=error,
     )
