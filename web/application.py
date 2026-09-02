@@ -80,6 +80,7 @@ from game.world.travel import (
     start_travel,
     update_travel,
 )
+from game.crime.tools import tools_for
 from game.crime import (
     CRIMES,
     CRIMES_BY_KEY,
@@ -3361,6 +3362,7 @@ def crimes():
         work_shift=work_shift,
         crime_block_reason=crime_block_reason,
         crime_progression=crime_progression,
+        crime_tools=tools_for,
     )
 
 

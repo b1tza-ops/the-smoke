@@ -168,6 +168,37 @@ GUIDES = (
                 "you just cannot run the heavy jobs all day, because "
                 "of heat."
             ),
+            Heading("Bring the right kit"),
+            Text(
+                "Five tools turn up as loot and sell for very little. "
+                "Hold on to them instead: each one suits particular "
+                "jobs, and carrying suitable kit makes the job **4 "
+                "percentage points** more likely to come off. Two tools "
+                "is the most any job counts, so a full toolbox is worth "
+                "no more than a well-chosen pair."
+            ),
+            Table(
+                headers=("Tool", "Good for"),
+                rows=(
+                    ("Basic Lockpick",
+                     "Market stalls, nightclub offices, server rooms"),
+                    ("Bolt Cutters", "Warehouses, canal lock-ups"),
+                    ("Glass Cutter",
+                     "Gallery lifts, server rooms, lock-ups"),
+                    ("Duct Tape",
+                     "Market stalls, nightclubs, galleries, handovers"),
+                    ("Burner Phone",
+                     "Phone snatches, pickpocketing, handovers"),
+                ),
+            ),
+            Note(
+                "Nothing **needs** a tool — every job on the ladder can "
+                "be done empty-handed. But a job that goes wrong with "
+                "kit in your hands leaves one behind about a quarter of "
+                "the time, which is why the fence is not always the "
+                "best home for a lockpick.",
+                tone="tip",
+            ),
             Heading("Heat"),
             Text(
                 "Every crime raises your **wanted level**, and a wanted "

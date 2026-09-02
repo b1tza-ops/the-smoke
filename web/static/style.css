@@ -2257,3 +2257,41 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .attack-flee button:hover { border-color: #ffb1b4; color: #ffb1b4; }
 
 .attack-screen.is-live .attack-arena { justify-items: stretch; }
+
+/* --------------------------------------------- the kit a job wants */
+
+.crime-kit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem;
+    margin: 0 0 1rem;
+}
+
+.crime-kit__label {
+    color: var(--muted);
+    font-size: .6rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.crime-kit__tool {
+    border: 1px dashed #3a4348;
+    border-radius: 999px;
+    padding: .18rem .55rem;
+    color: #6d7679;
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+.crime-kit__tool.is-carried {
+    border-style: solid;
+    border-color: rgba(185, 243, 75, .5);
+    background: rgba(185, 243, 75, .1);
+    color: var(--accent);
+}
+
+.crime-kit b {
+    color: var(--accent);
+    font-size: .72rem;
+}

@@ -8,11 +8,14 @@ from game.crime.progression import (
     crime_progression_for,
 )
 from game.economy.fence import fence_price
+from game.crime.tools import tool_left_behind
 from game.inventory import (
     ITEMS_BY_KEY,
+    InventoryError,
     InventoryFullError,
     ItemLimitError,
     add_item,
+    remove_item,
 )
 from game.player.happiness import crime_success_penalty
 from game.player.progression import award_xp
@@ -413,6 +416,17 @@ def _resolve_failed_crime(
     rng,
     now=None,
 ):
+    # Botching a job with kit in your hands is how you leave it behind,
+    # which is what keeps tools in demand instead of a one-off buy.
+    dropped = tool_left_behind(
+        getattr(player, "inventory", None), crime.key, rng
+    )
+    if dropped is not None:
+        try:
+            remove_item(player, dropped.key, 1)
+        except InventoryError:
+            dropped = None
+
     consequence_roll = rng.randint(1, 100)
 
     # Heat sharpens the odds of being taken in. The wanted level was

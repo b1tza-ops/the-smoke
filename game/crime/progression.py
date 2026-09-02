@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from game.crime.tools import tool_bonus, usable_tools
+
 
 MAX_SUCCESS_CHANCE = 95
 MAX_REPUTATION_BONUS_PERCENT = 15
@@ -27,6 +29,9 @@ class CrimeProgression:
     effective_success_chance: int
     min_reward: int
     max_reward: int
+    # Kit carried that suited this job, and what it was worth.
+    tools: tuple = ()
+    tool_bonus: int = 0
 
 
 MASTERY_TIERS = (
@@ -92,12 +97,21 @@ def crime_progression_for(player, crime, happiness_penalty=0):
         0,
     )
     reward_bonus = reputation_bonus_percent(reputation)
+    # Kit you are carrying that suits this job. Capped in
+    # game/crime/tools.py, so this cannot run away.
+    carried_tools = usable_tools(
+        getattr(player, "inventory", None), crime.key
+    )
+    tools_bonus = tool_bonus(
+        getattr(player, "inventory", None), crime.key
+    )
     effective_chance = min(
         MAX_SUCCESS_CHANCE,
         max(
             1,
             crime.success_chance
             + mastery.success_bonus
+            + tools_bonus
             - max(0, happiness_penalty),
         ),
     )
@@ -117,6 +131,8 @@ def crime_progression_for(player, crime, happiness_penalty=0):
         effective_success_chance=effective_chance,
         min_reward=min_reward,
         max_reward=max_reward,
+        tools=carried_tools,
+        tool_bonus=tools_bonus,
     )
 
 
