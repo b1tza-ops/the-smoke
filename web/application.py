@@ -235,6 +235,22 @@ from database.repositories.fights import (
     take_fight_turn,
     weapons_for,
 )
+from database.repositories.vehicles import (
+    active_vehicle,
+    buy_vehicle,
+    garage_for,
+    sell_vehicle,
+    set_active,
+)
+from game.vehicles.definitions import VEHICLES, get_vehicle
+from game.vehicles.service import (
+    DRIVE_KEY,
+    PULLED_OVER_SECONDS,
+    VehicleError,
+    driving_mode,
+    resale_value,
+    stop_chance,
+)
 from database.repositories.bounties import (
     bounties_posted_by,
     find_target,
@@ -2317,6 +2333,82 @@ def gun_bazaar():
     )
 
 
+FORECOURT_DISTRICT = "brixton"
+
+
+@app.route("/motors", methods=["GET", "POST"])
+def motors():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    player_data = get_player_by_user_id(session["user_id"])
+    if player_data is None:
+        return redirect("/login")
+
+    player = Player(*player_data)
+    update_travel(player)
+    update_player_status(player)
+    save_player(player)
+    message = None
+    error = None
+    action = request.form.get("action", "buy")
+
+    if request.method == "POST":
+        try:
+            if action == "sell":
+                sold, paid = sell_vehicle(
+                    session["user_id"],
+                    int(request.form.get("owned_id", "0")),
+                )
+                message = f"Sold the {sold.name} for £{paid:,}."
+                record_player_action(
+                    "vehicle_sold", message, {"key": sold.key}
+                )
+            elif action == "drive":
+                set_active(
+                    session["user_id"],
+                    int(request.form.get("owned_id", "0")),
+                )
+                message = "That is the one you are driving."
+            else:
+                bought = buy_vehicle(
+                    session["user_id"],
+                    request.form.get("vehicle_key", ""),
+                )
+                message = (
+                    f"The {bought.name} is yours "
+                    f"for £{bought.price:,}."
+                )
+                record_player_action(
+                    "vehicle_bought", message, {"key": bought.key}
+                )
+            player = Player(*get_player_by_user_id(session["user_id"]))
+        except VehicleError as vehicle_error:
+            error = str(vehicle_error)
+        except ValueError:
+            error = "That is not one of the cars."
+
+    garage = garage_for(session["user_id"])
+
+    return render_template(
+        "motors.html",
+        player=player,
+        garage=garage,
+        stock=VEHICLES,
+        resale=resale_value,
+        stop_chance=stop_chance,
+        pulled_over_minutes=PULLED_OVER_SECONDS // 60,
+        message=message,
+        error=error,
+        accessible=(
+            player.current_district == FORECOURT_DISTRICT
+            and player.travel_destination is None
+            and player.jail_until is None
+            and player.hospital_until is None
+        ),
+    )
+
+
 @app.route("/blackmarket", methods=["GET", "POST"])
 def black_market():
     if "user_id" not in session:
@@ -3075,6 +3167,7 @@ def travel():
                     "mode_key",
                     DEFAULT_TRANSPORT_KEY,
                 ),
+                vehicle=active_vehicle(player.id),
             )
             destination = get_district(
                 journey.destination_key
@@ -3105,6 +3198,7 @@ def travel():
 
     active_travel = get_active_travel(player)
     current = get_district(player.current_district)
+    driven = active_vehicle(player.id)
     destinations = []
 
     if active_travel is None:
@@ -3117,7 +3211,12 @@ def travel():
                 district.key,
             )
             locked = player.level < district.minimum_level
-            modes = available_modes(current.key, district.key)
+            modes = list(available_modes(current.key, district.key))
+            underground_runs = len(modes) == 3
+            if driven is not None:
+                # Appended, so the tube keeps its place in the list and
+                # the car reads as the extra option it is.
+                modes.append(driving_mode(driven))
             destinations.append({
                 "district": district,
                 "locked": locked,
@@ -3130,10 +3229,14 @@ def travel():
                         "affordable": (
                             player.money >= mode.fare(route)
                         ),
+                        "stop_chance": (
+                            stop_chance(driven, player.wanted_level)
+                            if mode.key == DRIVE_KEY else 0
+                        ),
                     }
                     for mode in modes
                 ],
-                "no_underground": len(modes) < 3,
+                "no_underground": not underground_runs,
             })
 
     active_destination = (
@@ -3149,6 +3252,7 @@ def travel():
         destinations=destinations,
         active_travel=active_travel,
         active_destination=active_destination,
+        driven=driven,
         message=message,
         error=error,
     )

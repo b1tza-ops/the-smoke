@@ -524,14 +524,15 @@ GUIDES = (
     Guide(
         slug="travel",
         title="Getting Around",
-        summary="Walk, bus or Underground, and what each costs you.",
+        summary="Walk, bus, Underground or your own car.",
         section="Around London",
         icon="travel",
         blocks=(
             Text(
                 "Crimes, gyms, shops and opponents are tied to districts, "
                 "so moving around is part of playing. Every route offers "
-                "three ways to make it."
+                "three ways to make it, and a fourth once you own "
+                "something to drive."
             ),
             Table(
                 headers=("Mode", "Fare", "Time"),
@@ -544,11 +545,53 @@ GUIDES = (
             Bullets((
                 "**Walking is free** and always available. If you are "
                 "going to be away from the keyboard anyway, walk.",
-                "**There is no Underground to Hackney.** Walk or take the "
-                "bus.",
+                "**There is no Underground to Hackney.** Walk, take the "
+                "bus, or drive.",
                 "You cannot do anything else while travelling — no crime, "
                 "no training, no fighting.",
             )),
+            Heading("Driving"),
+            Text(
+                "**[Coldharbour Motors](/motors)** in Brixton sells seven "
+                "vehicles, from a £250 bicycle to a £220,000 Sable GT. A "
+                "car is faster than the bus, cheaper to run than the "
+                "fare, and — unlike the Underground — it goes to Hackney."
+            ),
+            Table(
+                headers=("Vehicle", "Price", "Journey", "Attention"),
+                rows=(
+                    ("Second-hand Bicycle", "£250", "120%", "0/10"),
+                    ("Delivery Moped", "£1,500", "80%", "1/10"),
+                    ("Corsair Hatchback", "£5,000", "60%", "2/10"),
+                    ("Marlow Estate", "£14,000", "50%", "3/10"),
+                    ("Kestrel Saloon", "£38,000", "40%", "5/10"),
+                    ("Bellamy Coupé", "£90,000", "32%", "8/10"),
+                    ("Sable GT", "£220,000", "25%", "10/10"),
+                ),
+                caption=(
+                    "Journey is against the bus. The Underground is 50%, "
+                    "and does not run to Hackney."
+                ),
+            ),
+            Bullets((
+                "**You need somewhere to keep it.** Nothing below a van "
+                "has a garage; a modern house holds two and a penthouse "
+                "three. You cannot move somewhere smaller than your cars.",
+                "**Being wanted is the catch.** A patrol stops you before "
+                "you set off — you lose the journey and fifteen minutes "
+                "to a cell, though never the petrol. The odds are your "
+                "heat against how much the car shows off.",
+                "**The bicycle is never stopped**, at any wanted level. "
+                "That is what it is for.",
+                "The forecourt buys back at **half** what you paid.",
+            )),
+            Note(
+                "The fastest car is the worst one to be sitting in after "
+                "a job. At full heat a Sable GT is stopped half the time "
+                "and a bicycle never is — so keep something dull in the "
+                "garage for the ride home.",
+                tone="warning",
+            ),
             Heading("Where everything is"),
             Table(
                 headers=("District", "Unlocks at", "Known for"),
@@ -902,15 +945,17 @@ GUIDES = (
                 "yet:"
             ),
             Bullets((
-                "**Garage space** is listed on every property and is "
-                "not yet read by anything. There is no vehicle to put "
-                "in a garage.",
                 "**Comfort** is shown but has no effect, so the "
                 "superior interior and the open bar are decoration for "
                 "now.",
                 "**Gym gains** are not affected yet, so the swimming "
                 "pool is decoration too.",
             )),
+            Text(
+                "**Garage space** is real: it is how many vehicles you "
+                "may own, and nothing below a van has any. See "
+                "[Getting Around](/forum/travel)."
+            ),
             Note(
                 "Buy on the recovery figures alone. Those are real, "
                 "they are in the table above, and they are the reason "

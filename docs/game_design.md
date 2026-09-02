@@ -957,6 +957,31 @@ Player-owned businesses may eventually employ other players.
 
 ## Vehicles
 
+Coldharbour Motors in Brixton sells seven vehicles. A car is the third
+thing money buys that keeps paying — the gym sells stats, housing sells
+recovery, a vehicle sells time — and it is the first thing to make the
+garage figure on the property page load-bearing.
+
+Driving is deliberately not a straight upgrade on the Underground:
+
+- **Faster and cheaper**, and it reaches Hackney, which the tube does not.
+- **Gated by housing.** Nothing below a van has a garage, so a car is
+  behind a home, and a home is behind rent. You cannot move somewhere
+  that will not hold what you own.
+- **Stoppable.** It is the only way across London the police can
+  interrupt. The odds are wanted level against how much the vehicle
+  shows off, so the quickest car on the forecourt is the worst thing to
+  be sitting in after a job, and the bicycle is never stopped at all.
+  Being pulled over costs the journey and a quarter of an hour, never
+  the petrol.
+- **Resold at half.** A garage is not a savings account.
+
+This also gives wanted level a second consequence. Until now heat only
+raised the jail chance on crimes; it now also decides whether you can
+drive home.
+
+
+
 Vehicles are useful game systems, not merely collectibles.
 
 Core vehicle stats:

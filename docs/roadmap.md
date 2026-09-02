@@ -55,7 +55,7 @@
 - Businesses
 - Employees and company progression
 - Investments
-- Vehicle upgrades/maintenance
+- Vehicle upgrades/maintenance (vehicles themselves shipped)
 - Advanced properties
 - Player market
 - Coordinated heists

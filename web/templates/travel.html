@@ -52,7 +52,7 @@
                         {% if option.locked %}
                             <p class="transport-note">Requires level {{ district.minimum_level }}.</p>
                         {% else %}
-                            {% if option.no_underground %}<p class="transport-note">No Underground out here — bus or walk.</p>{% endif %}
+                            {% if option.no_underground %}<p class="transport-note">No Underground out here — bus, walk{% if driven %} or drive{% endif %}.</p>{% endif %}
                             <div class="transport-options">
                                 {% for choice in option.options %}
                                 <form method="post" action="{{ url_for('travel') }}#district-{{ district.key }}" class="transport-option">
@@ -60,7 +60,7 @@
                                     <input type="hidden" name="mode_key" value="{{ choice.mode.key }}">
                                     <button class="travel-button travel-button--{{ choice.mode.key }}" type="submit" {% if not choice.affordable %}disabled{% endif %}>
                                         <span class="transport-option__name">{{ choice.mode.name }}</span>
-                                        <span class="transport-option__detail">{% if choice.fare %}£{{ "{:,}".format(choice.fare) }}{% else %}Free{% endif %} · {{ hud_duration(choice.duration_seconds) }}</span>
+                                        <span class="transport-option__detail">{% if choice.fare %}£{{ "{:,}".format(choice.fare) }}{% else %}Free{% endif %} · {{ hud_duration(choice.duration_seconds) }}{% if choice.stop_chance %} · <em class="transport-heat">{{ choice.stop_chance }}% stopped</em>{% endif %}</span>
                                     </button>
                                 </form>
                                 {% endfor %}

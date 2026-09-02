@@ -2403,3 +2403,28 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .bounty-link{display:block;margin-top:.45rem;color:#8f9a9f;text-align:center;font-size:.7rem;font-weight:700;text-decoration:none}
 .bounty-link:hover{color:var(--accent)}
 @media(max-width:560px){.bounty-row{grid-template-columns:minmax(0,1fr) auto;row-gap:.3rem}.bounty-row span:nth-child(3),.bounty-row span:nth-child(4){font-size:.68rem;color:#7c868b}.bounty-row--head{display:none}}
+
+/* --------------------------------------------------- Coldharbour Motors */
+.garage,.forecourt,.forecourt-notes{margin:1.4rem 0}
+.garage h2,.forecourt h2,.forecourt-notes h2{margin:0 0 .7rem;font-size:1rem}
+.garage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.7rem}
+.garage-card{display:flex;flex-direction:column;gap:.5rem;border:1px solid var(--border);border-radius:14px;background:#0d1114;padding:.9rem}
+.garage-card__top{display:flex;align-items:center;justify-content:space-between;color:#7c868b;font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.garage-card__top .icon{width:1.4rem;height:1.4rem;fill:#5d666b}
+.garage-card h3{margin:0;font-size:.95rem}
+.garage-card__blurb{margin:0;color:#8f9a9f;font-size:.75rem;line-height:1.5}
+.garage-card.is-driving{border-color:var(--accent)}
+.garage-card.is-driving .garage-card__top{color:var(--accent)}
+.garage-card.is-driving .garage-card__top .icon{fill:var(--accent)}
+.garage-card.is-locked{opacity:.55}
+.garage-stats{display:grid;gap:.3rem;margin:0}
+.garage-stats div{display:flex;justify-content:space-between;gap:.5rem;font-size:.72rem}
+.garage-stats dt{color:#7c868b}
+.garage-stats dd{margin:0;color:#d7dcda;font-weight:700}
+.garage-actions{display:grid;gap:.4rem;margin-top:auto}
+.garage-actions button{width:100%}
+.ghost-button--danger{border-color:rgba(224,86,86,.4);color:#e07a7a}
+.forecourt-notes ul{margin:0;padding-left:1.1rem;color:#8f9a9f;font-size:.78rem;line-height:1.65}
+.forecourt-notes strong{color:#d7dcda}
+.travel-button--drive{border-color:rgba(185,243,75,.35)}
+.transport-heat{color:#e0a05a;font-style:normal;font-weight:800}

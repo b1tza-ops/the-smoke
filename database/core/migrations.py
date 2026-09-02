@@ -2233,6 +2233,42 @@ def migrate_053_player_bounties(cursor):
     """)
 
 
+def migrate_054_player_vehicles(cursor):
+    """What is in the garage, and which one is on the drive.
+
+    Its own table rather than a column on `players`, for the reason the
+    README gives: that row is splatted positionally into `Player`.
+
+    The partial unique index is the whole state machine. Exactly one
+    vehicle per player may carry `is_active`, so "which car am I
+    driving" cannot drift into two answers however many requests race
+    each other -- the database refuses the second one rather than the
+    application remembering to.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_vehicles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            vehicle_key TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 0
+                CHECK (is_active IN (0, 1)),
+            purchased_at TEXT NOT NULL,
+
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS player_vehicles_owner
+        ON player_vehicles (player_id)
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS player_vehicles_one_active
+        ON player_vehicles (player_id) WHERE is_active = 1
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2498,6 +2534,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=53,
         name="player_bounties",
         apply=migrate_053_player_bounties,
+    ),
+    Migration(
+        version=54,
+        name="player_vehicles",
+        apply=migrate_054_player_vehicles,
     ),
 )
 

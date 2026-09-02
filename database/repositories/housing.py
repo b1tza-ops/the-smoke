@@ -145,6 +145,22 @@ def move_house(user_id, residence_key):
         if current == residence.key:
             raise HousingError("You already live at this residence.")
 
+        # Moving somewhere smaller must not orphan a car. Refusing the
+        # move is the honest answer: the alternative is a vehicle in a
+        # garage that no longer exists, which is a state nothing else
+        # in the game knows how to render.
+        parked = connection.execute(
+            "SELECT COUNT(*) FROM player_vehicles WHERE player_id = ?",
+            (player_id,),
+        ).fetchone()[0]
+
+        if parked > residence.garage_capacity:
+            raise HousingError(
+                f"You have {parked} in the garage and "
+                f"{residence.name} holds {residence.garage_capacity}. "
+                "Sell one at Coldharbour Motors first."
+            )
+
         remaining = _spend(
             connection,
             player_id,

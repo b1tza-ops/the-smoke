@@ -431,17 +431,20 @@ class HousingGuideTests(unittest.TestCase):
             for item in block.items
         )
 
-        for unwired in ("Garage space", "Comfort", "Gym gains"):
+        for unwired in ("Comfort", "Gym gains"):
             with self.subTest(attribute=unwired):
                 self.assertIn(unwired, prose)
 
-    def test_it_no_longer_calls_the_safe_decoration(self):
+    def test_it_stops_calling_a_figure_dead_once_it_is_wired_up(self):
         """The other half of the same rule.
 
-        Safe capacity was on the not-wired-up list, and stayed there
-        after the safe shipped -- so the same page both explained the
-        interest rate and said the number did nothing. A guide that
-        contradicts itself is worse than one that is merely behind.
+        Safe capacity sat on the not-wired-up list after the safe
+        shipped, so the same page both explained the interest rate and
+        said the number did nothing. Garage space would have done the
+        same the day vehicles landed. A guide that contradicts itself
+        is worse than one that is merely behind, so both are pinned
+        here: the moment a figure starts working, it comes off the
+        list.
         """
         prose = " ".join(
             str(item)
@@ -450,7 +453,9 @@ class HousingGuideTests(unittest.TestCase):
             for item in block.items
         )
 
-        self.assertNotIn("Safe capacity", prose)
+        for wired in ("Safe capacity", "Garage space"):
+            with self.subTest(attribute=wired):
+                self.assertNotIn(wired, prose)
 
 
 class CrimeGuideTests(unittest.TestCase):
