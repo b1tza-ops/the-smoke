@@ -437,6 +437,28 @@ Bonuses are calculated from progress held before the attempt. The crime that
 crosses a threshold unlocks the improvement for the next attempt rather than
 rewarding itself.
 
+### Getting out of jail
+
+Jail cannot be bought off by the player in it. Somebody else has to
+come, which makes it the one cost in the game that needs another
+person.
+
+- **Bail** is priced from the time it buys — roughly half again what
+  the inmate would have earned in the minutes it saves — and the money
+  is destroyed rather than paid to anybody. It was previously a flat
+  fee per level plus a per-minute one, which charged a level 20 player
+  £2,050 to save five minutes and made bail worst value exactly when it
+  was least useful.
+- **A breakout** costs the springer nerve and reads their speed and
+  dexterity against the inmate's level as a ratio, so both inputs
+  matter from a combined 10 to a combined 10,000. The old formula added
+  raw stats to a base of 55 and capped at 85%, which every trained
+  player reached and never left.
+
+Neither is ever certain, and both formulas are recomputed against the
+crime and career catalogues in the tests, so a change to what the game
+pays cannot leave the price of a cell behind.
+
 ### Wanted Level
 
 Wanted level increases through crime and falls over real time. Higher wanted levels increase police pressure and may restrict activities.

@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 1,017 tests
+python3 -m unittest discover -s tests            # 1,041 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -178,8 +178,17 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
-- **#159** — the last two figures on the property page that did nothing.
-  **Comfort** now drives happiness recovery, which is what the gym spends
+- **#159** — two jail formulas that stopped reading their inputs, plus the
+  last two figures on the property page that did nothing. Bail charged a flat
+  fee per level — £2,050 to save a level 20 player five minutes, £410 a minute
+  against £15 a minute of earning power — and the breakout capped at 85% for
+  anyone with a combined 60 in speed and dexterity, which is everybody. Both
+  are now priced and scaled against what the game actually pays. Also found on
+  the way: the HUD worked out its five meter widths inline with no clamp, so a
+  player whose XP sat below their level floor rendered `--progress:-950%` on
+  every page.
+  In the same PR, the last two figures on the property page that did nothing:
+  **comfort** now drives happiness recovery, which is what the gym spends
   alongside energy — so a good address buys more trains rather than bigger
   ones — and the **swimming pool** finally adds the 2% gym gains it has been
   sold for. Nothing a property advertises is decoration any more, and a test

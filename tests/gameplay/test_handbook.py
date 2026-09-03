@@ -309,6 +309,30 @@ class NewGuideAccuracyTests(unittest.TestCase):
         self.assertIn("three contracts a day", prose)
         self.assertIn("at least two of your three", prose)
 
+    def test_the_jail_section_quotes_the_real_breakout_odds(self):
+        """Both jail numbers were written for a game that grew past them.
+
+        Bail charged a flat fee per level and the breakout capped at
+        85% for anyone with a combined 60 in speed and dexterity, which
+        is everybody. The guide describes the repaired versions, so it
+        has to move if they move again.
+        """
+        from database.repositories.jail import (
+            BREAKOUT_FLOOR,
+            BREAKOUT_NERVE_COST,
+            BREAKOUT_RANGE,
+        )
+
+        prose = " ".join(
+            all_strings(GUIDES_BY_SLUG["crime-and-jail"])
+        )
+
+        self.assertIn(f"{BREAKOUT_NERVE_COST} nerve", prose)
+        self.assertIn(
+            f"{BREAKOUT_FLOOR}\u2013{BREAKOUT_FLOOR + BREAKOUT_RANGE}%",
+            prose,
+        )
+
     def test_the_market_guide_quotes_the_real_commission(self):
         from game.economy.fence import FENCE_RATE
         from game.economy.market import (

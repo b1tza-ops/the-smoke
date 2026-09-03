@@ -460,7 +460,23 @@ def hud_duration(seconds):
     return f"{remaining_seconds}s"
 
 
+def percentage(value, maximum):
+    """A meter width, clamped to something a bar can actually draw.
+
+    The clamp is the point. The HUD used to work each of its five
+    meters out inline in the template with no bounds, so a player whose
+    XP sat below their level's floor rendered `--progress:-950%` on
+    every page in the game. Routes had this helper all along; the
+    template just did not use it.
+    """
+    if maximum <= 0:
+        return 0
+
+    return max(0, min(100, round((value / maximum) * 100)))
+
+
 app.jinja_env.globals.update(
+    hud_percent=percentage,
     hud_level_xp=xp_required_for_level,
     hud_next_level_xp=lambda level: xp_required_for_level(
         level + 1
@@ -729,13 +745,6 @@ def record_player_action(action_type, summary, metadata=None):
         app.logger.exception(
             "Could not record player activity."
         )
-
-
-def percentage(value, maximum):
-    if maximum <= 0:
-        return 0
-
-    return max(0, min(100, round((value / maximum) * 100)))
 
 
 @app.route("/healthz")

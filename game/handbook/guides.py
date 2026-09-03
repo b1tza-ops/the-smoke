@@ -226,6 +226,34 @@ GUIDES = (
                 "minutes for every point of nerve the job asked of you.",
                 tone="warning",
             ),
+            Heading("Getting out early"),
+            Text(
+                "Jail is the one cost in this game you cannot pay your "
+                "own way out of. Somebody else has to come and get you, "
+                "from the [jail page](/jail), and there are two ways "
+                "they can."
+            ),
+            Table(
+                headers=("Way out", "Costs them", "Works"),
+                rows=(
+                    ("Pay your bail", "Money", "Always"),
+                    ("Break you out", "5 nerve",
+                     "20–80%, on their speed and dexterity"),
+                ),
+            ),
+            Bullets((
+                "**Bail is priced on the time it buys** — about half "
+                "again what you would have earned in the minutes it "
+                "saves you. A nearly finished sentence is nearly free; "
+                "a fresh one is not.",
+                "**A breakout reads the springer's speed and "
+                "dexterity** against your level. It is never certain "
+                "and never hopeless, and training genuinely moves it.",
+                "**A failed breakout costs them** — wanted level, and "
+                "sometimes six hours in a cell of their own.",
+                "Neither works on yourself. Getting out early is a "
+                "favour somebody does you.",
+            )),
             Heading("Loot"),
             Text(
                 "Succeeding at a crime sometimes turns up an item as well "
