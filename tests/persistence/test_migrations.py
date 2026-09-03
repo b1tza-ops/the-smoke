@@ -84,7 +84,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             applied_versions,
-            tuple(range(1, 55)),
+            tuple(range(1, 56)),
         )
 
         with closing(
@@ -286,6 +286,7 @@ class MigrationTests(unittest.TestCase):
                     (52, "notifications_without_an_attack"),
                     (53, "player_bounties"),
                     (54, "player_vehicles"),
+                    (55, "agent_keys"),
                 ],
             )
 
@@ -575,7 +576,7 @@ class MigrationTests(unittest.TestCase):
 
         self.assertEqual(
             first_run,
-            tuple(range(1, 55)),
+            tuple(range(1, 56)),
         )
         self.assertEqual(second_run, ())
 
@@ -610,7 +611,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(player_count, 1)
             self.assertEqual(money, 777)
-            self.assertEqual(migration_count, 54)
+            self.assertEqual(migration_count, 55)
             self.assertEqual(
                 len(player_columns),
                 len(set(player_columns)),
@@ -682,7 +683,7 @@ class MigrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 recorded_versions,
-                list(range(1, 55)),
+                list(range(1, 56)),
             )
             self.assertEqual(money, 777)
 
@@ -717,7 +718,7 @@ class MigrationTests(unittest.TestCase):
 
             self.assertEqual(
                 versions,
-                list(range(1, 55)),
+                list(range(1, 56)),
             )
             self.assertEqual(player_count, 1)
             self.assertIn("bank_balance", columns)

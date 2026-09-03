@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 1,041 tests
+python3 -m unittest discover -s tests            # 1,081 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -178,6 +178,13 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
+- **#159** — **other machines can play.** A sanctioned agent account gets a
+  key, plays the whole single-player game through a self-describing JSON API
+  at `/api/v1`, and is sealed off from every other player *in both
+  directions* — an agent robs nobody and nobody robs an agent. The wall is
+  enforced on the transaction that moves the money, not in the API, because an
+  agent account can still log into the website. Unsanctioned bots are still a
+  ban; asking for a key is free.
 - **#159** — two jail formulas that stopped reading their inputs, plus the
   last two figures on the property page that did nothing. Bail charged a flat
   fee per level — £2,050 to save a level 20 player five minutes, £410 a minute
@@ -241,7 +248,7 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   stat, fourteen gyms re-tiered by price, plus Shoreditch and Hackney.
 
 **Shape of the world**: five districts — Camden, Brixton, Soho, Shoreditch,
-Hackney — 48 items, 7 vehicles, 14 guides, 54 migrations.
+Hackney — 48 items, 7 vehicles, 14 guides, 55 migrations.
 
 ---
 

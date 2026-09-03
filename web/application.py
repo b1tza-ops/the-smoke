@@ -487,6 +487,16 @@ app.jinja_env.globals.update(
 )
 
 rate_limiter = FixedWindowRateLimiter()
+agent_rate_limiter = FixedWindowRateLimiter()
+
+# The machine-readable city, at /api/v1. Registered here rather than
+# defined here: `web/api.py` is a self-contained surface, and keeping
+# it that way is what stops it drifting into a second implementation
+# of the game.
+from web.api import api as agent_api
+
+app.config["AGENT_RATE_LIMITER"] = agent_rate_limiter
+app.register_blueprint(agent_api)
 # A real bcrypt hash of a value nobody can supply, compared against
 # when the username does not exist so that a failed sign-in costs the
 # same either way. Generated once at import; the password it encodes is

@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 import random
 
 from database.core.connection import get_connection
+from database.repositories.agents import refuse_if_sealed
 from game.crime.burglary import (
     BURGLARY_COOLDOWN_SECONDS,
     BURGLARY_JAIL_CHANCE,
@@ -293,7 +294,6 @@ def burgle(user_id, victim_player_id, rng=None, now=None):
     connection = get_connection()
     try:
         connection.execute("BEGIN IMMEDIATE")
-
         burglar = connection.execute(
             """
             SELECT id, nerve, jail_until, hospital_until,
@@ -306,6 +306,12 @@ def burgle(user_id, victim_player_id, rng=None, now=None):
             raise BurglaryError("No such player.")
 
         burglar_id, nerve, jail_until, hospital_until, travelling = burglar
+
+        # Checked on this transaction, before any nerve is spent: an
+        # agent robs nobody and nobody robs an agent.
+        refuse_if_sealed(
+            connection, "burgle", burglar_id, victim_player_id
+        )
 
         if jail_until:
             raise BurglaryError("You cannot do this from a cell.")

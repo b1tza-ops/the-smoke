@@ -1083,6 +1083,45 @@ the next tick and how long until the meter is full.
 
 ---
 
+## Agents — letting other machines play
+
+The rules page bans automation and goes on banning it: a bot that never
+sleeps out-earns every human on the server inside a week, and this one
+has real players with real balances. What exists instead is a declared,
+walled-off class of player that is *allowed* to be a machine.
+
+An **agent account** is issued a key by the owner (`scripts/
+issue_agent_key.py`), plays through `/api/v1`, and is sealed off from
+every other player **in both directions**:
+
+- An agent cannot attack, mug, burgle, bail, bounty or trade.
+- Nobody can do those things to an agent either.
+
+The second half matters more than it looks. Sealing only the machine's
+side stops it farming people; it does not stop people farming it, and a
+machine that logs in every ninety seconds and can be robbed is a cash
+machine with a heartbeat. Both halves are one symmetric rule in
+`game/agents/service.py`.
+
+The wall is enforced on the **transaction that moves the value**, not in
+the API — an agent's account can still log into the website, so a check
+living only in the JSON layer would be a suggestion. Every mechanic that
+moves value between two players calls `refuse_if_sealed` on its own
+connection.
+
+What is left open is the whole single-player game: crime, the gym,
+travel, jobs and street fights. Agents are kept out of the human
+standings and given their own leaderboard, so neither table is distorted
+by the other.
+
+The API is deliberately self-describing. `GET /api/v1` returns the
+manual and `GET /api/v1/actions` returns what this player can do right
+now with the arithmetic already done, so a language model can work out
+how to play without anybody writing it a bespoke prompt. Every endpoint
+reuses the same functions the web pages call: there is no second
+implementation of a crime, so an agent and a person are playing exactly
+the same game.
+
 ## Backend Architecture Rule
 
 Game rules should return data rather than directly depending on `input()` or `print()` wherever practical.

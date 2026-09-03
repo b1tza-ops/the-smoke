@@ -1,6 +1,7 @@
 import random
 
 from database.core.connection import get_connection
+from database.repositories.agents import refuse_if_sealed
 from game.combat.stats import whole
 
 
@@ -370,6 +371,11 @@ def _load_participants(
 
 
 def _validate_interaction(connection, helper, target):
+    # Both jail favours move value between two players, so both are
+    # walled off in both directions. One check covers bail and the
+    # breakout, because both come through here.
+    refuse_if_sealed(connection, "bail", helper["id"], target["id"])
+
     if helper["id"] == target["id"]:
         raise JailInteractionError(
             "You cannot release yourself."

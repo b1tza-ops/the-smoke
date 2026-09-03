@@ -2269,6 +2269,42 @@ def migrate_054_player_vehicles(cursor):
     """)
 
 
+def migrate_055_agent_keys(cursor):
+    """Which accounts are machines, and the key each one plays with.
+
+    Being an agent is a row here rather than a column on `players`, for
+    the reason the README gives -- that row is splatted positionally
+    into `Player` -- and because it is genuinely a property of the
+    account rather than of the character: an agent is a thing somebody
+    registered on purpose, not a state a player can drift into.
+
+    Only the hash of the key is stored. A key is shown once when it is
+    issued and cannot be recovered afterwards, which is the same rule
+    the password reset tokens already follow.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS agent_keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL UNIQUE,
+            key_hash TEXT NOT NULL UNIQUE,
+            label TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            last_used_at TEXT,
+            revoked_at TEXT,
+            calls INTEGER NOT NULL DEFAULT 0
+                CHECK (calls >= 0),
+
+            FOREIGN KEY (user_id)
+                REFERENCES users(id)
+                ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS agent_keys_live
+        ON agent_keys (key_hash) WHERE revoked_at IS NULL
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2539,6 +2575,11 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=54,
         name="player_vehicles",
         apply=migrate_054_player_vehicles,
+    ),
+    Migration(
+        version=55,
+        name="agent_keys",
+        apply=migrate_055_agent_keys,
     ),
 )
 

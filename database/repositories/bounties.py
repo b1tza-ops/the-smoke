@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from database.core.connection import get_connection
+from database.repositories.agents import refuse_if_sealed
 from game.combat.bounties import (
     BOUNTY_LIFETIME_SECONDS,
     MAXIMUM_OPEN_BOUNTIES,
@@ -203,6 +204,8 @@ def post_bounty(user_id, target_id, amount, now=None):
             raise BountyError("You do not have a character yet.")
 
         poster_id, money = poster
+
+        refuse_if_sealed(connection, "bounty", poster_id, target_id)
 
         if poster_id == target_id:
             raise BountyError(
@@ -440,6 +443,11 @@ def claim_on(connection, target_id, claimer_id, attack_id, now):
     have.
     """
     now = _now(now)
+    # A collector who is an agent, or a target who is one, means there
+    # was no bounty to collect in the first place -- posting is walled
+    # off too -- but the check is repeated here because this is where
+    # the money moves.
+    refuse_if_sealed(connection, "bounty", claimer_id, target_id)
     expire_lapsed(connection, now)
 
     rows = connection.execute(
