@@ -328,7 +328,10 @@ from game.housing import (
     FACILITIES,
     RESIDENCES,
     HousingError,
+    comfort_for,
     get_residence,
+    gym_gain_bonus,
+    recovery_bonus,
 )
 from database.repositories.housing import (
     facilities_for,
@@ -3003,6 +3006,9 @@ def housing():
         player=player,
         residences=RESIDENCES,
         artwork=_HOUSING_ARTWORK,
+        # The bare address, without whatever the player has fitted --
+        # this is the ladder, not their own home.
+        happiness_bonus=lambda home: recovery_bonus(home, (), "happiness"),
         notice=notice,
         error=error,
     )
@@ -3059,13 +3065,25 @@ def manage_housing():
         except (HousingError, SafeError, ValueError) as housing_error:
             error = str(housing_error)
 
+    # Read once, after any purchase above has landed, so the figures
+    # shown are the ones the player has just paid for.
+    fitted = facilities_for(session["user_id"])
+    home = get_residence(player.residence_key)
+
     return render_template(
         "housing_manage.html",
         player=player,
         residence=get_residence(player.residence_key),
         artwork=_HOUSING_ARTWORK,
         facilities=FACILITIES,
-        owned_facilities=facilities_for(session["user_id"]),
+        owned_facilities=fitted,
+        # What this player's home is actually doing for them, fittings
+        # included -- the ladder page shows the bare address instead.
+        comfort=comfort_for(home, fitted),
+        happiness_bonus=recovery_bonus(home, fitted, "happiness"),
+        energy_bonus=recovery_bonus(home, fitted, "energy"),
+        nerve_bonus=recovery_bonus(home, fitted, "nerve"),
+        gym_bonus=gym_gain_bonus(fitted),
         upkeep=upkeep_for(session["user_id"]),
         safe=safe_for(session["user_id"]),
         notice=notice,
@@ -3275,6 +3293,10 @@ def gym():
     message = None
     trained_stat = None
     error = None
+    # Read once for the whole request: the same figure has to reach the
+    # preview and the training itself, or the page advertises a gain it
+    # does not award.
+    home_gains = gym_gain_bonus(facilities_for(session["user_id"]))
 
     if request.method == "POST":
         action = request.form.get("action", "")
@@ -3325,6 +3347,7 @@ def gym():
                     stat,
                     energy=energy,
                     gym_key=gym_key,
+                    home_bonus_percent=home_gains,
                 )
 
                 if trained:
@@ -3406,6 +3429,7 @@ def gym():
                     stat,
                     gym.energy_per_train,
                     player=player,
+                    home_bonus_percent=home_gains,
                 )
                 for stat in VALID_BATTLE_STATS
                 if gym.trains(stat)

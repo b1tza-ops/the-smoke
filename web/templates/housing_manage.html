@@ -1,5 +1,5 @@
 <!doctype html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ residence.name }} · Housing</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='bounty-1') }}"></head>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ residence.name }} · Housing</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='comfort-1') }}"></head>
 <body class="dashboard-page"><div class="app-shell">{% include "_player_hud.html" %}<main class="dashboard-main game-page">
 <section class="game-page__header"><div><p class="eyebrow">Current property</p><h1>{{ residence.name }}</h1><p>{{ residence.description }}</p></div></section>
 {% if residence.key in artwork %}<img src="{{ url_for('static', filename='images/housing/' + residence.key + '.webp') }}" alt="{{ residence.name }}" class="property-art property-art--wide">{% else %}<div class="property-art property-art--wide property-art--placeholder" role="img" aria-label="{{ residence.name }}"><svg class="game-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#housing"></use></svg></div>{% endif %}
@@ -28,7 +28,7 @@
 {% endif %}
 </section>
 
-<article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Facilities & modifications</p><h2>Make this place yours</h2>{% if upkeep.daily %}<section class="shark-panel">
+<article class="crime-card"><div class="crime-card__body"><p class="eyebrow">Facilities & modifications</p><h2>Make this place yours</h2><dl class="home-effects"><div><dt>Comfort</dt><dd>{{ comfort }}</dd></div><div><dt>Energy</dt><dd>+{{ energy_bonus }}%</dd></div><div><dt>Nerve</dt><dd>+{{ nerve_bonus }}%</dd></div><div><dt>Happiness</dt><dd>+{{ happiness_bonus }}%</dd></div><div><dt>Gym gains</dt><dd>+{{ gym_bonus }}%</dd></div></dl><p class="handbook-summary">Comfort is what drives happiness recovery, and happiness is what the gym spends alongside energy. A better address means more trains, not bigger ones.</p>{% if upkeep.daily %}<section class="shark-panel">
 <div class="shark-panel__head"><h2>Rent</h2><span>£{{ "{:,}".format(upkeep.daily) }} a day</span></div>
 {% if upkeep.in_arrears %}
 <div class="game-notice game-notice--error">You owe <strong>£{{ "{:,}".format(upkeep.owed) }}</strong>. Until it is paid this home does nothing for you — no faster recovery and no extra carrying space. You keep the place and everything in it.</div>

@@ -270,6 +270,7 @@ def train(
     energy=None,
     gym_key=None,
     now=None,
+    home_bonus_percent=0,
 ):
     """Train one stat. `energy=None` means a single train at this gym.
 
@@ -316,6 +317,7 @@ def train(
         stat_value=getattr(player, stat),
         happiness=getattr(player, "happiness", None),
         max_happiness=getattr(player, "max_happiness", None),
+        home_bonus_percent=home_bonus_percent,
     )
 
     player.energy -= outcome.energy_spent
@@ -358,7 +360,9 @@ def train(
     return outcome
 
 
-def calculate_training_gain(gym_key, stat, energy=None, player=None):
+def calculate_training_gain(
+    gym_key, stat, energy=None, player=None, home_bonus_percent=0
+):
     """Preview the gain a training batch would produce.
 
     Shares `training_outcome` with `train()` so the figure shown on the
@@ -382,6 +386,7 @@ def calculate_training_gain(gym_key, stat, energy=None, player=None):
         stat_value=getattr(player, stat, 0) or 0,
         happiness=getattr(player, "happiness", None),
         max_happiness=getattr(player, "max_happiness", None),
+        home_bonus_percent=home_bonus_percent,
     ).stat_gain
 
 

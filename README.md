@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 999 tests
+python3 -m unittest discover -s tests            # 1,017 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -178,6 +178,12 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
+- **#159** — the last two figures on the property page that did nothing.
+  **Comfort** now drives happiness recovery, which is what the gym spends
+  alongside energy — so a good address buys more trains rather than bigger
+  ones — and the **swimming pool** finally adds the 2% gym gains it has been
+  sold for. Nothing a property advertises is decoration any more, and a test
+  asserts that against the code rather than against the guide.
 - **#156** — two things that give the rest of the game something to push
   against.
   **The bounty board**: anybody can put £500–£250,000 on any player's head;

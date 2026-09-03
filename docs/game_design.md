@@ -922,6 +922,26 @@ Properties can provide:
 
 Possible upgrades include security, gym rooms, medical rooms, storage, garages and offices.
 
+### What a home does
+
+Every figure a property advertises is read by something:
+
+| Figure | Effect |
+| --- | --- |
+| Energy recovery | Faster energy ticks, 0–40% |
+| Nerve recovery | Faster nerve ticks, 0–35% |
+| Comfort | Faster happiness ticks, 4% a point above the first |
+| Safe capacity | How much cash can be kept at home, and burgled |
+| Garage capacity | How many vehicles may be owned |
+| Storage | Inventory slots |
+
+Comfort is the subtle one. Happiness is spent alongside energy at the
+gym, so a comfortable home buys *more trains* rather than bigger ones —
+the address compounds into stats without ever appearing in the training
+formula. The superior interior and the open bar add comfort on top; the
+swimming pool is the only fitting that touches training directly, at
++2% gain.
+
 ### Businesses
 
 Businesses should be active investments rather than passive infinite-money generators.
