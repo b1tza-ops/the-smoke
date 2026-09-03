@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 992 tests
+python3 -m unittest discover -s tests            # 999 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -226,7 +226,7 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   stat, fourteen gyms re-tiered by price, plus Shoreditch and Hackney.
 
 **Shape of the world**: five districts — Camden, Brixton, Soho, Shoreditch,
-Hackney — 48 items, 7 vehicles, 11 guides, 54 migrations.
+Hackney — 48 items, 7 vehicles, 14 guides, 54 migrations.
 
 ---
 

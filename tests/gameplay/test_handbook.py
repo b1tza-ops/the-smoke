@@ -195,6 +195,139 @@ class GuideAccuracyTests(unittest.TestCase):
                 self.assertIn(f"Level {district.minimum_level}", text)
 
 
+def table_with(guide, first_header):
+    for block in guide.blocks:
+        if isinstance(block, Table) and block.headers[0] == first_header:
+            return block
+    raise AssertionError(
+        f"{guide.slug} has no table starting {first_header!r}"
+    )
+
+
+class NewGuideAccuracyTests(unittest.TestCase):
+    """Three systems shipped without a guide, and now have one.
+
+    Jobs, the item market and the daily contract board were all live
+    and all undocumented -- the handbook mentioned the contract board
+    nowhere at all. These pin the figures those guides quote to the
+    catalogues they came from, so the tables cannot drift the way the
+    housing one did.
+    """
+
+    def test_the_job_table_lists_every_role_at_the_right_pay(self):
+        from game.jobs.definitions import CAREERS
+
+        table = table_with(GUIDES_BY_SLUG["jobs-and-shifts"], "Role")
+        listed = {row[0]: row for row in table.rows}
+        roles = [role for career in CAREERS for role in career.roles]
+
+        self.assertEqual(len(listed), len(roles))
+
+        for role in roles:
+            with self.subTest(role=role.key):
+                row = listed.get(role.name)
+                self.assertIsNotNone(row, f"{role.name} is not listed")
+                self.assertEqual(row[1], f"£{role.salary:,}")
+                self.assertEqual(row[2], str(role.energy_cost))
+
+    def test_the_job_guide_quotes_the_real_shift_length(self):
+        from game.jobs.service import SHIFT_SECONDS
+
+        hours = SHIFT_SECONDS // 3600
+        prose = " ".join(all_strings(GUIDES_BY_SLUG["jobs-and-shifts"]))
+
+        self.assertIn(f"{hours} hours", prose.replace("three", "3"))
+
+    def test_the_best_paid_role_is_the_one_the_guide_recommends(self):
+        """The advice, not just the table.
+
+        The guide tells a new player to join London Transport and an
+        established one to aim at Hackney Security. Both claims are
+        arithmetic, so both can go stale.
+        """
+        from game.jobs.definitions import CAREERS
+
+        by_name = {career.name: career for career in CAREERS}
+        entry_pay = {
+            name: career.roles[0].salary
+            for name, career in by_name.items()
+            if career.roles[0].required_level == 1
+        }
+        best_entry = max(entry_pay, key=entry_pay.get)
+        best_top = max(
+            by_name,
+            key=lambda name: by_name[name].roles[-1].salary,
+        )
+
+        self.assertEqual(best_entry, "London Transport")
+        self.assertEqual(best_top, "Hackney Security")
+
+    def test_the_careers_that_need_a_district_are_named_as_such(self):
+        from game.jobs.definitions import CAREERS
+
+        table = table_with(GUIDES_BY_SLUG["jobs-and-shifts"], "Career")
+        listed = {row[0]: row[1] for row in table.rows}
+
+        self.assertEqual(len(listed), len(CAREERS))
+
+        for career in CAREERS:
+            with self.subTest(career=career.key):
+                want = (
+                    DISTRICTS_BY_KEY[career.required_district].name
+                    if career.required_district
+                    else "Anywhere"
+                )
+                self.assertEqual(listed[career.name], want)
+
+    def test_the_contract_table_lists_the_whole_pool(self):
+        from game.combat.contracts import CONTRACT_POOL
+
+        table = table_with(GUIDES_BY_SLUG["daily-contracts"], "Contract")
+        listed = {row[0]: row[2] for row in table.rows}
+
+        self.assertEqual(len(listed), len(CONTRACT_POOL))
+
+        for contract in CONTRACT_POOL:
+            with self.subTest(contract=contract.key):
+                pays = listed.get(contract.name)
+                self.assertIsNotNone(pays)
+                self.assertIn(f"£{contract.cash_reward:,}", pays)
+                self.assertIn(f"{contract.xp_reward} XP", pays)
+
+    def test_the_contract_guide_quotes_the_board_size(self):
+        from game.combat.contracts import (
+            DAILY_CONTRACT_COUNT,
+            MINIMUM_SOLO_CONTRACTS,
+        )
+
+        prose = " ".join(
+            all_strings(GUIDES_BY_SLUG["daily-contracts"])
+        ).lower()
+
+        self.assertEqual(DAILY_CONTRACT_COUNT, 3)
+        self.assertEqual(MINIMUM_SOLO_CONTRACTS, 2)
+        self.assertIn("three contracts a day", prose)
+        self.assertIn("at least two of your three", prose)
+
+    def test_the_market_guide_quotes_the_real_commission(self):
+        from game.economy.fence import FENCE_RATE
+        from game.economy.market import (
+            COMMISSION_RATE,
+            MAXIMUM_LISTING_QUANTITY,
+        )
+
+        prose = " ".join(
+            all_strings(GUIDES_BY_SLUG["the-item-market"])
+        ).lower()
+
+        self.assertIn(
+            f"commission is {int(COMMISSION_RATE * 100)}%", prose
+        )
+        self.assertIn(f"{int(FENCE_RATE * 100)}% of value", prose)
+        self.assertIn("twenty", prose)
+        self.assertEqual(MAXIMUM_LISTING_QUANTITY, 20)
+
+
 class RuleTests(unittest.TestCase):
     def test_every_rule_states_a_penalty(self):
         for rule in RULES:

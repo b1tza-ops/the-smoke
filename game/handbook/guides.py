@@ -520,6 +520,205 @@ GUIDES = (
         ),
     ),
 
+    Guide(
+        slug="jobs-and-shifts",
+        title="Jobs and Shifts",
+        summary="Money that arrives while you are not playing.",
+        section="Making Money",
+        icon="job",
+        blocks=(
+            Text(
+                "Crime pays on nerve and fighting pays on energy. A job "
+                "pays on **time**, and that is the point of it: you "
+                "start a three-hour shift, close the tab, and the money "
+                "is waiting when you come back."
+            ),
+            Note(
+                "A shift costs 10–16 energy at the start and nothing "
+                "afterwards. There is no reason not to have one "
+                "running — it does not compete with anything else you "
+                "do.",
+                tone="tip",
+            ),
+            Heading("The five careers"),
+            Table(
+                headers=("Career", "Where", "Opens at"),
+                rows=(
+                    ("London Construction", "Anywhere", "Level 1"),
+                    ("London Transport", "Anywhere", "Level 1"),
+                    ("Soho Hospitality", "Soho", "Level 1"),
+                    ("Shoreditch Creative", "Shoreditch", "Level 5"),
+                    ("Hackney Security", "Hackney", "Level 7"),
+                ),
+                caption=(
+                    "Two of them follow you around London. The other "
+                    "three need you to be standing in the district."
+                ),
+            ),
+            Heading("What each rung pays"),
+            Text(
+                "Every career has three roles. You start at the bottom "
+                "of whichever you join and climb by working shifts."
+            ),
+            Table(
+                headers=("Role", "A shift", "Energy", "Needs"),
+                rows=(
+                    ("Construction Labourer", "£120", "10", "Level 1"),
+                    ("Skilled Labourer", "£220", "12", "4 shifts, level 2"),
+                    ("Site Foreman", "£400", "15", "10 shifts, level 4"),
+                    ("Bar Back", "£110", "10", "Level 1"),
+                    ("Bartender", "£210", "12", "4 shifts, level 2"),
+                    ("Venue Manager", "£380", "15", "10 shifts, level 4"),
+                    ("Courier Rider", "£130", "10", "Level 1"),
+                    ("Delivery Driver", "£230", "12", "4 shifts, level 2"),
+                    ("Logistics Supervisor", "£410", "15", "10 shifts, level 4"),
+                    ("Gallery Assistant", "£180", "10", "Level 5"),
+                    ("Studio Manager", "£340", "12", "5 shifts, level 6"),
+                    ("Creative Director", "£620", "15", "12 shifts, level 8"),
+                    ("Yard Watchman", "£230", "10", "Level 7"),
+                    ("Close Protection", "£430", "13", "6 shifts, level 9"),
+                    ("Security Contractor", "£780", "16", "14 shifts, level 11"),
+                ),
+                caption="Every shift is three hours long.",
+            ),
+            Heading("Which one to join"),
+            Bullets((
+                "**London Transport** is the best of the three you can "
+                "join at level 1, and it works from any district. "
+                "£130 a shift against Construction's £120 and "
+                "Hospitality's £110, and Hospitality also ties you to "
+                "Soho.",
+                "**Hackney Security** is the best paid in the game — "
+                "£780 a shift at the top, which is over three times "
+                "what Construction's best rung pays — but it needs "
+                "level 7 to reach and level 11 to top out.",
+                "**Promotion is per career.** The shifts you worked "
+                "for one do not count towards another, so switching "
+                "starts you at the bottom again. Pick one and stay.",
+            )),
+            Note(
+                "A shift you abandon before the three hours are up "
+                "pays nothing, and you do not get the energy back. "
+                "Start one when you are stopping for a while, not "
+                "when you are about to travel.",
+                tone="warning",
+            ),
+        ),
+    ),
+    Guide(
+        slug="the-item-market",
+        title="Selling to Other Players",
+        summary="The ceiling on what your loot is worth.",
+        section="Making Money",
+        icon="shop",
+        blocks=(
+            Text(
+                "There are three places to sell what you steal, and "
+                "they are a ladder. The [item market](/market) is the "
+                "top of it."
+            ),
+            Table(
+                headers=("Where", "Pays", "Catch"),
+                rows=(
+                    ("The fence", "50% of value", "Instant, and always there"),
+                    ("Black market", "More than the fence", "Only some items"),
+                    ("Item market", "Whatever you ask", "Only if somebody buys"),
+                ),
+            ),
+            Text(
+                "The fence is the **floor**: it will take anything, "
+                "immediately, for half. The item market is the "
+                "**ceiling**: you name the price and wait. Nothing in "
+                "the game depends on anybody turning up to buy, which "
+                "is what makes it safe to use while the game is small."
+            ),
+            Heading("Listing something"),
+            Bullets((
+                "**The commission is 5%**, taken from the seller when "
+                "it sells. Nothing is charged for listing.",
+                "**Twenty of one thing** is the most you may list at "
+                "once.",
+                "**You cannot undercut the fence.** The floor price is "
+                "half the item's value — below that you should simply "
+                "walk to the black market, and it stops £1 listings "
+                "being used to shuffle items between accounts.",
+                "**Listing escrows the items.** They leave your "
+                "inventory the moment you list them, which is what "
+                "makes selling the same thing twice impossible. "
+                "Cancelling puts them back.",
+            )),
+            Note(
+                "The commission is a **sink**: that money leaves the "
+                "game rather than going to anybody. It is also why "
+                "washing money between two accounts through the market "
+                "destroys 5% of it every time.",
+                tone="tip",
+            ),
+        ),
+    ),
+    Guide(
+        slug="daily-contracts",
+        title="Daily Contracts",
+        summary="Three jobs a day, and they reset at midnight.",
+        section="Getting Stronger",
+        icon="operations",
+        blocks=(
+            Text(
+                "The [contract board](/pvp/contracts) offers **three "
+                "contracts a day**, drawn from a pool of eight. They "
+                "reset at midnight UTC, and anything unclaimed is "
+                "gone."
+            ),
+            Note(
+                "These are free money for fights you were going to "
+                "have anyway. Check the board *before* you start "
+                "fighting, not after — progress only counts from the "
+                "moment the contract is on it.",
+                tone="tip",
+            ),
+            Heading("What is in the pool"),
+            Table(
+                headers=("Contract", "What it wants", "Pays"),
+                rows=(
+                    ("First blood", "Win one fight, anyone",
+                     "£150, 30 XP, an energy drink"),
+                    ("Street patrol", "Finish three fights, win or lose",
+                     "£225, 40 XP"),
+                    ("Clean sweep", "Win two fights, anyone",
+                     "£300, 55 XP, a first aid kit"),
+                    ("Cash run", "Take £100 from fights", "£200, 45 XP"),
+                    ("Go loud", "Win a player fight, Aggressive",
+                     "£225, 45 XP"),
+                    ("Hold the line", "Win a player fight, Defensive",
+                     "£225, 45 XP"),
+                    ("Precision work", "Win a player fight, Precise",
+                     "£225, 45 XP"),
+                    ("Untouchable", "Win a player fight, Evasive",
+                     "£225, 45 XP"),
+                ),
+            ),
+            Heading("Street fights count"),
+            Text(
+                "Only the four **approach** contracts need a person on "
+                "the other side, because picking Aggressive or Evasive "
+                "is a choice that only exists in a player fight. "
+                "Everything else counts a street opponent just as "
+                "readily."
+            ),
+            Bullets((
+                "**At least two of your three** are always ones you "
+                "can finish alone. On a quiet server the board is "
+                "never unwinnable.",
+                "**Unrated repeat attacks do not count.** Beating the "
+                "same player over and over stops paying towards a "
+                "contract at the same point it stops paying rating.",
+                "A contract is **claimed by hand** once it is "
+                "complete. Finishing it is not the same as collecting "
+                "it.",
+            )),
+        ),
+    ),
+
     # -------------------------------------------------- around london
     Guide(
         slug="travel",
