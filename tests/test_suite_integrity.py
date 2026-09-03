@@ -102,6 +102,15 @@ class SuiteIntegrityTests(unittest.TestCase):
         Checked against the source tree rather than a written-down
         list, so a package added at the top level tomorrow is covered
         without anybody remembering this test exists.
+
+        Both sides need their `__init__.py` for this to bite, and the
+        first draft of this test only checked the name. A directory
+        with no `__init__.py` is a *namespace* package, and a namespace
+        package loses to a regular one further down the path -- so a
+        bare `tests/auth/` left behind by the rename, holding nothing
+        but a stale `__pycache__`, shadows precisely nothing. Flagging
+        it sent somebody looking for a fault that was not there, which
+        is the same sin as missing a real one.
         """
         packages = {
             entry.name
@@ -113,7 +122,9 @@ class SuiteIntegrityTests(unittest.TestCase):
         shadows = sorted(
             entry.name
             for entry in TESTS_ROOT.iterdir()
-            if entry.is_dir() and entry.name in packages
+            if entry.is_dir()
+            and entry.name in packages
+            and (entry / "__init__.py").exists()
         )
 
         self.assertEqual(
