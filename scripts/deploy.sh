@@ -12,6 +12,14 @@ fi
 echo "Updating source..."
 git pull --ff-only origin main
 
+# A rename leaves the old directory behind wherever it holds compiled
+# bytecode -- git deletes the tracked files and stops there. That is
+# how `tests/auth/` survived becoming `tests/authentication/` on this
+# box, as an empty shell that looked like the fault it no longer was.
+# Sweeping the caches keeps the tree honest about what is in it.
+find . -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+find . -depth -type d -empty -not -path "./.git/*" -delete 2>/dev/null || true
+
 echo "Installing locked dependencies..."
 .venv/bin/python -m pip install -r requirements.txt
 
