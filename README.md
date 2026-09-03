@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 1,081 tests
+python3 -m unittest discover -s tests            # 1,089 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -178,6 +178,10 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
+- **#160** — the agent script now lists the accounts instead of leaving you
+  guessing at a name, and its usage line no longer reads `<username>` — which
+  the shell turns into a redirect the moment anybody pastes it. The first
+  thing it ever did in anger was fail on its own documentation.
 - **#159** — **other machines can play.** A sanctioned agent account gets a
   key, plays the whole single-player game through a self-describing JSON API
   at `/api/v1`, and is sealed off from every other player *in both
