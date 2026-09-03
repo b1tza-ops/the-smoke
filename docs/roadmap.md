@@ -44,6 +44,7 @@
 - Weapons and armour
 - PvP protections
 - Mugging/hospitalisation
+- Bounties
 - Gangs
 - Gang upgrades
 - Gang operations
@@ -54,7 +55,7 @@
 - Businesses
 - Employees and company progression
 - Investments
-- Vehicle upgrades/maintenance
+- Vehicle upgrades/maintenance (vehicles themselves shipped)
 - Advanced properties
 - Player market
 - Coordinated heists

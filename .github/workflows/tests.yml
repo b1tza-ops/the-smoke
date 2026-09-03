@@ -15,14 +15,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          # Match the server. A suite green on a different Python is
+          # how a float reached randint in production while every test
+          # passed here.
+          python-version: "3.14"
           cache: pip
 
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
 
       - name: Run tests
-        run: python -m unittest discover -s tests -v
+        # -t . roots discovery at the project, so tests/auth is a
+        # package rather than a shadow of the real auth one. Without it
+        # those thirty-six tests are skipped in silence.
+        run: python -m unittest discover -s tests -t . -v
 
       - name: Compile Python files
         run: python -m compileall -q app.py main.py auth cli database game tests web

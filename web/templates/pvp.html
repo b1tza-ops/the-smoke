@@ -2,14 +2,14 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b0d"><title>Player fights · The Smoke</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='safe-1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='bounty-1') }}">
 </head><body class="dashboard-page"><div class="app-shell">
 <header class="topbar">{% include "_topbar_menu.html" %}<a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a><a class="logout-link" href="{{ url_for('fight') }}">NPC fights</a></header>
 {% include "_player_hud.html" %}
 <main class="dashboard-main game-page pvp-page">
 {% set focused = staged_target or result or (fight and fight.open) %}
 {% if not focused %}
-<nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_contracts') }}">Contracts</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
+<nav class="combat-mode-tabs"><a class="is-active" href="{{ url_for('pvp') }}">Matchmaking</a><a href="{{ url_for('pvp_contracts') }}">Contracts</a><a href="{{ url_for('pvp_bounties') }}">Bounties</a><a href="{{ url_for('pvp_leaderboard') }}">Leaderboards</a></nav>
 <section class="pvp-rating-strip"><div><span>Your rating</span><strong>{{ pvp_profile.rating }}</strong></div><div><span>Record</span><strong>{{ pvp_profile.wins }}–{{ pvp_profile.losses }}</strong></div><div><span>Win streak</span><strong>{{ pvp_profile.streak }}</strong></div><div><span>Personal best</span><strong>{{ pvp_profile.best_rating }}</strong></div></section>
 <section class="pvp-streak-card {{ 'is-active' if streak_progress.streak >= 3 }}">
 <div class="pvp-streak-card__heading"><div><p class="eyebrow">Rated win streak</p><h2>{{ streak_progress.current_title }}</h2></div><strong>{{ streak_progress.streak }} wins</strong></div>
@@ -80,7 +80,7 @@
   {% if aftermath.choice == "mug" %}
     {% if aftermath.cash_stolen %}You went through their pockets and took <strong>&pound;{{ "{:,}".format(aftermath.cash_stolen) }}</strong>.{% else %}You went through their pockets. They had nothing on them.{% endif %}
   {% elif aftermath.choice == "hospitalise" %}
-    You put them in hospital. They are out of it for a quarter of an hour.
+    You put them in hospital. They are out of it for a quarter of an hour.{% if aftermath.bounty_collected %} You collected <strong>&pound;{{ "{:,}".format(aftermath.bounty_collected) }}</strong> in {{ 'bounties' if aftermath.bounty_count > 1 else 'bounty' }}.{% endif %}
   {% else %}
     You left them where they fell.
   {% endif %}
@@ -184,9 +184,9 @@
           <input type="hidden" name="attack_id" value="{{ pending_aftermath.attack_id }}">
           <button type="submit" name="choice" value="leave">LEAVE</button>
           <button type="submit" name="choice" value="mug">MUG</button>
-          <button type="submit" name="choice" value="hospitalise">HOSPITALISE</button>
+          <button type="submit" name="choice" value="hospitalise">HOSPITALISE{% if pending_aftermath.bounty %} <small>&pound;{{ "{:,}".format(pending_aftermath.bounty) }}</small>{% endif %}</button>
         </form>
-        <p class="attack-outcome__note">Mug them or put them in hospital &mdash; not both.</p>
+        <p class="attack-outcome__note">Mug them or put them in hospital &mdash; not both.{% if pending_aftermath.bounty %} There is <strong>&pound;{{ "{:,}".format(pending_aftermath.bounty) }}</strong> on their head, and only a hospital bed collects it.{% endif %}</p>
       </div>
       {% endif %}
     </div>
@@ -207,12 +207,13 @@
 <div class="pvp-targets">
 {% for target in targets %}
 <article class="pvp-target">
-<div class="pvp-target__identity"><span class="combat-avatar">{{ target.name[:2]|upper }}</span><div><small>{{ target.matchmaking }} · Level {{ target.level }}</small><h2>{{ target.name }}</h2><p>{{ target.health }}/{{ target.max_health }} health · {{ target.rating }} rating · {{ target.estimate }}</p></div></div>
+<div class="pvp-target__identity"><span class="combat-avatar">{{ target.name[:2]|upper }}</span><div><small>{{ target.matchmaking }} · Level {{ target.level }}</small><h2>{{ target.name }}</h2><p>{{ target.health }}/{{ target.max_health }} health · {{ target.rating }} rating · {{ target.estimate }}</p>{% if target.bounty %}<p class="pvp-target__bounty">&pound;{{ "{:,}".format(target.bounty) }} on their head</p>{% endif %}</div></div>
 {% if target.beginner_protection_seconds %}<p class="combat-block">New player protection · {{ (target.beginner_protection_seconds // 3600) + 1 }}h</p>{% elif target.restricted %}<p class="combat-block">Currently unavailable</p>{% elif target.limits.protected_seconds %}<p class="combat-block">Protected for {{ target.limits.protected_seconds }} seconds</p>{% endif %}
 {% if block_reason or target.beginner_protection_seconds or target.restricted or target.limits.blocked %}
 <button class="work-button" type="button" disabled><span>Attack {{ target.name }}</span><span>&rarr;</span></button>
 {% else %}
 <a class="work-button" href="{{ url_for('pvp', target_id=target.id) }}"><span>Attack {{ target.name }}</span><span>&rarr;</span></a>
+<a class="bounty-link" href="{{ url_for('pvp_bounties', name=target.name) }}">Put a price on their head</a>
 {% endif %}
 {% if not target.restricted and not target.beginner_protection_seconds %}
 <form method="post" class="burgle-form">

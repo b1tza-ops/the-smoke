@@ -79,6 +79,13 @@ FIXED = (
         "Lends on a handshake. Collects in person.",
         district="soho",
     ),
+    Destination(
+        "motors",
+        "Coldharbour Motors",
+        "car",
+        "Buys back time. Sells the attention that comes with it.",
+        district="brixton",
+    ),
 )
 
 

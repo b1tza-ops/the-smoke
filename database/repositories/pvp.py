@@ -4,6 +4,11 @@ import json
 import random
 
 from database.core.connection import get_connection
+from database.repositories.bounties import (
+    BountyClaim,
+    bounty_on,
+    claim_on,
+)
 from game.combat.pvp import (
     AFTERMATH_CHOICES,
     AFTERMATH_HOSPITALISE,
@@ -684,6 +689,10 @@ class PendingAftermath:
     defender_money: int
     reward_multiplier: float
     seconds_left: int
+    # What hospitalising them is worth. Shown on the choice, because a
+    # decision between their pockets and their price is only a decision
+    # if you can see both.
+    bounty: int = 0
 
 
 def get_pending_aftermath(attacker_id, now=None):
@@ -727,6 +736,7 @@ def get_pending_aftermath(attacker_id, now=None):
         defender_money=row[3],
         reward_multiplier=row[4],
         seconds_left=left,
+        bounty=bounty_on(row[1], now=now),
     )
 
 
@@ -783,6 +793,7 @@ def settle_aftermath(attack_id, attacker_id, choice, rng=None, now=None):
             raise PvpError("They got away before you decided.")
 
         taken = 0
+        claim = BountyClaim(collected=0, bounties=0, skipped=0)
 
         if choice == AFTERMATH_MUG:
             money = connection.execute(
@@ -821,6 +832,14 @@ def settle_aftermath(attack_id, attacker_id, choice, rng=None, now=None):
                 """,
                 (format_timestamp(until), defender_id),
             )
+            # A hospital bed is what a bounty pays for. Collected on
+            # this same connection so the payout and the bed commit
+            # together -- there is no state where somebody is in
+            # hospital and the money that put them there is still on
+            # the board.
+            claim = claim_on(
+                connection, defender_id, attacker_id, attack_id, now
+            )
 
         connection.execute(
             """
@@ -832,7 +851,12 @@ def settle_aftermath(attack_id, attacker_id, choice, rng=None, now=None):
         )
         connection.commit()
 
-        return Aftermath(choice=choice, cash_stolen=taken)
+        return Aftermath(
+            choice=choice,
+            cash_stolen=taken,
+            bounty_collected=claim.collected,
+            bounty_count=claim.bounties,
+        )
     except Exception:
         connection.rollback()
         raise

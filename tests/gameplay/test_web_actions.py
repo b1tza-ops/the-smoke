@@ -23,6 +23,7 @@ class WebGameplayTests(unittest.TestCase):
 
     def make_player(self):
         return SimpleNamespace(
+            id=1,
             current_district="camden",
             current_gym_key="camden_community",
             unlocked_gyms={"camden_community"},
@@ -268,11 +269,13 @@ class WebGameplayTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        # No mode posted, so the bus is what departs.
+        # No mode posted, so the bus is what departs -- and with no
+        # car in the garage there is nothing to drive instead.
         start_travel.assert_called_once_with(
             player,
             "brixton",
             "bus",
+            vehicle=None,
         )
         save_player.assert_called_once_with(player)
 

@@ -2176,6 +2176,99 @@ def migrate_052_notifications_without_an_attack(cursor):
     cursor.execute("DROP TABLE pvp_notifications_old")
 
 
+def migrate_053_player_bounties(cursor):
+    """A price on somebody's head, and the money already put up for it.
+
+    The stake is escrowed here the moment the bounty is posted -- it is
+    gone from the poster's wallet before the row exists -- which is the
+    same trick the item market uses for listings. Without it a player
+    could promise a fortune, spend it, and leave a hunter with nothing
+    to collect.
+
+    `status` is the whole state machine: open until somebody collects it
+    or it lapses, and never open again after either. The partial index
+    is what makes "everything still on this head" cheap on the fight
+    list, which reads it once per target.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_bounties (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            poster_id INTEGER NOT NULL,
+            target_id INTEGER NOT NULL,
+            amount INTEGER NOT NULL
+                CHECK (amount > 0),
+            fee INTEGER NOT NULL DEFAULT 0
+                CHECK (fee >= 0),
+            status TEXT NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'claimed', 'expired')),
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            claimed_by INTEGER,
+            claimed_at TEXT,
+            attack_id INTEGER,
+
+            CHECK (poster_id != target_id),
+
+            FOREIGN KEY (poster_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (target_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE,
+            FOREIGN KEY (claimed_by)
+                REFERENCES players(id)
+                ON DELETE SET NULL,
+            FOREIGN KEY (attack_id)
+                REFERENCES player_pvp_attacks(id)
+                ON DELETE SET NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS player_bounties_open_on_target
+        ON player_bounties (target_id, status)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS player_bounties_lapsing
+        ON player_bounties (status, expires_at)
+    """)
+
+
+def migrate_054_player_vehicles(cursor):
+    """What is in the garage, and which one is on the drive.
+
+    Its own table rather than a column on `players`, for the reason the
+    README gives: that row is splatted positionally into `Player`.
+
+    The partial unique index is the whole state machine. Exactly one
+    vehicle per player may carry `is_active`, so "which car am I
+    driving" cannot drift into two answers however many requests race
+    each other -- the database refuses the second one rather than the
+    application remembering to.
+    """
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_vehicles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            vehicle_key TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 0
+                CHECK (is_active IN (0, 1)),
+            purchased_at TEXT NOT NULL,
+
+            FOREIGN KEY (player_id)
+                REFERENCES players(id)
+                ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS player_vehicles_owner
+        ON player_vehicles (player_id)
+    """)
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS player_vehicles_one_active
+        ON player_vehicles (player_id) WHERE is_active = 1
+    """)
+
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -2436,6 +2529,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         version=52,
         name="notifications_without_an_attack",
         apply=migrate_052_notifications_without_an_attack,
+    ),
+    Migration(
+        version=53,
+        name="player_bounties",
+        apply=migrate_053_player_bounties,
+    ),
+    Migration(
+        version=54,
+        name="player_vehicles",
+        apply=migrate_054_player_vehicles,
     ),
 )
 

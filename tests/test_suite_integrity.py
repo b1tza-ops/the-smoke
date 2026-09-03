@@ -28,6 +28,21 @@ def module_name(path):
     return ".".join(relative.parts)
 
 
+def _flatten(suite):
+    """Every TestCase in a suite, however deeply nested.
+
+    A failed import becomes a `_FailedTest` whose module is the loader
+    rather than the file, so it never counts as reached -- which is the
+    behaviour wanted: a file that cannot be imported has not been
+    discovered in any useful sense.
+    """
+    for item in suite:
+        if isinstance(item, unittest.TestSuite):
+            yield from _flatten(item)
+        else:
+            yield item
+
+
 class SuiteIntegrityTests(unittest.TestCase):
     def test_every_test_file_contributes_at_least_one_test(self):
         """No file may sit in tests/ contributing nothing.
@@ -50,6 +65,40 @@ class SuiteIntegrityTests(unittest.TestCase):
             empty,
             [],
             "these files run no tests at all: " + ", ".join(empty),
+        )
+
+    def test_discovery_reaches_every_file_the_suite_contains(self):
+        """The other half: found individually is not found by CI.
+
+        The guard above loads each file by name, so it stays honest
+        about a directory discovery cannot see. That is exactly what
+        `tests/auth/` was -- thirty-six tests that passed when run by
+        hand and had never once run on a push, among them every check
+        on password handling and login timing.
+
+        The directory needs its `__init__.py` *and* a run rooted at the
+        project, or `tests/auth` shadows the real `auth` package and
+        seventy-seven unrelated tests fail on the import. Both halves
+        are pinned here, because either one alone is silent.
+        """
+        discovered = {
+            type(case).__module__
+            for case in _flatten(
+                unittest.TestLoader().discover(
+                    str(TESTS_ROOT), top_level_dir=str(PROJECT_ROOT)
+                )
+            )
+        }
+        expected = {
+            module_name(path)
+            for path in test_files()
+        }
+        missed = sorted(expected - discovered)
+
+        self.assertEqual(
+            missed,
+            [],
+            "discovery never reaches these files: " + ", ".join(missed),
         )
 
     def test_no_test_is_written_as_a_bare_function(self):

@@ -16,7 +16,7 @@ echo "Installing locked dependencies..."
 .venv/bin/python -m pip install -r requirements.txt
 
 echo "Running tests..."
-.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s tests -t . -v
 .venv/bin/python -m compileall -q auth database game utils web
 
 echo "Restarting application..."

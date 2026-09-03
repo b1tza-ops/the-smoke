@@ -45,9 +45,9 @@ RULES = (
             Text(
                 "**One person, one account.** Running a second account to "
                 "feed your main — cash, items, easy fights, market trades "
-                "at rigged prices — is the most damaging thing you can do "
-                "to a game this size, because every number on it is "
-                "comparative."
+                "at rigged prices, bounties posted to be collected by a "
+                "friend — is the most damaging thing you can do to a game "
+                "this size, because every number on it is comparative."
             ),
             Bullets((
                 "Both accounts are banned, not just the second one.",

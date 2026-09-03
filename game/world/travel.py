@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
+import random
 
 from game.world.districts import (
     DISTRICTS,
@@ -11,6 +12,12 @@ from game.world.transport import (
     get_transport_mode,
     serves,
 )
+from game.vehicles.service import (
+    DRIVE_KEY,
+    PULLED_OVER_SECONDS,
+    driving_mode,
+    stop_chance,
+)
 
 from game.player.regeneration import (
     format_timestamp,
@@ -19,6 +26,7 @@ from game.player.regeneration import (
 from game.player.status import (
     get_active_restriction,
     normalise_now,
+    send_to_jail,
 )
 
 
@@ -60,6 +68,10 @@ class UnknownTransportError(TravelError):
 
 class TransportUnavailableError(TravelError):
     """Raised when a mode does not serve a route."""
+
+
+class PulledOverError(TravelError):
+    """Raised when the police stop the journey before it starts."""
 
 
 @dataclass(frozen=True)
@@ -151,6 +163,8 @@ def start_travel(
     destination_key,
     mode_key=DEFAULT_TRANSPORT_KEY,
     now=None,
+    vehicle=None,
+    rng=None,
 ):
     now = normalise_now(now)
     update_travel(player, now=now)
@@ -201,7 +215,16 @@ def start_travel(
             "No travel route is available."
         ) from error
 
-    mode = get_transport_mode(mode_key)
+    if mode_key == DRIVE_KEY:
+        # Built from the car rather than looked up, because a bicycle
+        # and a Sable GT are not the same journey.
+        if vehicle is None:
+            raise TransportUnavailableError(
+                "You have nothing in the garage to drive."
+            )
+        mode = driving_mode(vehicle)
+    else:
+        mode = get_transport_mode(mode_key)
 
     if mode is None:
         raise UnknownTransportError(
@@ -219,6 +242,20 @@ def start_travel(
         raise InsufficientTravelFundsError(
             "Not enough carried cash for travel."
         )
+
+    if mode.key == DRIVE_KEY:
+        # Checked before any money moves: being stopped costs the
+        # journey and a quarter of an hour, never the petrol as well.
+        chance = stop_chance(vehicle, player.wanted_level)
+        roll = (rng or random.SystemRandom()).randint(1, 100)
+
+        if chance and roll <= chance:
+            send_to_jail(player, PULLED_OVER_SECONDS, now=now)
+            raise PulledOverError(
+                f"A patrol pulls the {vehicle.name} over before you "
+                "reach the end of the road. You are wanted, and they "
+                "know it."
+            )
 
     departed_at = format_timestamp(now)
     arrives_at = format_timestamp(

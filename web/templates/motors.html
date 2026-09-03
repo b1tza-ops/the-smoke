@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#090b0d">
+    <title>Coldharbour Motors · The Smoke</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='bounty-1') }}">
+</head>
+<body class="dashboard-page">
+<div class="app-shell">
+    <header class="topbar">{% include "_topbar_menu.html" %}
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand__mark">TS</span><span class="brand__name">The Smoke</span></a>
+        <a class="logout-link" href="{{ url_for('travel') }}">Travel</a>
+    </header>
+    {% include "_player_hud.html" %}
+    <main class="dashboard-main shop-page">
+        <section class="shop-hero">
+            <div><p class="eyebrow">Brixton · Motors</p><h1>Coldharbour Motors</h1><p>A forecourt under the arches. What you buy here buys back the minutes you would spend on a bus — and a car reaches Hackney, which the Underground never has.</p></div>
+            <div class="shop-restock"><small>Garage</small><strong>{{ garage.vehicles|length }} / {{ garage.capacity }}</strong></div>
+        </section>
+        {% if message %}<div class="game-notice game-notice--success" role="status">{{ message }}</div>{% endif %}
+        {% if error %}<div class="game-notice game-notice--error" role="alert">{{ error }}</div>{% endif %}
+        {% if not accessible %}<div class="game-notice game-notice--error">You have to be standing in Brixton, and free to walk about, to buy or sell a car. Choosing which one you drive works from anywhere.</div>{% endif %}
+        {% if garage.capacity == 0 %}<div class="game-notice game-notice--warning">You have nowhere to keep a car. A <a href="{{ url_for('housing') }}">van</a> is the cheapest address in London with a garage.</div>{% endif %}
+
+        {% if garage.vehicles %}
+        <section class="garage">
+            <h2>Your garage</h2>
+            <div class="garage-grid">
+            {% for owned in garage.vehicles %}
+                <article class="garage-card {{ 'is-driving' if owned.active }}">
+                    <div class="garage-card__top"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#car"></use></svg><span>{{ 'Driving' if owned.active else 'Parked' }}</span></div>
+                    <h3>{{ owned.vehicle.name }}</h3>
+                    <dl class="garage-stats">
+                        <div><dt>Journey</dt><dd>{{ (owned.vehicle.duration_multiplier * 100)|round|int }}% of the bus</dd></div>
+                        <div><dt>Petrol</dt><dd>{{ (owned.vehicle.fare_multiplier * 100)|round|int }}% of the fare</dd></div>
+                        <div><dt>Pulled over</dt><dd>{{ stop_chance(owned.vehicle, player.wanted_level) }}% at your heat</dd></div>
+                    </dl>
+                    <div class="garage-actions">
+                        <form method="post"><input type="hidden" name="action" value="drive"><input type="hidden" name="owned_id" value="{{ owned.id }}">
+                            <button class="ghost-button" type="submit" {{ 'disabled' if owned.active }}>{{ 'Driving this' if owned.active else 'Drive this one' }}</button></form>
+                        <form method="post"><input type="hidden" name="action" value="sell"><input type="hidden" name="owned_id" value="{{ owned.id }}">
+                            <button class="ghost-button ghost-button--danger" type="submit" {{ 'disabled' if not accessible }}>Sell · £{{ "{:,}".format(resale(owned.vehicle)) }}</button></form>
+                    </div>
+                </article>
+            {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="forecourt">
+            <h2>On the forecourt</h2>
+            <div class="garage-grid">
+            {% for vehicle in stock %}
+                {% set locked = player.level < vehicle.minimum_level %}
+                <article class="garage-card {{ 'is-locked' if locked }}">
+                    <div class="garage-card__top"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/game-icons-v3.svg') }}#car"></use></svg><span>{{ 'Level ' ~ vehicle.minimum_level if locked else 'Available' }}</span></div>
+                    <h3>{{ vehicle.name }}</h3>
+                    <p class="garage-card__blurb">{{ vehicle.description }}</p>
+                    <dl class="garage-stats">
+                        <div><dt>Journey</dt><dd>{{ (vehicle.duration_multiplier * 100)|round|int }}% of the bus</dd></div>
+                        <div><dt>Petrol</dt><dd>{{ (vehicle.fare_multiplier * 100)|round|int }}% of the fare</dd></div>
+                        <div><dt>Draws attention</dt><dd>{{ vehicle.showiness }}/10</dd></div>
+                    </dl>
+                    <form method="post"><input type="hidden" name="action" value="buy"><input type="hidden" name="vehicle_key" value="{{ vehicle.key }}">
+                        <button class="work-button" type="submit" {{ 'disabled' if locked or not accessible or garage.room <= 0 or player.money < vehicle.price }}>
+                            <span>£{{ "{:,}".format(vehicle.price) }}</span><span>&rarr;</span></button></form>
+                </article>
+            {% endfor %}
+            </div>
+        </section>
+
+        <section class="forecourt-notes">
+            <h2>Worth knowing before you sign</h2>
+            <ul>
+                <li>The Underground does <strong>half</strong> the bus journey and does not run to Hackney. Anything from the <strong>Marlow Estate</strong> up beats it, everywhere.</li>
+                <li>Being <strong>wanted</strong> is what makes driving a decision. A patrol stops you before you set off — you lose the journey and {{ pulled_over_minutes }} minutes to a cell, though never the petrol. The chance is your heat against how much the car shows off, so a bicycle is never stopped and a Sable GT at full heat is a coin toss.</li>
+                <li>Your garage holds what your <strong>address</strong> allows: nothing below a van, one up to a modern house, three in a penthouse.</li>
+                <li>The forecourt buys back at <strong>half</strong> what you paid. A car is not a savings account.</li>
+            </ul>
+        </section>
+    </main>
+</div>
+</body>
+</html>

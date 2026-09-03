@@ -833,6 +833,27 @@ Possible PvP outcomes later:
 
 New-player protection, cooldowns and reduced rewards for extreme power differences should prevent abuse.
 
+### Bounties
+
+Any player may put money on any other player's head. The stake is escrowed
+when the bounty is posted, so a bounty is never worth more than somebody
+actually put up, and a fixer's cut is charged on top as a sink.
+
+The bounty is collected by whoever beats that player and chooses
+**hospitalise**. That is what makes the aftermath a real decision: mugging
+takes their pockets and leaves the price standing, hospitalising takes the
+price and leaves their money alone. You cannot collect a bounty you posted
+yourself, which is what stops the board being a way to move money between
+two accounts for less than the item market charges.
+
+An unclaimed bounty lapses after a week and the stake is returned; the fee
+is not. Settlement is lazy, from elapsed time, like every other clock here.
+
+The point of the mechanic is that it works asynchronously. A game with few
+players online at once still gives them a reason to matter to each other,
+because neither party has to be awake for a bounty to be posted, seen or
+collected.
+
 ---
 
 ## Gangs
@@ -935,6 +956,31 @@ Player-owned businesses may eventually employ other players.
 ---
 
 ## Vehicles
+
+Coldharbour Motors in Brixton sells seven vehicles. A car is the third
+thing money buys that keeps paying — the gym sells stats, housing sells
+recovery, a vehicle sells time — and it is the first thing to make the
+garage figure on the property page load-bearing.
+
+Driving is deliberately not a straight upgrade on the Underground:
+
+- **Faster and cheaper**, and it reaches Hackney, which the tube does not.
+- **Gated by housing.** Nothing below a van has a garage, so a car is
+  behind a home, and a home is behind rent. You cannot move somewhere
+  that will not hold what you own.
+- **Stoppable.** It is the only way across London the police can
+  interrupt. The odds are wanted level against how much the vehicle
+  shows off, so the quickest car on the forecourt is the worst thing to
+  be sitting in after a job, and the bicycle is never stopped at all.
+  Being pulled over costs the journey and a quarter of an hour, never
+  the petrol.
+- **Resold at half.** A garage is not a savings account.
+
+This also gives wanted level a second consequence. Until now heat only
+raised the jail chance on crimes; it now also decides whether you can
+drive home.
+
+
 
 Vehicles are useful game systems, not merely collectibles.
 
