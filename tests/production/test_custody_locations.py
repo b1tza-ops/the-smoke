@@ -9,6 +9,7 @@ from database.repositories.hospital import (
     get_hospital_patients,
 )
 from database.repositories.jail import (
+    BAIL_MINIMUM,
     attempt_jail_break,
     bail_out_inmate,
     calculate_bail_cost,
@@ -97,8 +98,17 @@ class CustodyLocationTests(unittest.TestCase):
             remaining_seconds=heavy.jail_seconds,
         )
 
-        self.assertEqual(short_bail, 250)
+        # The shape, not a fixed price. This used to pin £250, which
+        # was the old formula's floor rather than anything about the
+        # crime -- so it passed while bail was charging a level 20
+        # player £410 a minute.
+        self.assertGreaterEqual(short_bail, BAIL_MINIMUM)
         self.assertGreater(severe_bail, short_bail)
+        self.assertAlmostEqual(
+            severe_bail / short_bail,
+            heavy.jail_seconds / light.jail_seconds,
+            delta=0.1,
+        )
 
     def test_every_sentence_is_five_minutes_a_nerve_point(self):
         # One rule, so a new crime cannot quietly arrive with a

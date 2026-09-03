@@ -264,7 +264,10 @@ def get_player_by_user_id(user_id):
         maximum_value=player_data[34],
         last_update=player_data[35],
         points_per_tick=HAPPINESS_POINTS_PER_TICK,
-        tick_seconds=HAPPINESS_TICK_SECONDS,
+        tick_seconds=faster_tick(
+            HAPPINESS_TICK_SECONDS,
+            recovery_bonus(residence, facilities, "happiness"),
+        ),
         now=now
     )
 

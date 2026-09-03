@@ -1,28 +1,88 @@
 import random
 
 from database.core.connection import get_connection
+from database.repositories.agents import refuse_if_sealed
+from game.combat.stats import whole
 
 
 BREAKOUT_NERVE_COST = 5
 BREAKOUT_WANTED_PENALTY = 3
 FAILED_BREAKOUT_JAIL_SECONDS = 6 * 60 * 60
 
+# What an hour of play is worth, roughly, at a given level -- the best
+# crime available plus the best job, which is what somebody sitting in a
+# cell is actually losing. Measured against the crime and career
+# catalogues rather than guessed; `tests/production/test_jail_odds.py`
+# recomputes it and fails if the ladder moves away from this.
+BAIL_HOURLY_FLOOR = 430
+BAIL_HOURLY_PER_LEVEL = 45
+BAIL_HOURLY_CEILING = 910
+
+# Bail costs half again what the time is worth. It has to hurt -- it is
+# a sink, and the money is destroyed rather than paid to anybody -- but
+# not so much that springing a friend is irrational, which is what the
+# old flat `level * 100` made it: £2,050 to save a level 20 player five
+# minutes, or £410 a minute against £15 a minute of earning power.
+BAIL_PREMIUM = 1.5
+BAIL_MINIMUM = 100
+
+# The breakout used to read `speed + dexterity` raw against a base of
+# 55, so anything above a combined 60 sat on the 85% cap. Every trained
+# player has been at that cap for months, which meant the two stats the
+# mechanic claims to read stopped mattering almost immediately.
+#
+# A ratio fixes that: skill is weighed against a difficulty set by the
+# target's level, so both inputs matter at every scale and neither ever
+# wins outright.
+BREAKOUT_DIFFICULTY_PER_LEVEL = 40
+BREAKOUT_FLOOR = 20
+BREAKOUT_RANGE = 60
+
 
 class JailInteractionError(ValueError):
     pass
 
 
+def hourly_income_estimate(level):
+    """What an hour is worth to a player at this level."""
+    return min(
+        BAIL_HOURLY_CEILING,
+        BAIL_HOURLY_FLOOR + max(0, int(level)) * BAIL_HOURLY_PER_LEVEL,
+    )
+
+
 def calculate_bail_cost(level, remaining_seconds):
-    minutes = max(1, (remaining_seconds + 59) // 60)
-    return max(250, level * 100 + minutes * 10)
+    """Priced from the time it buys, not from a flat fee per level.
+
+    Rounded up to the minute, so the last few seconds of a sentence
+    still cost something rather than nothing.
+    """
+    minutes = max(1, (max(0, remaining_seconds) + 59) // 60)
+    per_minute = hourly_income_estimate(level) / 60
+
+    return max(
+        BAIL_MINIMUM,
+        int(minutes * per_minute * BAIL_PREMIUM),
+    )
 
 
 def calculate_breakout_chance(helper, target_level):
-    skill = helper["speed"] + helper["dexterity"]
-    return max(
-        15,
-        min(85, 55 + skill - target_level * 2),
-    )
+    """Odds of springing somebody, as a percentage.
+
+    Never certain and never hopeless: a ratio saturates smoothly, so a
+    player with 10,000 speed is meaningfully better than one with 100
+    and neither is ever guaranteed. Whole numbers throughout, because
+    trained stats are floats and this figure is printed on a page.
+    """
+    skill = whole(helper["speed"]) + whole(helper["dexterity"])
+    difficulty = max(1, whole(target_level)) * BREAKOUT_DIFFICULTY_PER_LEVEL
+
+    if skill <= 0:
+        return BREAKOUT_FLOOR
+
+    odds = skill / (skill + difficulty)
+
+    return int(BREAKOUT_FLOOR + BREAKOUT_RANGE * odds)
 
 
 def get_jail_inmates(limit=50):
@@ -311,6 +371,11 @@ def _load_participants(
 
 
 def _validate_interaction(connection, helper, target):
+    # Both jail favours move value between two players, so both are
+    # walled off in both directions. One check covers bail and the
+    # breakout, because both come through here.
+    refuse_if_sealed(connection, "bail", helper["id"], target["id"])
+
     if helper["id"] == target["id"]:
         raise JailInteractionError(
             "You cannot release yourself."

@@ -2428,3 +2428,9 @@ svg.game-icon{display:block!important;flex:0 0 auto!important;width:1.25rem!impo
 .forecourt-notes strong{color:#d7dcda}
 .travel-button--drive{border-color:rgba(185,243,75,.35)}
 .transport-heat{color:#e0a05a;font-style:normal;font-weight:800}
+
+/* ------------------------------------------- what a home actually does */
+.home-effects{display:grid;grid-template-columns:repeat(auto-fit,minmax(5.2rem,1fr));gap:.5rem;margin:.8rem 0}
+.home-effects div{border:1px solid var(--border);border-radius:10px;background:#0b0f11;padding:.5rem .6rem;text-align:center}
+.home-effects dt{color:#7c868b;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.home-effects dd{margin:.2rem 0 0;color:var(--accent);font-size:.95rem;font-weight:900}

@@ -7,7 +7,7 @@ carries the penalty in its own heading so it cannot be missed.
 
 from dataclasses import dataclass
 
-from game.handbook.blocks import Bullets, Note, Text
+from game.handbook.blocks import Bullets, Heading, Note, Text
 
 
 BAN = "Ban"
@@ -113,6 +113,31 @@ RULES = (
                 "wrapper.",
                 "Being asleep while your account plays is the test.",
             )),
+            Heading("Except for declared agents"),
+            Text(
+                "There is one sanctioned way to be a machine here. An "
+                "**agent account** is issued a key by the owner, plays "
+                "through the [API](/api/v1), and is sealed off from "
+                "every other player in both directions."
+            ),
+            Bullets((
+                "An agent **cannot** attack, mug, burgle, bail, "
+                "bounty or trade with anybody.",
+                "**Nor can anybody do those things to an agent.** A "
+                "machine that could be robbed would be a cash machine "
+                "with a heartbeat.",
+                "Agents are kept out of the human standings and have "
+                "[a leaderboard of their own](/api/v1/leaderboard).",
+                "This is enforced in the database, not in the API, so "
+                "there is no way round it from either side.",
+            )),
+            Note(
+                "Running a bot **without** a key is still a ban, and "
+                "asking for a key is free. If you want to point "
+                "something at this game, say so and it becomes "
+                "allowed.",
+                tone="warning",
+            ),
         ),
     ),
     Rule(

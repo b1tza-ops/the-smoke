@@ -33,13 +33,12 @@
         <div class="compact-hud__resources">
             {% set next_level_xp = hud_next_level_xp(player.level) %}
             {% set xp_start = hud_level_xp(player.level) %}
-            {% set xp_percent = (((player.xp - xp_start) / (next_level_xp - xp_start)) * 100)|round if next_level_xp > xp_start else 0 %}
             {% for label, icon, value, maximum, percent, tone in (
-                ("Health", "health", player.health, player.max_health, (player.health / player.max_health * 100)|round if player.max_health else 0, "health"),
-                ("Energy", "energy", player.energy, player.max_energy, (player.energy / player.max_energy * 100)|round if player.max_energy else 0, "energy"),
-                ("Nerve", "nerve", player.nerve, player.max_nerve, (player.nerve / player.max_nerve * 100)|round if player.max_nerve else 0, "nerve"),
-                ("Happiness", "happiness", player.happiness, player.max_happiness, (player.happiness / player.max_happiness * 100)|round if player.max_happiness else 0, "happiness"),
-                ("XP", "xp", player.xp, next_level_xp, xp_percent, "xp")
+                ("Health", "health", player.health, player.max_health, hud_percent(player.health, player.max_health), "health"),
+                ("Energy", "energy", player.energy, player.max_energy, hud_percent(player.energy, player.max_energy), "energy"),
+                ("Nerve", "nerve", player.nerve, player.max_nerve, hud_percent(player.nerve, player.max_nerve), "nerve"),
+                ("Happiness", "happiness", player.happiness, player.max_happiness, hud_percent(player.happiness, player.max_happiness), "happiness"),
+                ("XP", "xp", player.xp, next_level_xp, hud_percent(player.xp - xp_start, next_level_xp - xp_start), "xp")
             ) %}
             {% set forecast = hud_forecast(player, tone) %}
             <div class="hud-meter hud-meter--{{ tone }}"{% if forecast %} tabindex="0" data-tick-seconds="{{ forecast.tick_seconds }}" data-ticks-needed="{{ forecast.ticks_needed }}" data-next-tick="{{ forecast.seconds_to_next_tick }}" data-resource-full="{{ 1 if forecast.is_full else 0 }}"{% endif %}>

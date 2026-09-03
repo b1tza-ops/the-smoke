@@ -309,6 +309,30 @@ class NewGuideAccuracyTests(unittest.TestCase):
         self.assertIn("three contracts a day", prose)
         self.assertIn("at least two of your three", prose)
 
+    def test_the_jail_section_quotes_the_real_breakout_odds(self):
+        """Both jail numbers were written for a game that grew past them.
+
+        Bail charged a flat fee per level and the breakout capped at
+        85% for anyone with a combined 60 in speed and dexterity, which
+        is everybody. The guide describes the repaired versions, so it
+        has to move if they move again.
+        """
+        from database.repositories.jail import (
+            BREAKOUT_FLOOR,
+            BREAKOUT_NERVE_COST,
+            BREAKOUT_RANGE,
+        )
+
+        prose = " ".join(
+            all_strings(GUIDES_BY_SLUG["crime-and-jail"])
+        )
+
+        self.assertIn(f"{BREAKOUT_NERVE_COST} nerve", prose)
+        self.assertIn(
+            f"{BREAKOUT_FLOOR}\u2013{BREAKOUT_FLOOR + BREAKOUT_RANGE}%",
+            prose,
+        )
+
     def test_the_market_guide_quotes_the_real_commission(self):
         from game.economy.fence import FENCE_RATE
         from game.economy.market import (
@@ -553,20 +577,52 @@ class HousingGuideTests(unittest.TestCase):
 
         self.assertEqual(missing, [], f"unrenderable: {missing}")
 
-    def test_it_admits_what_is_not_wired_up(self):
-        # Comfort and garage space are shown on the property page and
-        # read by nothing. While that is true the guide has to say so,
-        # or it is selling something the game does not deliver.
-        prose = " ".join(
-            str(item)
-            for block in self.guide.blocks
-            if isinstance(block, Bullets)
-            for item in block.items
-        )
+    def test_nothing_on_the_property_page_is_decoration_any_more(self):
+        """Checked against the code, not against the guide.
 
-        for unwired in ("Comfort", "Gym gains"):
-            with self.subTest(attribute=unwired):
-                self.assertIn(unwired, prose)
+        Every figure a property advertises used to have a chance of
+        being read by nothing: safe capacity was, then garage space
+        was, then comfort and the swimming pool. Each was found by a
+        reader noticing the guide's own apology rather than by
+        anything failing.
+
+        So this asserts the behaviour instead of the prose: each
+        advertised number must visibly change something. A figure added
+        to `ResidenceDefinition` tomorrow and wired to nothing does not
+        fail here -- but a figure quietly *unwired* does.
+        """
+        from game.housing.service import (
+            RESIDENCES,
+            gym_gain_bonus,
+            recovery_bonus,
+        )
+        from game.housing.safe import capacity_for
+        from game.vehicles.service import garage_capacity
+
+        bottom, top = RESIDENCES[0], RESIDENCES[-1]
+
+        for label, read in (
+            ("energy", lambda home: recovery_bonus(home, (), "energy")),
+            ("nerve", lambda home: recovery_bonus(home, (), "nerve")),
+            ("comfort",
+             lambda home: recovery_bonus(home, (), "happiness")),
+            ("safe", lambda home: capacity_for(home.key)),
+            ("garage", lambda home: garage_capacity(home.key)),
+            ("storage", lambda home: home.storage_capacity),
+        ):
+            with self.subTest(figure=label):
+                self.assertGreater(
+                    read(top),
+                    read(bottom),
+                    f"{label} is advertised and reads the same at "
+                    "both ends of the ladder",
+                )
+
+        self.assertGreater(
+            gym_gain_bonus(("pool",)),
+            0,
+            "the swimming pool is sold for £8,000 and does nothing",
+        )
 
     def test_it_stops_calling_a_figure_dead_once_it_is_wired_up(self):
         """The other half of the same rule.
@@ -586,7 +642,12 @@ class HousingGuideTests(unittest.TestCase):
             for item in block.items
         )
 
-        for wired in ("Safe capacity", "Garage space"):
+        for wired in (
+            "Safe capacity",
+            "Garage space",
+            "has no effect",
+            "decoration",
+        ):
             with self.subTest(attribute=wired):
                 self.assertNotIn(wired, prose)
 

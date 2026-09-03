@@ -82,17 +82,23 @@ def validate_training_energy(gym, energy):
         )
 
 
-def gain_per_train(gym, stat, stat_value=0):
+def gain_per_train(gym, stat, stat_value=0, home_bonus_percent=0):
     """Gain for one train at full happiness.
 
     Multiplied before dividing so the arithmetic stays exact for any
     energy cost, not just the ones that happen to divide cleanly.
+
+    `home_bonus_percent` is what is fitted at home -- the swimming pool
+    and nothing else, at present. It multiplies the whole gain rather
+    than the gym's own figure, so it is worth the same proportion at
+    Camden Community as at The Lock.
     """
     return (
         gym.energy_per_train
         * gym.multiplier_for(stat)
         * GAIN_PER_ENERGY
         * (1 + stat_value / STAT_SCALE)
+        * (1 + max(0, home_bonus_percent) / 100)
     )
 
 
@@ -103,6 +109,7 @@ def training_outcome(
     stat_value=0,
     happiness=None,
     max_happiness=None,
+    home_bonus_percent=0,
 ):
     """Resolve a training batch into gain, energy and happiness spent.
 
@@ -123,6 +130,7 @@ def training_outcome(
             gym,
             stat,
             current_stat,
+            home_bonus_percent,
         ) * training_multiplier_at(
             remaining,
             max_happiness,

@@ -4,6 +4,7 @@ import json
 import random
 
 from database.core.connection import get_connection
+from database.repositories.agents import refuse_if_sealed
 from database.repositories.bounties import (
     BountyClaim,
     bounty_on,
@@ -90,6 +91,11 @@ def get_pvp_targets(attacker_id, district, now=None):
             LEFT JOIN player_pvp_ratings AS rating
                 ON rating.player_id = players.id
             WHERE players.id != ?
+              AND players.id NOT IN (
+                  SELECT players.id FROM agent_keys
+                  JOIN players ON players.user_id = agent_keys.user_id
+                  WHERE agent_keys.revoked_at IS NULL
+              )
               AND (
                   CASE
                       WHEN travel_destination IS NOT NULL
@@ -386,6 +392,9 @@ def reserve_pvp_attack(attacker_id, defender_id, now=None):
     connection = get_connection()
     try:
         connection.execute("BEGIN IMMEDIATE")
+        refuse_if_sealed(
+            connection, "attack", attacker_id, defender_id
+        )
         stale_before = now - timedelta(minutes=2)
         connection.execute(
             """

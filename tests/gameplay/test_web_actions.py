@@ -115,6 +115,8 @@ class WebGameplayTests(unittest.TestCase):
             "strength",
             energy=10,
             gym_key="camden_community",
+            # Nothing fitted at home, so the pool adds nothing.
+            home_bonus_percent=0,
         )
         save_player.assert_called_once_with(player)
 

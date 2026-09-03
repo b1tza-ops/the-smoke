@@ -12,6 +12,7 @@ seller is no longer carrying them.
 import sqlite3
 
 from database.core.connection import get_connection
+from database.repositories.agents import refuse_if_sealed
 from game.economy.market import (
     commission_on,
     seller_proceeds,
@@ -102,6 +103,9 @@ def create_listing(user_id, item_key, quantity, price_each):
             connection,
             user_id,
         )
+        # Agents play the city, not its economy. A machine listing
+        # items would put an endless supply into the human market.
+        refuse_if_sealed(connection, "market", player_id)
 
         if jail_until or hospital_until:
             raise MarketError("You cannot trade while restricted.")
@@ -172,6 +176,7 @@ def buy_listing(user_id, listing_id):
             connection,
             user_id,
         )
+        refuse_if_sealed(connection, "market", buyer_id)
 
         if jail_until or hospital_until:
             raise MarketError("You cannot trade while restricted.")

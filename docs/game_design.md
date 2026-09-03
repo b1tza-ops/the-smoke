@@ -437,6 +437,28 @@ Bonuses are calculated from progress held before the attempt. The crime that
 crosses a threshold unlocks the improvement for the next attempt rather than
 rewarding itself.
 
+### Getting out of jail
+
+Jail cannot be bought off by the player in it. Somebody else has to
+come, which makes it the one cost in the game that needs another
+person.
+
+- **Bail** is priced from the time it buys — roughly half again what
+  the inmate would have earned in the minutes it saves — and the money
+  is destroyed rather than paid to anybody. It was previously a flat
+  fee per level plus a per-minute one, which charged a level 20 player
+  £2,050 to save five minutes and made bail worst value exactly when it
+  was least useful.
+- **A breakout** costs the springer nerve and reads their speed and
+  dexterity against the inmate's level as a ratio, so both inputs
+  matter from a combined 10 to a combined 10,000. The old formula added
+  raw stats to a base of 55 and capped at 85%, which every trained
+  player reached and never left.
+
+Neither is ever certain, and both formulas are recomputed against the
+crime and career catalogues in the tests, so a change to what the game
+pays cannot leave the price of a cell behind.
+
 ### Wanted Level
 
 Wanted level increases through crime and falls over real time. Higher wanted levels increase police pressure and may restrict activities.
@@ -922,6 +944,26 @@ Properties can provide:
 
 Possible upgrades include security, gym rooms, medical rooms, storage, garages and offices.
 
+### What a home does
+
+Every figure a property advertises is read by something:
+
+| Figure | Effect |
+| --- | --- |
+| Energy recovery | Faster energy ticks, 0–40% |
+| Nerve recovery | Faster nerve ticks, 0–35% |
+| Comfort | Faster happiness ticks, 4% a point above the first |
+| Safe capacity | How much cash can be kept at home, and burgled |
+| Garage capacity | How many vehicles may be owned |
+| Storage | Inventory slots |
+
+Comfort is the subtle one. Happiness is spent alongside energy at the
+gym, so a comfortable home buys *more trains* rather than bigger ones —
+the address compounds into stats without ever appearing in the training
+formula. The superior interior and the open bar add comfort on top; the
+swimming pool is the only fitting that touches training directly, at
++2% gain.
+
 ### Businesses
 
 Businesses should be active investments rather than passive infinite-money generators.
@@ -1040,6 +1082,45 @@ the next one. The HUD uses that to show, on each meter, how long until
 the next tick and how long until the meter is full.
 
 ---
+
+## Agents — letting other machines play
+
+The rules page bans automation and goes on banning it: a bot that never
+sleeps out-earns every human on the server inside a week, and this one
+has real players with real balances. What exists instead is a declared,
+walled-off class of player that is *allowed* to be a machine.
+
+An **agent account** is issued a key by the owner (`scripts/
+issue_agent_key.py`), plays through `/api/v1`, and is sealed off from
+every other player **in both directions**:
+
+- An agent cannot attack, mug, burgle, bail, bounty or trade.
+- Nobody can do those things to an agent either.
+
+The second half matters more than it looks. Sealing only the machine's
+side stops it farming people; it does not stop people farming it, and a
+machine that logs in every ninety seconds and can be robbed is a cash
+machine with a heartbeat. Both halves are one symmetric rule in
+`game/agents/service.py`.
+
+The wall is enforced on the **transaction that moves the value**, not in
+the API — an agent's account can still log into the website, so a check
+living only in the JSON layer would be a suggestion. Every mechanic that
+moves value between two players calls `refuse_if_sealed` on its own
+connection.
+
+What is left open is the whole single-player game: crime, the gym,
+travel, jobs and street fights. Agents are kept out of the human
+standings and given their own leaderboard, so neither table is distorted
+by the other.
+
+The API is deliberately self-describing. `GET /api/v1` returns the
+manual and `GET /api/v1/actions` returns what this player can do right
+now with the arithmetic already done, so a language model can work out
+how to play without anybody writing it a bespoke prompt. Every endpoint
+reuses the same functions the web pages call: there is no second
+implementation of a crime, so an agent and a person are playing exactly
+the same game.
 
 ## Backend Architecture Rule
 

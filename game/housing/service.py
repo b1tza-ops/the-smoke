@@ -239,7 +239,55 @@ def purchase_residence(player, residence_key):
 FACILITY_RECOVERY = {
     "energy": {"hot_tub": 5},
     "nerve": {"sauna": 5},
+    # Happiness has no fitting of its own. It runs on comfort, which is
+    # what the superior interior and the open bar buy -- see
+    # `comfort_for` below.
+    "happiness": {},
 }
+
+# Comfort each fitting adds on top of the address. These are the
+# numbers the shop already advertises; until now nothing read them.
+FACILITY_COMFORT = {
+    "interior": 2,
+    "open_bar": 3,
+}
+
+# Happiness recovery, as a percentage, per point of comfort above the
+# first. A tent is comfort 1 and gets nothing, which keeps it level
+# with its 0% energy and nerve bonuses; a penthouse is comfort 10 and
+# gets 36%, which sits alongside its 40% energy. Fitting both the
+# interior and the open bar takes that to 56%.
+#
+# Happiness is what the gym spends alongside energy, so this is the
+# quiet way a good address pays for itself: not more gains per train,
+# but more trains.
+COMFORT_HAPPINESS_PERCENT = 4
+
+# Gym gains each fitting adds, as a percentage. Small on purpose --
+# £8,000 should nudge training, not replace the gym ladder.
+FACILITY_GYM_GAIN = {
+    "pool": 2,
+}
+
+
+def comfort_for(residence, facilities):
+    """How comfortable a home is, fittings included."""
+    from_home = residence.comfort if residence else 0
+
+    return from_home + sum(
+        points
+        for key, points in FACILITY_COMFORT.items()
+        if key in (facilities or ())
+    )
+
+
+def gym_gain_bonus(facilities):
+    """Extra training gain from what is fitted at home, per cent."""
+    return sum(
+        percent
+        for key, percent in FACILITY_GYM_GAIN.items()
+        if key in (facilities or ())
+    )
 
 
 def recovery_bonus(residence, facilities, resource):
@@ -247,9 +295,18 @@ def recovery_bonus(residence, facilities, resource):
 
     Adds the residence's own bonus to anything fitted inside it, so a
     penthouse with a hot tub beats a penthouse without one.
+
+    Happiness is the odd one out: no fitting speeds it directly, so it
+    is driven by comfort instead -- which is what finally makes the
+    comfort figure on every property mean something.
     """
     if resource not in FACILITY_RECOVERY:
         raise HousingError(f"No recovery bonus for {resource!r}.")
+
+    if resource == "happiness":
+        comfort = comfort_for(residence, facilities)
+
+        return max(0, comfort - 1) * COMFORT_HAPPINESS_PERCENT
 
     from_home = getattr(
         residence,

@@ -226,6 +226,34 @@ GUIDES = (
                 "minutes for every point of nerve the job asked of you.",
                 tone="warning",
             ),
+            Heading("Getting out early"),
+            Text(
+                "Jail is the one cost in this game you cannot pay your "
+                "own way out of. Somebody else has to come and get you, "
+                "from the [jail page](/jail), and there are two ways "
+                "they can."
+            ),
+            Table(
+                headers=("Way out", "Costs them", "Works"),
+                rows=(
+                    ("Pay your bail", "Money", "Always"),
+                    ("Break you out", "5 nerve",
+                     "20–80%, on their speed and dexterity"),
+                ),
+            ),
+            Bullets((
+                "**Bail is priced on the time it buys** — about half "
+                "again what you would have earned in the minutes it "
+                "saves you. A nearly finished sentence is nearly free; "
+                "a fresh one is not.",
+                "**A breakout reads the springer's speed and "
+                "dexterity** against your level. It is never certain "
+                "and never hopeless, and training genuinely moves it.",
+                "**A failed breakout costs them** — wanted level, and "
+                "sometimes six hours in a cell of their own.",
+                "Neither works on yourself. Getting out early is a "
+                "favour somebody does you.",
+            )),
             Heading("Loot"),
             Text(
                 "Succeeding at a crime sometimes turns up an item as well "
@@ -1127,8 +1155,10 @@ GUIDES = (
                 rows=(
                     ("Hot tub", "£3,000", "+5% energy recovery"),
                     ("Sauna", "£2,500", "+5% nerve recovery"),
-                    ("Superior interior", "£1,500", "+2 comfort"),
-                    ("Open bar", "£5,000", "+3 comfort"),
+                    ("Superior interior", "£1,500",
+                     "+2 comfort (+8% happiness)"),
+                    ("Open bar", "£5,000",
+                     "+3 comfort (+12% happiness)"),
                     ("Swimming pool", "£8,000", "+2% gym gains"),
                 ),
             ),
@@ -1137,29 +1167,45 @@ GUIDES = (
                 "home already gives you, so a penthouse with a hot tub "
                 "refills energy 45% faster than a tent does."
             ),
-            Heading("What is not working yet"),
+            Heading("Comfort, and why it matters"),
             Text(
-                "Being straight with you, because the property page "
-                "shows these figures and they are not doing anything "
-                "yet:"
+                "Comfort was printed on every property for months and "
+                "read by nothing. It now drives **happiness recovery**, "
+                "which is the quiet reason a good address pays for "
+                "itself: happiness is what the gym spends alongside "
+                "energy, so a comfortable home buys you *more trains*, "
+                "not bigger ones."
             ),
-            Bullets((
-                "**Comfort** is shown but has no effect, so the "
-                "superior interior and the open bar are decoration for "
-                "now.",
-                "**Gym gains** are not affected yet, so the swimming "
-                "pool is decoration too.",
-            )),
+            Table(
+                headers=("Home", "Comfort", "Happiness recovery"),
+                rows=(
+                    ("Tent", "1", "—"),
+                    ("Hostel Room", "2", "+4%"),
+                    ("Converted Van", "3", "+8%"),
+                    ("Council Flat", "4", "+12%"),
+                    ("Council House", "5", "+16%"),
+                    ("City Apartment", "6", "+20%"),
+                    ("Modern House", "8", "+28%"),
+                    ("Penthouse", "10", "+36%"),
+                ),
+                caption=(
+                    "The superior interior and the open bar add 2 and 3 "
+                    "comfort on top, so a fully fitted penthouse "
+                    "recovers happiness 56% faster."
+                ),
+            ),
             Text(
-                "**Garage space** is real: it is how many vehicles you "
-                "may own, and nothing below a van has any. See "
+                "**Garage space** is real too: it is how many vehicles "
+                "you may own, and nothing below a van has any. See "
                 "[Getting Around](/forum/travel)."
             ),
             Note(
-                "Buy on the recovery figures alone. Those are real, "
-                "they are in the table above, and they are the reason "
-                "to climb. The rest will follow.",
-                tone="warning",
+                "Every figure on the property page now does something. "
+                "Energy, nerve and happiness recovery, the safe, the "
+                "garage and comfort are all live — the swimming pool "
+                "adds 2% to gym gains, and that is the only fitting "
+                "that touches training.",
+                tone="tip",
             ),
             Heading("Worth knowing"),
             Bullets((
