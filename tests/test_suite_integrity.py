@@ -1,15 +1,25 @@
 """Does the suite actually run the tests it appears to contain?
 
-Twice now this project has shipped tests that read as coverage and
-executed nothing. `tests/auth/` has no `__init__.py`, so discovery walks
-straight past all five files in it. And four files were written in the
-pytest style -- bare `def test_...` functions with plain `assert` -- which
-`unittest` does not collect at all, so seventeen tests sat green by
-never running. One of them was guarding combat payouts while the payout
-rule was rewritten underneath it.
+Three times now this project has shipped tests that read as coverage and
+executed nothing.
+
+`tests/auth/` had no `__init__.py`, so discovery walked straight past
+all six files in it -- every check on password hashing, login timing,
+the admin rate limit and Turnstile, passing on demand and never once on
+a push. Adding the `__init__.py` was worse: `tests/auth` then shadowed
+the real `auth` package, and seventy-seven unrelated tests died on the
+import instead. The directory is now `tests/authentication/`, which
+collides with nothing, and `test_no_test_directory_shadows_a_real_one`
+below is what stops the next one being reintroduced.
+
+And four files were written in the pytest style -- bare `def test_...`
+functions with plain `assert` -- which `unittest` does not collect at
+all, so seventeen tests sat green by never running. One of them was
+guarding combat payouts while the payout rule was rewritten underneath
+it.
 
 A test that cannot fail is worse than no test, because it reads as
-cover. These two hold the suite honest about its own size.
+cover. These hold the suite honest about its own size.
 """
 
 import unittest
@@ -25,6 +35,17 @@ def test_files():
 
 def module_name(path):
     relative = path.relative_to(PROJECT_ROOT).with_suffix("")
+    return ".".join(relative.parts)
+
+
+def discovered_name(path):
+    """The dotted name discovery gives a file under `-s tests`.
+
+    Rooted at `tests/` rather than at the project, because that is the
+    command CI and the deploy script actually run. Pinning the other
+    rooting would let this pass while the real invocation broke.
+    """
+    relative = path.relative_to(TESTS_ROOT).with_suffix("")
     return ".".join(relative.parts)
 
 
@@ -48,7 +69,8 @@ class SuiteIntegrityTests(unittest.TestCase):
         """No file may sit in tests/ contributing nothing.
 
         Loaded individually, so a directory missing its `__init__.py`
-        is still checked -- that is the other way tests go quiet here.
+        is still checked -- that is one of the ways tests go quiet
+        here.
         """
         loader = unittest.TestLoader()
         empty = []
@@ -67,33 +89,58 @@ class SuiteIntegrityTests(unittest.TestCase):
             "these files run no tests at all: " + ", ".join(empty),
         )
 
+    def test_no_test_directory_shadows_a_real_one(self):
+        """The cause, rather than the symptom.
+
+        `discover -s tests` puts `tests/` on the front of the path, so
+        a package in here named after a real one takes its place for
+        the whole run. `tests/auth/` did exactly that, and the failure
+        it produced -- `No module named 'auth.email_delivery'`, seventy
+        -seven files deep -- points nowhere near the directory that
+        caused it.
+
+        Checked against the source tree rather than a written-down
+        list, so a package added at the top level tomorrow is covered
+        without anybody remembering this test exists.
+        """
+        packages = {
+            entry.name
+            for entry in PROJECT_ROOT.iterdir()
+            if entry.is_dir()
+            and (entry / "__init__.py").exists()
+            and entry != TESTS_ROOT
+        }
+        shadows = sorted(
+            entry.name
+            for entry in TESTS_ROOT.iterdir()
+            if entry.is_dir() and entry.name in packages
+        )
+
+        self.assertEqual(
+            shadows,
+            [],
+            "these directories shadow a real package for the whole "
+            "run: " + ", ".join(shadows),
+        )
+
     def test_discovery_reaches_every_file_the_suite_contains(self):
         """The other half: found individually is not found by CI.
 
         The guard above loads each file by name, so it stays honest
-        about a directory discovery cannot see. That is exactly what
-        `tests/auth/` was -- thirty-six tests that passed when run by
-        hand and had never once run on a push, among them every check
-        on password handling and login timing.
-
-        The directory needs its `__init__.py` *and* a run rooted at the
-        project, or `tests/auth` shadows the real `auth` package and
-        seventy-seven unrelated tests fail on the import. Both halves
-        are pinned here, because either one alone is silent.
+        about a directory discovery cannot see. This one runs the
+        command CI runs and checks that every file turns up in it.
         """
         discovered = {
             type(case).__module__
             for case in _flatten(
-                unittest.TestLoader().discover(
-                    str(TESTS_ROOT), top_level_dir=str(PROJECT_ROOT)
-                )
+                unittest.TestLoader().discover(str(TESTS_ROOT))
             )
         }
-        expected = {
-            module_name(path)
+        missed = sorted(
+            discovered_name(path)
             for path in test_files()
-        }
-        missed = sorted(expected - discovered)
+            if discovered_name(path) not in discovered
+        )
 
         self.assertEqual(
             missed,
@@ -113,23 +160,17 @@ class SuiteIntegrityTests(unittest.TestCase):
             if path.name == Path(__file__).name:
                 continue
 
-            bare = [
-                line.split("(")[0].removeprefix("def ").strip()
-                for line in path.read_text().splitlines()
-                if line.startswith("def test_")
-            ]
-            if bare:
-                offenders.append(
-                    f"{path.relative_to(PROJECT_ROOT)}: {', '.join(bare)}"
-                )
+            for number, line in enumerate(
+                path.read_text().splitlines(), start=1
+            ):
+                if line.startswith("def test_"):
+                    offenders.append(
+                        f"{path.relative_to(PROJECT_ROOT)}:{number}"
+                    )
 
         self.assertEqual(
             offenders,
             [],
-            "module-level test functions are never run by unittest; "
-            "move them onto a TestCase -- " + " | ".join(offenders),
+            "module-level test functions never run under unittest: "
+            + ", ".join(offenders),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

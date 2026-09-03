@@ -118,7 +118,9 @@ The independent static holding page used by the public site. It remains separate
 
 ### `tests/`
 
-- `tests/auth/` covers authentication security and account recovery.
+- `tests/authentication/` covers authentication security and account
+  recovery. Named the long way on purpose: `tests/auth/` shadows the real
+  `auth/` package during discovery.
 - `tests/gameplay/` covers game rules.
 - `tests/persistence/` covers SQLite, migrations, and saved player state.
 

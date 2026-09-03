@@ -2,12 +2,13 @@
 
 Run the complete automated suite from the repository root:
 
-    python3 -m unittest discover -s tests -t . -v
+    python3 -m unittest discover -s tests -v
 
-The `-t .` is load-bearing: it roots discovery at the project so that
-`tests/auth/` is a package rather than something that shadows the real `auth/`
-package. Drop it and thirty-six authentication tests are skipped without a
-word. `tests/test_suite_integrity.py` fails if that ever happens again.
+That is the whole suite. No directory in `tests/` may be named after a
+top-level package — `tests/auth/` once was, and because discovery puts
+`tests/` on the front of the path it replaced the real `auth/` package for the
+entire run. The authentication tests live in `tests/authentication/`, and
+`tests/test_suite_integrity.py` fails if the collision is ever reintroduced.
 
 The same command runs for every push and pull request in GitHub Actions.
 Tests that touch SQLite patch the configured database path and use temporary
@@ -34,6 +35,6 @@ game database.
 
 Run:
 
-    python3 -m unittest discover -s tests -t . -v
+    python3 -m unittest discover -s tests -v
     python3 -m compileall -q app.py main.py auth cli database game tests web
     git diff --check
