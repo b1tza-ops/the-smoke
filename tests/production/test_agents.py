@@ -438,6 +438,96 @@ class AgentApiTests(unittest.TestCase):
             self.assertIn("expected_per_nerve", crime)
             self.assertIn("affordable", crime)
 
+    def test_crimes_publish_the_number_that_actually_decides(self):
+        """Per-nerve is the obvious figure and the wrong optimum.
+
+        It ignores jail, and jail is time during which no nerve can be
+        spent at all. An agent maximising it would be optimising a
+        proxy -- so the hourly figure, which counts the sentence it can
+        expect to serve, is published beside it and named as the one to
+        use.
+        """
+        for crime in self.get("/api/v1/actions")["crimes"]:
+            with self.subTest(crime=crime["key"]):
+                self.assertIn("expected_per_hour", crime)
+                self.assertIn("expected_jail_seconds", crime)
+                self.assertGreater(crime["expected_per_hour"], 0)
+
+        advice = self.get("/api/v1/actions")["how_to_choose"]["crimes"]
+
+        self.assertIn("expected_per_hour", advice)
+
+    def test_the_hourly_figure_counts_the_jail_time(self):
+        """A dangerous crime must be worth less per hour than per nerve.
+
+        If they were the same number the jail term would not be in it,
+        which is the mistake this field exists to avoid.
+        """
+        from game.crime import CRIMES_BY_KEY
+
+        crimes = {
+            crime["key"]: crime
+            for crime in self.get("/api/v1/actions")["crimes"]
+        }
+        riskiest = max(
+            crimes.values(),
+            key=lambda crime: CRIMES_BY_KEY[
+                crime["key"]
+            ].jail_chance,
+        )
+
+        # Twelve nerve an hour is £/nerve x 12 with no jail at all.
+        self.assertLess(
+            riskiest["expected_per_hour"],
+            riskiest["expected_per_nerve"] * 12,
+        )
+
+    def test_the_published_optimum_is_the_one_worth_taking(self):
+        """The two figures agree today. If they stop, this says so.
+
+        The crime rewards were set from a curve, so the harder job
+        currently wins on both measures in every district. That is a
+        property of the current balance rather than of the maths, and
+        an agent following the wrong field would quietly earn less
+        while looking like it was winning.
+        """
+        from game.crime import CRIMES
+
+        for district in {crime.district for crime in CRIMES}:
+            here = [
+                crime for crime in CRIMES if crime.district == district
+            ]
+
+            def per_nerve(crime):
+                return (
+                    (crime.min_reward + crime.max_reward) / 2
+                    * crime.success_chance / 100 / crime.nerve_cost
+                )
+
+            def per_hour(crime):
+                jail = (
+                    crime.jail_chance / 100
+                    * crime.jail_seconds / crime.nerve_cost
+                )
+                return per_nerve(crime) * 3600 / (300 + jail)
+
+            with self.subTest(district=district):
+                self.assertEqual(
+                    max(here, key=per_nerve).key,
+                    max(here, key=per_hour).key,
+                    f"in {district} the two figures now disagree; the "
+                    "guides and /actions need to say which wins",
+                )
+
+    def test_opponents_say_how_badly_it_might_go(self):
+        """Energy was never the question. Losing is."""
+        for opponent in self.get("/api/v1/actions")["opponents"]:
+            with self.subTest(opponent=opponent["key"]):
+                self.assertIn("power_ratio", opponent)
+                self.assertIn("your_health", opponent)
+                self.assertGreater(opponent["power_ratio"], 0)
+                self.assertEqual(len(opponent["your_health"]), 2)
+
     def test_a_crime_pays_what_it_says_it_paid(self):
         """The first version reported £0 on every success.
 
