@@ -15,17 +15,22 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests -t .       # 991 tests
+python3 -m unittest discover -s tests            # 992 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
-**Note the `-t .`, and do not drop it.** It roots discovery at the project
-rather than at `tests/`, which is what lets `tests/auth/` be a package instead
-of a shadow of the real `auth/` one. Without it those thirty-six tests — every
-check on password hashing, login timing and the admin rate limit — are skipped
-in silence, which is how they went a year without running on a push.
-`tests/test_suite_integrity.py` fails if discovery ever stops reaching a file
-again.
+**One command, and it runs everything.** That was not true until recently:
+`tests/auth/` had no `__init__.py`, so discovery walked past all six files in
+it — every check on password hashing, login timing and the admin rate limit,
+passing on demand and never once on a push. Adding the `__init__.py` made it
+worse, because `discover -s tests` puts `tests/` on the front of the path and
+`tests/auth` then *replaced* the real `auth` package, killing seventy-seven
+unrelated tests with `No module named 'auth.email_delivery'`.
+
+The directory is now `tests/authentication/`, which collides with nothing.
+`tests/test_suite_integrity.py` fails if a test directory is ever named after a
+real package again, and names the directory rather than leaving you to work it
+out from an import error seventy-seven files deep.
 
 Only two dependencies — `bcrypt` and `Flask` — and that is on purpose. Catalogues
 are structured Python, not YAML or JSON loaded at runtime. Think hard before
