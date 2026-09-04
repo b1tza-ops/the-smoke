@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 1,093 tests
+python3 -m unittest discover -s tests            # 1,102 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -178,7 +178,14 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
-- **#160** — `/api/v1/actions` now publishes **£ per hour** alongside £ per
+- **#160** — the sitemap sent Google the two hints it discards (`priority`,
+  `changefreq`) and omitted the one it reads (`lastmod`). It now carries real
+  per-page dates, held honest by a content fingerprint: edit a guide without
+  moving its date and the suite fails and prints the line to paste. A wrong
+  `lastmod` is worse than none — Google's stated response to one that moves
+  site-wide on every deploy is to stop trusting the field, which rules out a
+  file modification time.
+  Also: `/api/v1/actions` now publishes **£ per hour** alongside £ per
   nerve, counting the sentence a crime can be expected to earn you. Per-nerve
   is the obvious figure and the wrong optimum: jail is time during which no
   nerve can be spent. The two agree in every district today because the crime
