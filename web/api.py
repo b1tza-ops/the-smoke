@@ -305,6 +305,93 @@ def me():
     )
 
 
+# Nerve refills at twelve an hour, which is the rate every income
+# figure in this game is measured against. Kept here beside the only
+# thing that uses it rather than imported from a test.
+NERVE_PER_HOUR = 12
+SECONDS_PER_NERVE = 3600 / NERVE_PER_HOUR
+
+
+def _crime_view(crime, player):
+    """One crime, with the arithmetic an agent actually needs.
+
+    `expected_per_nerve` is the obvious figure and the wrong one to
+    optimise: it ignores jail, and jail is time during which no nerve
+    can be spent at all. `expected_per_hour` is the number that
+    decides -- nerve regeneration plus the sentence you can expect to
+    serve for attempting this.
+
+    On today's ladder the two agree in every district, because the
+    crime rewards were set from a curve. They are not guaranteed to,
+    and an agent optimising the wrong one would quietly earn less
+    while looking like it was winning, so both are published and the
+    right one is named.
+    """
+    expected = (
+        (crime.min_reward + crime.max_reward) / 2
+        * crime.success_chance / 100
+    )
+    per_nerve = expected / crime.nerve_cost
+    jail_per_nerve = (
+        crime.jail_chance / 100 * crime.jail_seconds / crime.nerve_cost
+    )
+
+    return {
+        "key": crime.key,
+        "name": crime.name,
+        "nerve": crime.nerve_cost,
+        "success_percent": crime.success_chance,
+        "pays": [crime.min_reward, crime.max_reward],
+        "expected": round(expected),
+        "expected_per_nerve": round(per_nerve, 1),
+        "expected_per_hour": round(
+            per_nerve * 3600 / (SECONDS_PER_NERVE + jail_per_nerve)
+        ),
+        "jail_percent": crime.jail_chance,
+        "jail_seconds": crime.jail_seconds,
+        "expected_jail_seconds": round(
+            crime.jail_chance / 100 * crime.jail_seconds
+        ),
+        "affordable": player.nerve >= crime.nerve_cost,
+    }
+
+
+def _opponent_view(opponent, player):
+    """One street opponent, and how badly it might go.
+
+    `affordable` used to mean "you have the energy", which is true and
+    not the question. Losing costs a hospital stay, and an agent at
+    half health has no way to know that from an energy figure -- so the
+    health it is walking in with, and how it compares, are here too.
+    """
+    from game.combat.npc import combat_power, payout_share
+
+    theirs = combat_power(
+        opponent.strength, opponent.defence,
+        opponent.speed, opponent.dexterity,
+    )
+    mine = combat_power(
+        player.strength, player.defence,
+        player.speed, player.dexterity,
+    )
+
+    return {
+        "key": opponent.key,
+        "name": opponent.name,
+        "energy": opponent.energy_cost,
+        "pays": [opponent.cash_min, opponent.cash_max],
+        "xp": opponent.xp_reward,
+        "their_power": round(theirs),
+        "your_power": round(mine),
+        # Below 1.0 you are the stronger. Above it, you are not.
+        "power_ratio": round(theirs / max(1, mine), 2),
+        # What is left of their purse once you have outgrown them.
+        "payout_share": round(payout_share(player, opponent), 2),
+        "your_health": [player.health, player.max_health],
+        "affordable": player.energy >= opponent.energy_cost,
+    }
+
+
 @api.get("/actions")
 @agent_only
 def actions():
@@ -330,25 +417,7 @@ def actions():
     here = player.current_district
 
     crimes = [
-        {
-            "key": crime.key,
-            "name": crime.name,
-            "nerve": crime.nerve_cost,
-            "success_percent": crime.success_chance,
-            "pays": [crime.min_reward, crime.max_reward],
-            "expected": round(
-                (crime.min_reward + crime.max_reward) / 2
-                * crime.success_chance / 100
-            ),
-            "expected_per_nerve": round(
-                (crime.min_reward + crime.max_reward) / 2
-                * crime.success_chance / 100 / crime.nerve_cost,
-                1,
-            ),
-            "jail_percent": crime.jail_chance,
-            "jail_seconds": crime.jail_seconds,
-            "affordable": player.nerve >= crime.nerve_cost,
-        }
+        _crime_view(crime, player)
         for crime in CRIMES
         if crime.district.casefold() == here.casefold()
     ]
@@ -372,14 +441,7 @@ def actions():
     ]
 
     opponents = [
-        {
-            "key": opponent.key,
-            "name": opponent.name,
-            "energy": opponent.energy_cost,
-            "pays": [opponent.cash_min, opponent.cash_max],
-            "xp": opponent.xp_reward,
-            "affordable": player.energy >= opponent.energy_cost,
-        }
+        _opponent_view(opponent, player)
         for opponent in get_district_opponents(here)
     ]
 
@@ -420,6 +482,18 @@ def actions():
             if blocked else
             "Nothing is stopping you acting."
         ),
+        how_to_choose={
+            "crimes": (
+                "Optimise `expected_per_hour`, not "
+                "`expected_per_nerve`. The per-nerve figure ignores "
+                "jail, and jail is time you cannot spend nerve in."
+            ),
+            "fights": (
+                "`power_ratio` above 1.0 means the opponent is "
+                "stronger than you. Losing costs a hospital stay, so "
+                "check `your_health` before a close one."
+            ),
+        },
     )
 
 
