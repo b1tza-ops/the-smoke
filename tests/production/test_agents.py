@@ -438,6 +438,96 @@ class AgentApiTests(unittest.TestCase):
             self.assertIn("expected_per_nerve", crime)
             self.assertIn("affordable", crime)
 
+    def test_crimes_publish_the_number_that_actually_decides(self):
+        """Per-nerve is the obvious figure and the wrong optimum.
+
+        It ignores jail, and jail is time during which no nerve can be
+        spent at all. An agent maximising it would be optimising a
+        proxy -- so the hourly figure, which counts the sentence it can
+        expect to serve, is published beside it and named as the one to
+        use.
+        """
+        for crime in self.get("/api/v1/actions")["crimes"]:
+            with self.subTest(crime=crime["key"]):
+                self.assertIn("expected_per_hour", crime)
+                self.assertIn("expected_jail_seconds", crime)
+                self.assertGreater(crime["expected_per_hour"], 0)
+
+        advice = self.get("/api/v1/actions")["how_to_choose"]["crimes"]
+
+        self.assertIn("expected_per_hour", advice)
+
+    def test_the_hourly_figure_counts_the_jail_time(self):
+        """A dangerous crime must be worth less per hour than per nerve.
+
+        If they were the same number the jail term would not be in it,
+        which is the mistake this field exists to avoid.
+        """
+        from game.crime import CRIMES_BY_KEY
+
+        crimes = {
+            crime["key"]: crime
+            for crime in self.get("/api/v1/actions")["crimes"]
+        }
+        riskiest = max(
+            crimes.values(),
+            key=lambda crime: CRIMES_BY_KEY[
+                crime["key"]
+            ].jail_chance,
+        )
+
+        # Twelve nerve an hour is £/nerve x 12 with no jail at all.
+        self.assertLess(
+            riskiest["expected_per_hour"],
+            riskiest["expected_per_nerve"] * 12,
+        )
+
+    def test_the_published_optimum_is_the_one_worth_taking(self):
+        """The two figures agree today. If they stop, this says so.
+
+        The crime rewards were set from a curve, so the harder job
+        currently wins on both measures in every district. That is a
+        property of the current balance rather than of the maths, and
+        an agent following the wrong field would quietly earn less
+        while looking like it was winning.
+        """
+        from game.crime import CRIMES
+
+        for district in {crime.district for crime in CRIMES}:
+            here = [
+                crime for crime in CRIMES if crime.district == district
+            ]
+
+            def per_nerve(crime):
+                return (
+                    (crime.min_reward + crime.max_reward) / 2
+                    * crime.success_chance / 100 / crime.nerve_cost
+                )
+
+            def per_hour(crime):
+                jail = (
+                    crime.jail_chance / 100
+                    * crime.jail_seconds / crime.nerve_cost
+                )
+                return per_nerve(crime) * 3600 / (300 + jail)
+
+            with self.subTest(district=district):
+                self.assertEqual(
+                    max(here, key=per_nerve).key,
+                    max(here, key=per_hour).key,
+                    f"in {district} the two figures now disagree; the "
+                    "guides and /actions need to say which wins",
+                )
+
+    def test_opponents_say_how_badly_it_might_go(self):
+        """Energy was never the question. Losing is."""
+        for opponent in self.get("/api/v1/actions")["opponents"]:
+            with self.subTest(opponent=opponent["key"]):
+                self.assertIn("power_ratio", opponent)
+                self.assertIn("your_health", opponent)
+                self.assertGreater(opponent["power_ratio"], 0)
+                self.assertEqual(len(opponent["your_health"]), 2)
+
     def test_a_crime_pays_what_it_says_it_paid(self):
         """The first version reported £0 on every success.
 
@@ -539,6 +629,130 @@ class AgentApiTests(unittest.TestCase):
         self.assertEqual(codes[0], 200)
         self.assertEqual(codes[-1], 429)
         limiter.clear()
+
+
+class IssuingScriptTests(unittest.TestCase):
+    """The script an owner actually types at.
+
+    The first thing it ever did in anger was fail on its own usage
+    line: it read `<username>`, which the shell turns into a redirect
+    the moment anybody pastes it. It printed a docstring and left the
+    operator guessing at names.
+
+    Now every path ends somewhere useful -- the placeholder, a typo, an
+    empty command line -- and all three show who actually exists.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.database_path = Path(self.temp_dir.name) / "script.db"
+        self.database_patch = patch(
+            "database.core.connection.DB_PATH", self.database_path
+        )
+        self.database_patch.start()
+        self.addCleanup(self.database_patch.stop)
+        create_tables()
+
+        from database.repositories.players import create_player
+        from database.repositories.users import create_user
+
+        for name in ("paul", "botty"):
+            user_id = create_user(name, f"{name}@example.com", "hash")
+            create_player(user_id, name)
+
+        self.script = self.load()
+
+    def load(self):
+        import importlib.util
+        from pathlib import Path as P
+
+        here = P(__file__).resolve().parents[2]
+        spec = importlib.util.spec_from_file_location(
+            "issue_agent_key", here / "scripts" / "issue_agent_key.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def run_it(self, argv):
+        import contextlib
+        import io
+
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = self.script.main(argv)
+        return code, out.getvalue()
+
+    def test_no_arguments_lists_the_accounts(self):
+        code, output = self.run_it([])
+
+        self.assertEqual(code, 0)
+        self.assertIn("paul", output)
+        self.assertIn("botty", output)
+
+    def test_the_usage_line_is_pasteable(self):
+        """No angle brackets. That is the whole fix.
+
+        `<username>` in a usage line is a shell redirect waiting to
+        happen, and it happened.
+        """
+        commands = [
+            line.strip()
+            for line in self.script.__doc__.splitlines()
+            if line.strip().startswith("python3 scripts/")
+        ]
+
+        self.assertTrue(commands)
+        for command in commands:
+            with self.subTest(command=command):
+                # The prose may still explain the old form. A line
+                # somebody will paste may not contain it.
+                self.assertNotIn("<", command)
+                self.assertNotIn(">", command)
+
+    def test_the_placeholder_is_recognised_and_explained(self):
+        code, output = self.run_it(["<username>", "Claude"])
+
+        self.assertEqual(code, 2)
+        self.assertIn("placeholder", output)
+        self.assertIn("paul", output)
+
+    def test_an_unknown_name_suggests_a_real_one(self):
+        code, output = self.run_it(["botti"])
+
+        self.assertEqual(code, 1)
+        self.assertIn("Did you mean", output)
+        self.assertIn("botty", output)
+
+    def test_issuing_prints_the_key_once_and_says_what_it_costs(self):
+        code, output = self.run_it(["botty", "Claude, first try"])
+
+        self.assertEqual(code, 0)
+        self.assertIn(KEY_PREFIX, output)
+        self.assertIn("cannot be recovered", output)
+        for sealed in AGENT_SEALED_ACTIONS:
+            self.assertIn(sealed, output)
+
+    def test_the_listing_marks_who_is_already_a_machine(self):
+        self.run_it(["botty", "Claude, first try"])
+        _code, output = self.run_it([])
+
+        self.assertIn("agent", output)
+        self.assertIn("Claude, first try", output)
+
+    def test_revoking_puts_the_account_back(self):
+        self.run_it(["botty", "Claude, first try"])
+        code, output = self.run_it(["--revoke", "botty"])
+
+        self.assertEqual(code, 0)
+        self.assertIn("no longer an agent", output)
+
+    def test_revoking_somebody_who_never_was_says_so(self):
+        code, output = self.run_it(["--revoke", "paul"])
+
+        self.assertEqual(code, 1)
+        self.assertIn("was not an agent", output)
 
 
 if __name__ == "__main__":

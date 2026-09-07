@@ -352,6 +352,110 @@ class NewGuideAccuracyTests(unittest.TestCase):
         self.assertEqual(MAXIMUM_LISTING_QUANTITY, 20)
 
 
+class FreshnessTests(unittest.TestCase):
+    """`lastmod` has to be true, or it is worse than absent.
+
+    Google reads `lastmod` and ignores `priority` and `changefreq`, so
+    the sitemap carries the one that is used. But its guidance is
+    equally explicit that a date which is always "now", or which moves
+    on every deploy, gets the field ignored for the whole site -- which
+    rules out a file modification time, since a git checkout stamps
+    every file at deploy.
+
+    So each date is written down with a fingerprint of the guide beside
+    it, and this recomputes the fingerprint. Edit a guide without
+    moving its date and this fails, which is what makes the date honest
+    rather than remembered.
+    """
+
+    def test_every_guide_has_a_date(self):
+        from game.handbook.freshness import GUIDE_FRESHNESS
+
+        missing = sorted(
+            guide.slug for guide in GUIDES
+            if guide.slug not in GUIDE_FRESHNESS
+        )
+
+        self.assertEqual(
+            missing,
+            [],
+            "these guides have no last-changed date: "
+            + ", ".join(missing),
+        )
+
+    def test_no_date_is_claimed_for_a_guide_that_is_gone(self):
+        from game.handbook.freshness import GUIDE_FRESHNESS
+
+        slugs = {guide.slug for guide in GUIDES}
+        orphans = sorted(set(GUIDE_FRESHNESS) - slugs)
+
+        self.assertEqual(orphans, [])
+
+    def test_a_changed_guide_must_carry_a_changed_date(self):
+        from game.handbook.freshness import (
+            GUIDE_FRESHNESS,
+            fingerprint,
+        )
+
+        stale = []
+
+        for guide in GUIDES:
+            recorded = GUIDE_FRESHNESS.get(guide.slug)
+            if recorded is None:
+                continue
+
+            _date, recorded_print = recorded
+            now = fingerprint(guide)
+
+            if now != recorded_print:
+                stale.append(f'"{guide.slug}": ("<today>", "{now}")')
+
+        self.assertEqual(
+            stale,
+            [],
+            "these guides changed without their date moving. Paste "
+            "today's date and the new fingerprint into "
+            "game/handbook/freshness.py:\n  " + "\n  ".join(stale),
+        )
+
+    def test_the_fingerprint_notices_a_single_edited_word(self):
+        """Otherwise the guard above proves nothing."""
+        from dataclasses import replace
+
+        from game.handbook.blocks import Text
+        from game.handbook.freshness import fingerprint
+
+        guide = GUIDES[0]
+        edited = replace(
+            guide,
+            blocks=guide.blocks + (Text("One more sentence."),),
+        )
+        retitled = replace(guide, title=guide.title + "!")
+
+        self.assertNotEqual(fingerprint(guide), fingerprint(edited))
+        self.assertNotEqual(fingerprint(guide), fingerprint(retitled))
+
+    def test_the_fingerprint_is_stable_across_runs(self):
+        from game.handbook.freshness import fingerprint
+
+        for guide in GUIDES:
+            with self.subTest(guide=guide.slug):
+                self.assertEqual(
+                    fingerprint(guide), fingerprint(guide)
+                )
+
+    def test_the_dates_are_dates(self):
+        from datetime import date
+
+        from game.handbook.freshness import GUIDE_FRESHNESS
+
+        for slug, (when, _print) in GUIDE_FRESHNESS.items():
+            with self.subTest(guide=slug):
+                self.assertEqual(
+                    date.fromisoformat(when).isoformat(), when
+                )
+
+
 class RuleTests(unittest.TestCase):
     def test_every_rule_states_a_penalty(self):
         for rule in RULES:

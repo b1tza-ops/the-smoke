@@ -151,6 +151,77 @@ class DiscoverabilityTests(unittest.TestCase):
         for location in locations:
             self.assertTrue(location.startswith("http"), location)
 
+    def test_every_entry_carries_the_hint_google_reads(self):
+        """`lastmod` is used; `priority` and `changefreq` are not.
+
+        The sitemap sent the two Google discards and omitted the one it
+        reads. Every URL now carries a date, and the dates are held
+        honest by a fingerprint -- see game/handbook/freshness.py, and
+        `FreshnessTests` for the guard.
+        """
+        from xml.etree import ElementTree
+
+        body = self.get("/sitemap.xml").get_data(as_text=True)
+        root = ElementTree.fromstring(body)
+        namespace = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+        urls = list(root.iter(f"{namespace}url"))
+        dates = list(root.iter(f"{namespace}lastmod"))
+
+        self.assertEqual(len(dates), len(urls))
+        self.assertNotIn("<priority>", body)
+        self.assertNotIn("<changefreq>", body)
+
+    def test_the_dates_are_valid_and_not_in_the_future(self):
+        """A date Google cannot parse is worse than no date at all."""
+        from datetime import date
+        from xml.etree import ElementTree
+
+        root = ElementTree.fromstring(
+            self.get("/sitemap.xml").get_data(as_text=True)
+        )
+        namespace = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+        for element in root.iter(f"{namespace}lastmod"):
+            with self.subTest(lastmod=element.text):
+                stamped = date.fromisoformat(element.text)
+
+                self.assertEqual(stamped.isoformat(), element.text)
+                self.assertLessEqual(stamped, date.today())
+
+    def test_a_guide_carries_its_own_date_not_the_site_wide_one(self):
+        """Otherwise every page claims to change whenever any does.
+
+        Google's stated response to a lastmod that moves for the whole
+        site at once is to stop trusting the field entirely.
+        """
+        from xml.etree import ElementTree
+
+        from game.handbook.freshness import GUIDE_FRESHNESS
+
+        root = ElementTree.fromstring(
+            self.get("/sitemap.xml").get_data(as_text=True)
+        )
+        namespace = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+        by_location = {
+            element.findtext(f"{namespace}loc"):
+                element.findtext(f"{namespace}lastmod")
+            for element in root.iter(f"{namespace}url")
+        }
+
+        for guide in GUIDES:
+            with self.subTest(guide=guide.slug):
+                url = next(
+                    location for location in by_location
+                    if location.endswith(f"/forum/{guide.slug}")
+                )
+
+                self.assertEqual(
+                    by_location[url],
+                    GUIDE_FRESHNESS[guide.slug][0],
+                )
+
     def test_the_sitemap_never_offers_a_private_page(self):
         body = self.get("/sitemap.xml").get_data(as_text=True)
 

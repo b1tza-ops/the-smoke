@@ -246,6 +246,42 @@ def agent_player_ids():
     return {row[0] for row in rows}
 
 
+def accounts(limit=200):
+    """Every account with a character, and whether it is a machine.
+
+    For the issuing script, which otherwise leaves an operator
+    guessing at names -- the first thing anybody typed at it was the
+    placeholder from its own usage line.
+    """
+    connection = get_connection()
+    try:
+        rows = connection.execute(
+            """
+            SELECT users.username, players.name, players.level,
+                   agent_keys.label, agent_keys.revoked_at
+            FROM users
+            JOIN players ON players.user_id = users.id
+            LEFT JOIN agent_keys ON agent_keys.user_id = users.id
+            ORDER BY users.username COLLATE NOCASE ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    finally:
+        connection.close()
+
+    return [
+        {
+            "username": row[0],
+            "character": row[1],
+            "level": row[2],
+            "agent_label": row[3] if row[4] is None else None,
+            "is_agent": row[3] is not None and row[4] is None,
+        }
+        for row in rows
+    ]
+
+
 def roster(limit=50):
     """The agents on the server, for their own leaderboard."""
     connection = get_connection()

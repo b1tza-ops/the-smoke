@@ -32,6 +32,10 @@ from game.handbook import (
     inline as handbook_inline,
     sections as handbook_sections,
 )
+from game.handbook.freshness import (
+    HANDBOOK_EPOCH,
+    last_changed as guide_last_changed,
+)
 from game.casino import (
     MINIMUM_BET as CASINO_MINIMUM_BET,
     MINIMUM_LEVEL as CASINO_MINIMUM_LEVEL,
@@ -2124,13 +2128,21 @@ def loan_shark():
 # in Search Console and earning some inbound links does that. These just
 # make sure that once a crawler does arrive, it can find everything.
 
+# Google ignores <priority> and <changefreq> outright and reads
+# <lastmod>, so the sitemap now carries the one it uses and drops the
+# two it does not. The dates are real: see game/handbook/freshness.py
+# for why a wrong lastmod is worse than none.
 SEO_PUBLIC_PATHS = (
-    ("/", "1.0", "daily"),
-    ("/forum", "0.9", "weekly"),
-    ("/rules", "0.7", "monthly"),
-    ("/register", "0.6", "monthly"),
-    ("/login", "0.4", "monthly"),
+    "/",
+    "/forum",
+    "/rules",
+    "/register",
+    "/login",
 )
+
+# The public pages that are not guides change when the site does, not
+# on a content schedule of their own.
+SITE_LAST_CHANGED = HANDBOOK_EPOCH
 
 
 @app.route("/robots.txt")
@@ -2160,23 +2172,24 @@ def robots():
 
 @app.route("/sitemap.xml")
 def sitemap():
-    """Every public URL, including all eleven guides.
+    """Every public URL, with the date its content last changed.
 
     The guides are the only substantial prose on the site and the only
     thing that could plausibly rank for anything, so they are listed
     individually rather than left to be discovered by following links.
     """
+    root = url_for("home", _external=True)
     urls = [
-        (url_for("home", _external=True).rstrip("/") + path
-         if path != "/" else url_for("home", _external=True),
-         priority, frequency)
-        for path, priority, frequency in SEO_PUBLIC_PATHS
+        (
+            root if path == "/" else root.rstrip("/") + path,
+            SITE_LAST_CHANGED,
+        )
+        for path in SEO_PUBLIC_PATHS
     ]
     urls.extend(
         (
             url_for("forum_guide", slug=guide.slug, _external=True),
-            "0.8",
-            "monthly",
+            guide_last_changed(guide),
         )
         for guide in HANDBOOK_GUIDES
     )
@@ -2184,10 +2197,9 @@ def sitemap():
     entries = "".join(
         "<url>"
         f"<loc>{escape(location)}</loc>"
-        f"<changefreq>{frequency}</changefreq>"
-        f"<priority>{priority}</priority>"
+        f"<lastmod>{escape(changed)}</lastmod>"
         "</url>"
-        for location, priority, frequency in urls
+        for location, changed in urls
     )
 
     return Response(
