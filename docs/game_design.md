@@ -1083,6 +1083,30 @@ the next tick and how long until the meter is full.
 
 ---
 
+## While you were out
+
+The Smoke does a lot to a player who is not looking: rent accrues,
+interest compounds, somebody empties the safe, somebody puts a price on
+the head, a shift finishes. All of it worked. None of it was visible on
+the page a session actually starts on.
+
+The dashboard now carries a digest, ordered worst-first — what is
+costing money above what is paying it. It is an **alert, not an
+inbox**: it shows unread notices and does not mark them read, because a
+player who glances at the dashboard must not lose the detail. `/pvp`
+remains the place that clears them.
+
+Every figure is read without settling anything. Rent, loan interest and
+the contract board all normally advance a clock inside `BEGIN
+IMMEDIATE`, which is right where those live and wrong on the busiest
+page in the game — so `database/repositories/digest.py` holds read-only
+twins, following the precedent `players._rent_owed` already set.
+
+The quiet one is rent. Arrears suspend everything the home gives — no
+faster recovery, no extra carrying space — and that is enforced on
+every page load and was announced on none of them. The symptom was a
+game that had silently got slower for reasons nobody could see.
+
 ## Agents — letting other machines play
 
 The rules page bans automation and goes on banning it: a bot that never

@@ -15,7 +15,7 @@ else, including three things that have already caused live incidents.
 
 ```bash
 python3 app.py                                   # serve on :5000
-python3 -m unittest discover -s tests            # 1,102 tests
+python3 -m unittest discover -s tests            # 1,127 tests
 python3 -m compileall -q app.py main.py auth cli database game tests web scripts
 ```
 
@@ -161,6 +161,12 @@ To sweep the whole suite under those rules:
 Newest first. Every entry is a merged PR; `git log` has the detail.
 
 **Live fixes**
+- **#161** — `/pvp` returned 500 for anybody who had been burgled or had a
+  bounty posted on them. Migration 052 made `pvp_notifications.attack_id`
+  nullable on purpose, because a burglary has no attack to point at; the
+  template went on building `url_for('pvp_report', attack_id=...)` out of it
+  regardless, and that raises on None. The page that would have told them
+  about it was the page that crashed.
 - **#155** — four holes found auditing the live site: the admin login had no rate
   limit, a missing account answered faster than a wrong password (279ms against
   1ms, which enumerates the user list), the session secret could fall back to a
@@ -178,6 +184,12 @@ Newest first. Every entry is a merged PR; `git log` has the detail.
   040 to repair accounts already stranded.
 
 **Features**
+- **#161** — a "while you were out" panel on the dashboard. Four mechanics
+  tell a player something happened to them and every one of them surfaced on
+  exactly one page. Rent arrears, an overdue loan, a finished shift and
+  anybody who came for you now land on the page a session starts on, ordered
+  worst-first. It is an alert rather than an inbox: it does not consume the
+  notices it points at.
 - **#160** — the sitemap sent Google the two hints it discards (`priority`,
   `changefreq`) and omitted the one it reads (`lastmod`). It now carries real
   per-page dates, held honest by a content fingerprint: edit a guide without

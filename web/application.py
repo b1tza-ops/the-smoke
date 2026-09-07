@@ -205,6 +205,8 @@ from database.repositories.jail import (
     get_jail_inmates,
 )
 
+from database.repositories.digest import facts_for as digest_facts_for
+from game.player.digest import build as build_digest
 from database.repositories.players import (
     create_player,
     get_player_by_user_id,
@@ -1500,13 +1502,66 @@ def home():
         "next_level_xp": next_level_xp,
     }
 
+    # What happened while they were away. Every one of these already
+    # worked and none of them was visible on the page a session starts
+    # on -- notifications surfaced only on /pvp, and rent suspending
+    # the home's bonuses was announced nowhere at all.
+    facts = digest_facts_for(player)
+    shift = get_shift_state(player)
+
     return render_template(
         "dashboard.html",
         player=player,
         dashboard=dashboard,
+        digest=build_digest(
+            rent_owed=facts["rent_owed"],
+            daily_rent=facts["daily_rent"],
+            loan_balance=facts["loan_balance"],
+            loan_overdue=facts["loan_overdue"],
+            missed_payments=facts["missed_payments"],
+            notifications=facts["notifications"],
+            shift_ready=bool(shift and shift.ready_to_complete),
+            shift_pay=_shift_pay(shift),
+            jail_seconds=_seconds_until(player.jail_until),
+            hospital_seconds=_seconds_until(player.hospital_until),
+        ),
         online_players=get_online_player_count(),
         prologue=prologue,
     )
+
+
+def _shift_pay(shift):
+    """What a finished shift is worth, from the role it was worked in."""
+    if shift is None:
+        return 0
+
+    from game.jobs.definitions import get_job_role
+
+    role = get_job_role(shift.role_key)
+
+    return role.salary if role else 0
+
+
+def _seconds_until(stamp):
+    """How long a restriction has left, or zero if it has none."""
+    if not stamp:
+        return 0
+
+    from datetime import datetime, timezone
+
+    from game.player.regeneration import parse_timestamp
+
+    moment = parse_timestamp(stamp)
+
+    if moment is None:
+        return 0
+
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+
+    return max(0, int(
+        (moment - datetime.now(timezone.utc)).total_seconds()
+    ))
 
 
 @app.route("/operations", methods=["GET", "POST"])
