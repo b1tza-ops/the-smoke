@@ -62,7 +62,7 @@ def _load_player(connection, user_id, at_the_table=True):
 
 def _settle(connection, player_id, game, bet, payout, detail):
     """Move the net and log the round. Caller owns the transaction."""
-    payout = capped_payout(payout)
+    payout = capped_payout(payout, bet)
     net = payout - bet
     connection.execute(
         "UPDATE players SET money = money + ? WHERE id = ?",
@@ -226,7 +226,7 @@ def get_open_table(user_id):
 
 def _settle_table(connection, player_id, state, already_staked):
     """Pay the table out and log it. Returns what was returned."""
-    payout = capped_payout(state.payout)
+    payout = capped_payout(state.payout, state.staked)
     outstanding = state.staked - already_staked
     connection.execute(
         "UPDATE players SET money = money + ? WHERE id = ?",

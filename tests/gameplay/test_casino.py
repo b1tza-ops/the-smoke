@@ -371,9 +371,12 @@ class BlackjackRuleTests(unittest.TestCase):
         """Never doubling and standing on 17 costs a few percent.
 
         That is the floor, not the headline: playing the doubles, splits
-        and surrenders properly brings it under half a percent. This test
-        only pins that the game is neither beatable by accident nor a
-        mugging.
+        and surrenders properly brings it to about a third of a percent.
+        Measured over 5,000,000 hands the naive edge is
+        `NAIVE_STRATEGY_EDGE`; four thousand hands here carry a standard
+        error of about 1.5 points, so the band is wide on purpose and
+        the assertion is only that the game is neither beatable by
+        accident nor a mugging.
         """
         rng = random.Random(99)
         staked = returned = 0
@@ -393,6 +396,166 @@ class BlackjackRuleTests(unittest.TestCase):
         edge = 1 - returned / staked
         self.assertGreater(edge, 0, "the player is beating the house")
         self.assertLess(edge, 0.10, "standing on 17 should not be punished")
+        self.assertAlmostEqual(
+            edge, blackjack.NAIVE_STRATEGY_EDGE, delta=0.05,
+            msg="the naive floor has moved away from the recorded figure",
+        )
+
+
+def _cards(total):
+    """Two or more ace-free cards adding up to `total`.
+
+    Ace-free so the total is unambiguous, and never two cards making 21,
+    because that would be a natural and settle down a different path.
+    """
+    if total <= 11:
+        values = [2, total - 2]
+    elif total <= 20:
+        values = [10, total - 10]
+    else:
+        values = [10, 6, total - 16]
+
+    return tuple(
+        f"{'10' if value == 10 else value}{suit}"
+        for value, suit in zip(values, "SHDC")
+    )
+
+
+class BlackjackSettlementTests(unittest.TestCase):
+    """Every way a hand can finish, walked exhaustively.
+
+    The house edge is a consequence of this table, which is why the
+    table is what gets tested rather than the edge. Sampling is how the
+    published figure was found -- nineteen million hands of it -- but a
+    unit test can only afford a few thousand, and a few thousand cannot
+    tell 0.35% from 1%. These assertions are exact and cost nothing.
+    """
+
+    BET = 100
+
+    def hand(self, total, **fields):
+        return blackjack.Hand(cards=_cards(total), bet=self.BET, **fields)
+
+    def settled(self, hand, dealer_total, dealer_natural=False):
+        return blackjack._settle_hand(
+            hand, dealer_total, dealer_total > 21, dealer_natural
+        )
+
+    def test_a_bust_hand_pays_nothing_whatever_the_dealer_does(self):
+        for player in range(22, 27):
+            for dealer in range(17, 27):
+                result = self.settled(self.hand(player), dealer)
+                self.assertEqual(result.payout, 0, f"{player} v {dealer}")
+                self.assertEqual(result.outcome, blackjack.PLAYER_BUST)
+
+    def test_every_standing_hand_settles_against_every_dealer_total(self):
+        for player in range(4, 22):
+            for dealer in range(17, 27):
+                result = self.settled(self.hand(player), dealer)
+
+                if dealer > 21:
+                    expected, outcome = self.BET * 2, blackjack.DEALER_BUST
+                elif player > dealer:
+                    expected, outcome = self.BET * 2, blackjack.PLAYER_WIN
+                elif player < dealer:
+                    expected, outcome = 0, blackjack.DEALER_WIN
+                else:
+                    expected, outcome = self.BET, blackjack.PUSH
+
+                self.assertEqual(
+                    result.payout, expected,
+                    f"player {player} against dealer {dealer}",
+                )
+                self.assertEqual(result.outcome, outcome)
+
+    def test_a_dealer_natural_beats_every_hand_that_is_not_one(self):
+        for player in range(4, 22):
+            result = self.settled(
+                self.hand(player), 21, dealer_natural=True
+            )
+            self.assertEqual(result.payout, 0, f"player {player}")
+            self.assertEqual(result.outcome, blackjack.DEALER_WIN)
+
+    def test_a_natural_pays_three_to_two_against_everything_but_a_natural(self):
+        natural = blackjack.Hand(cards=("AS", "KH"), bet=self.BET)
+        for dealer in range(17, 27):
+            result = self.settled(natural, dealer)
+            self.assertEqual(result.outcome, blackjack.PLAYER_BLACKJACK)
+            self.assertEqual(result.payout, self.BET + self.BET * 3 // 2)
+
+        pushed = self.settled(natural, 21, dealer_natural=True)
+        self.assertEqual(pushed.outcome, blackjack.PUSH)
+        self.assertEqual(pushed.payout, self.BET)
+
+    def test_a_doubled_hand_settles_on_the_doubled_stake(self):
+        doubled = blackjack.Hand(
+            cards=_cards(20), bet=self.BET * 2, doubled=True
+        )
+        self.assertEqual(self.settled(doubled, 19).payout, self.BET * 4)
+        self.assertEqual(self.settled(doubled, 21).payout, 0)
+        self.assertEqual(self.settled(doubled, 20).payout, self.BET * 2)
+
+    def test_a_split_twenty_one_settles_as_a_plain_twenty_one(self):
+        """Not a natural, so it wins even money and pushes a dealer 21."""
+        split = blackjack.Hand(
+            cards=("AS", "KH"), bet=self.BET, from_split=True
+        )
+        self.assertEqual(self.settled(split, 20).payout, self.BET * 2)
+        self.assertEqual(self.settled(split, 21).payout, self.BET)
+
+    def test_the_published_edge_is_the_one_the_handbook_shows(self):
+        """The guide reads the figure from the code, not from memory.
+
+        This is the assertion the old table failed: it advertised 99.8%
+        beside a game that pays 99.65%, and nothing anywhere noticed.
+        """
+        from game.handbook.guides import GUIDES
+
+        guide = next(g for g in GUIDES if g.slug == "the-casino")
+        rows = next(
+            block.rows for block in guide.blocks
+            if hasattr(block, "rows") and block.headers[0] == "Game"
+        )
+        published = {row[0]: (row[1], row[2]) for row in rows}
+
+        self.assertEqual(
+            published["Fruit Machines"],
+            (f"{slots.return_to_player() * 100:.1f}%",
+             f"{(1 - slots.return_to_player()) * 100:.1f}%"),
+        )
+        self.assertEqual(
+            published["Blackjack"],
+            (f"{(1 - blackjack.BASIC_STRATEGY_EDGE) * 100:.2f}%",
+             f"{blackjack.BASIC_STRATEGY_EDGE * 100:.2f}%"),
+        )
+
+        low, high = keno.return_range()
+        self.assertIn(f"{low * 100:.1f}%", published["Keno"][0])
+        self.assertIn(f"{high * 100:.1f}%", published["Keno"][0])
+
+    def test_the_casino_pages_show_the_same_figure_as_the_guide(self):
+        """Four places quoted this number and one of them was wrong.
+
+        The guide, the table card on the casino index, and the header
+        over the house rules all print the blackjack edge. They now read
+        it from the module, and this is what stops one of them being
+        typed back in.
+        """
+        from web.application import CASINO_RETURNS, CASINO_TABLES
+
+        edge = f"{blackjack.BASIC_STRATEGY_EDGE * 100:.2f}%"
+        card = next(t for t in CASINO_TABLES if t["key"] == "blackjack")
+
+        self.assertIn(edge, card["edge"])
+        self.assertIn(edge, CASINO_RETURNS["blackjack"])
+        self.assertIn(
+            f"{(1 - slots.return_to_player()) * 100:.1f}%",
+            next(t for t in CASINO_TABLES if t["key"] == "slots")["edge"],
+        )
+        self.assertIn(
+            f"{slots.return_to_player() * 100:.1f}%",
+            CASINO_RETURNS["slots"],
+        )
 
 
 class BetLimitTests(unittest.TestCase):
@@ -423,8 +586,37 @@ class BetLimitTests(unittest.TestCase):
                     validate_bet(10, bet, 10_000)
 
     def test_the_table_maximum_caps_a_freak_payout(self):
-        self.assertEqual(capped_payout(MAXIMUM_PAYOUT * 3), MAXIMUM_PAYOUT)
-        self.assertEqual(capped_payout(50), 50)
+        self.assertEqual(
+            capped_payout(MAXIMUM_PAYOUT * 3, 100), MAXIMUM_PAYOUT + 100
+        )
+        self.assertEqual(capped_payout(50, 10), 50)
+
+    def test_the_ceiling_bounds_the_winnings_not_the_stake(self):
+        """The house caps what it mints, not what it was handed."""
+        self.assertEqual(
+            capped_payout(MAXIMUM_PAYOUT * 4, 400_000),
+            400_000 + MAXIMUM_PAYOUT,
+        )
+
+    def test_a_losing_or_pushing_table_is_never_topped_up(self):
+        self.assertEqual(capped_payout(0, 5_000), 0)
+        self.assertEqual(capped_payout(5_000, 5_000), 5_000)
+
+    def test_a_winning_table_never_returns_less_than_it_staked(self):
+        """The bug this guards: a blackjack table is not a single bet.
+
+        Split to four hands and doubled on each it holds eight times the
+        opening stake, so capping the gross return could trim a table
+        that won every hand to below what the player put down. Walked
+        across every level a player could ever reach.
+        """
+        for level in (MINIMUM_LEVEL, 10, 50, 125, 126, 200, 400, 1_000):
+            staked = maximum_bet(level) * 8      # four hands, each doubled
+            for gross in (staked * 2, staked * 3, MAXIMUM_PAYOUT * 9):
+                self.assertGreaterEqual(
+                    capped_payout(gross, staked), staked,
+                    f"level {level} wins every hand and loses money",
+                )
 
 
 class CasinoMoneyTests(unittest.TestCase):
