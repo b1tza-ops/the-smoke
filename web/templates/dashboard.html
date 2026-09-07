@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ player.name }} · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='comfort-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='digest-1') }}">
 </head>
 
 <body class="dashboard-page">
@@ -32,6 +32,20 @@
         {% include "_player_hud.html" %}
 
         <main class="dashboard-main">
+            {% if digest %}
+            <section class="digest" aria-labelledby="digest-heading">
+                <h2 id="digest-heading" class="digest__heading">While you were out</h2>
+                {% for entry in digest %}
+                <article class="digest-card digest-card--{{ entry.tone }}">
+                    <div class="digest-card__body">
+                        <strong>{{ entry.headline }}</strong>
+                        <p>{{ entry.detail }}</p>
+                    </div>
+                    <a class="digest-card__action" href="{{ entry.link }}">{{ entry.link_text }} &rarr;</a>
+                </article>
+                {% endfor %}
+            </section>
+            {% endif %}
             <section class="player-hero" aria-labelledby="player-name">
                 <div class="player-hero__identity">
                     <p class="eyebrow">Active character</p>
