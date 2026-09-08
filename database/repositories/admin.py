@@ -1,6 +1,11 @@
+import random
 import sqlite3
+from datetime import datetime, timezone
 
 from database.core.connection import get_connection
+from game.admin.mischief import AdminActionError, get_prank
+from game.player.status import MAX_WANTED_LEVEL
+from game.world.districts import DISTRICTS, get_district
 
 
 def get_admin_player_overview(search="", status="all"):
@@ -328,5 +333,220 @@ def clear_player_restrictions(user_id):
             "duration_minutes": 0,
             "until": None,
         }
+    finally:
+        connection.close()
+
+
+# --------------------------------------------------- money and mischief
+
+# Which live columns a prank may move, and what caps each one. Energy,
+# nerve and happiness are capped per player rather than globally -- a
+# top-up must not push somebody above the ceiling their level earned.
+_RESOURCE_CAPS = {
+    "energy": "max_energy",
+    "nerve": "max_nerve",
+    "happiness": "max_happiness",
+    "health": "max_health",
+}
+
+
+def _notify(connection, player_id, message, now=None):
+    """Tell the player something happened to them.
+
+    `attack_id` is null, which the dashboard digest and `/pvp` both
+    handle -- that is the same channel a burglary or a bounty uses, so
+    an owner's prank arrives looking like part of the game rather than
+    like a glitch.
+    """
+    stamp = (now or datetime.now(timezone.utc)).isoformat()
+    connection.execute(
+        """
+        INSERT INTO pvp_notifications (
+            player_id, attack_id, message, created_at
+        ) VALUES (?, NULL, ?, ?)
+        """,
+        (player_id, message, stamp),
+    )
+
+
+def _player_row(connection, user_id):
+    row = connection.execute(
+        """
+        SELECT id, name, money, energy, max_energy, nerve, max_nerve,
+               happiness, max_happiness, health, max_health,
+               wanted_level, current_district
+        FROM players
+        WHERE user_id = ?
+        """,
+        (user_id,),
+    ).fetchone()
+
+    if row is None:
+        raise AdminActionError("This account has no character.")
+
+    return row
+
+
+def adjust_player_money(user_id, amount, message=None):
+    """Put money in a player's pocket, or take it out.
+
+    `BEGIN IMMEDIATE` like every other money path in the game: this runs
+    while the player is very likely mid-session, and an admin top-up
+    landing in the middle of somebody's blackjack hand must not race it.
+
+    A player is never pushed below zero. Asking to take more than they
+    have takes what is there and says so, rather than inventing a debt
+    the rest of the game has no concept of.
+    """
+    amount = int(amount)
+
+    connection = get_connection()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = _player_row(connection, user_id)
+        player_id, name, before = row[0], row[1], row[2]
+
+        after = max(0, before + amount)
+        moved = after - before
+
+        connection.execute(
+            "UPDATE players SET money = ? WHERE id = ?", (after, player_id)
+        )
+
+        if message:
+            _notify(connection, player_id, message)
+
+        connection.commit()
+
+        return {
+            "name": name,
+            "requested": amount,
+            "moved": moved,
+            "before": before,
+            "after": after,
+            "clamped": moved != amount,
+        }
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def _scatter_district(current, rng):
+    """Somewhere that is not where they are now.
+
+    `DISTRICTS` is a tuple of definitions rather than a key map, which
+    is worth reading twice: iterating it yields whole districts, and
+    binding one of those into an UPDATE fails at the driver rather than
+    anywhere useful.
+    """
+    elsewhere = [
+        district.key for district in DISTRICTS if district.key != current
+    ]
+
+    return rng.choice(elsewhere) if elsewhere else current
+
+
+def apply_prank(user_id, prank_key, custom_message="", rng=None):
+    """Do something to a player, and tell them it happened.
+
+    The telling is not optional. Every branch below ends in a message,
+    because a change nobody explains reads as a broken game rather than
+    a wind-up -- and a player cannot tell the difference from where they
+    are sitting.
+    """
+    prank = get_prank(prank_key)
+
+    if prank is None:
+        raise AdminActionError("That is not one of the options.")
+
+    rng = rng or random
+    connection = get_connection()
+
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        (
+            player_id, name, money, energy, max_energy, nerve, max_nerve,
+            happiness, max_happiness, health, max_health, wanted, district,
+        ) = _player_row(connection, user_id)
+
+        current = {
+            "energy": energy, "nerve": nerve, "happiness": happiness,
+            "health": health, "wanted_level": wanted,
+        }
+        ceilings = {
+            "energy": max_energy, "nerve": max_nerve,
+            "happiness": max_happiness, "health": max_health,
+            "wanted_level": MAX_WANTED_LEVEL,
+        }
+
+        message = prank.message
+        effects = []
+
+        if prank.custom_message:
+            message = str(custom_message or "").strip()
+            if not message:
+                raise AdminActionError("Write something to send them.")
+            if len(message) > 280:
+                raise AdminActionError(
+                    "Keep it under 280 characters."
+                )
+
+        # Money, from the prank's own range so nobody types a figure.
+        low, high = prank.money
+        if low or high:
+            amount = rng.randint(low, high)
+            after = max(0, money + amount)
+            moved = after - money
+            connection.execute(
+                "UPDATE players SET money = ? WHERE id = ?", (after, player_id)
+            )
+            effects.append(f"£{abs(moved):,}")
+
+            # Lifting nothing off somebody skint is still a story, but
+            # it is not the story the prank was going to tell. Sending
+            # "your wallet is lighter" to a player whose balance did not
+            # move is the same lie this whole module exists to avoid.
+            if moved == 0 and prank.foiled_message:
+                message = prank.foiled_message
+
+        # Resources, each clamped to this player's own ceiling.
+        for column, delta in prank.resources.items():
+            ceiling = ceilings[column]
+            value = max(0, min(ceiling, current[column] + delta))
+            connection.execute(
+                f"UPDATE players SET {column} = ? WHERE id = ?",
+                (value, player_id),
+            )
+            effects.append(f"{column} {current[column]} to {value}")
+
+        if prank.scatter:
+            landed = _scatter_district(district, rng)
+            connection.execute(
+                """
+                UPDATE players
+                SET current_district = ?,
+                    travel_destination = NULL,
+                    travel_until = NULL
+                WHERE id = ?
+                """,
+                (landed, player_id),
+            )
+            message = message.format(district=get_district(landed).name)
+            effects.append(f"moved to {landed}")
+
+        _notify(connection, player_id, message)
+        connection.commit()
+
+        return {
+            "name": name,
+            "prank": prank,
+            "message": message,
+            "effects": effects,
+        }
+    except Exception:
+        connection.rollback()
+        raise
     finally:
         connection.close()

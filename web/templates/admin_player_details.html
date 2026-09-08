@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="theme-color" content="#090b0d">
     <title>{{ details.account.username }} · Operations · The Smoke</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='digest-1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='digest-2') }}">
 </head>
 <body class="dashboard-page">
 <div class="app-shell">
@@ -50,6 +50,10 @@
             <a href="#admin-stats">Stats</a>
             <a href="#admin-inventory">Inventory</a>
             <a href="#admin-crimes">Crimes</a>
+            {% if admin_role == "admin" %}
+            <a href="#admin-money">Money</a>
+            <a href="#admin-mischief">Mischief</a>
+            {% endif %}
             {% endif %}
             <a href="#admin-moderation">Moderation</a>
             <a href="#admin-activity">Activity</a>
@@ -197,6 +201,51 @@
                     {% for district in details.district_reputation %}
                     <div><strong>{{ district.district|title }}</strong><span>{{ district.reputation }}</span></div>
                     {% else %}<p>No reputation earned.</p>{% endfor %}
+                </div>
+            </article>
+        </section>
+        {% endif %}
+
+        {% if admin_role == "admin" and details.account.id %}
+        <section class="admin-detail-grid">
+            <article class="admin-panel" id="admin-money">
+                <div class="section-heading"><div><p class="eyebrow">Economy</p><h2>Adjust balance</h2></div></div>
+                <p>Add cash to their pocket or take it back out. A negative figure takes. One adjustment cannot move more than £{{ "{:,}".format(maximum_adjustment) }}, and nobody is ever pushed below zero.</p>
+                <div class="admin-inventory-control">
+                    <form method="post" action="{{ url_for('admin_user_money', user_id=details.account.user_id) }}">
+                        <label>Amount
+                            <input name="amount" type="text" inputmode="numeric" placeholder="5000 or -5000" required>
+                        </label>
+                        <label>Tell them (optional)
+                            <input name="note" type="text" maxlength="280" placeholder="Leave blank and the money just appears.">
+                        </label>
+                        <div class="admin-inventory-actions">
+                            <button type="submit">Adjust balance</button>
+                        </div>
+                    </form>
+                </div>
+                <p class="admin-footnote">Every adjustment is written to the activity ledger below with your name on it.</p>
+            </article>
+
+            <article class="admin-panel" id="admin-mischief">
+                <div class="section-heading"><div><p class="eyebrow">For your own amusement</p><h2>Mischief</h2></div></div>
+                <p>Wind them up. Every one of these sends the player a message telling them something happened — a change they cannot see reads as a broken game, not a joke.</p>
+                <div class="admin-inventory-control">
+                    <form method="post" action="{{ url_for('admin_user_mischief', user_id=details.account.user_id) }}">
+                        <label>Message <small>(only used by “Word on the street”)</small>
+                            <input name="message" type="text" maxlength="280" placeholder="I know what you did in Brixton.">
+                        </label>
+                        <div class="admin-mischief-actions">
+                            {% for prank in pranks %}
+                            <button class="admin-action{% if not prank.is_kind and not prank.custom_message %} admin-action--danger{% endif %}" name="prank" value="{{ prank.key }}" type="submit" title="{{ prank.blurb }}">{{ prank.label }}</button>
+                            {% endfor %}
+                        </div>
+                    </form>
+                </div>
+                <div class="admin-compact-list">
+                    {% for prank in pranks %}
+                    <div><strong>{{ prank.label }}</strong><span>{{ prank.blurb }}</span></div>
+                    {% endfor %}
                 </div>
             </article>
         </section>
