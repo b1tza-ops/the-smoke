@@ -73,7 +73,7 @@ GUIDE_FRESHNESS = {
     "the-item-market": ("2026-09-03", "dcc29243a35e87ef"),
     "daily-contracts": ("2026-09-03", "0f1a92a11eaa94e3"),
     "travel": ("2026-09-03", "70fab60cc4eda6e8"),
-    "the-casino": ("2026-09-07", "0e474f4e3a97c126"),
+    "the-casino": ("2026-09-08", "14f82ae1cb3fe5b9"),
     "the-loan-shark": ("2026-09-03", "9ffa4b5466f9c890"),
     "housing": ("2026-09-03", "80e01f06a497f861"),
 }

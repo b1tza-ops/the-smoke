@@ -1830,7 +1830,10 @@ CASINO_TABLES = (
         "endpoint": "casino_blackjack",
         "name": "Blackjack",
         "blurb": "Six decks, 3:2, splits and surrender. Beat the dealer.",
-        "edge": f"{BASIC_STRATEGY_EDGE * 100:.2f}% house edge",
+        # The condition matters more than the figure. Doubling on
+        # everything turns this table into a 34% edge, which is worse
+        # than the slots -- so the number is never shown bare.
+        "edge": f"{BASIC_STRATEGY_EDGE * 100:.2f}% house edge, played well",
     },
 )
 

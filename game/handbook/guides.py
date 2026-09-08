@@ -915,6 +915,16 @@ GUIDES = (
                 tone="info",
             ),
             Note(
+                "That 0.35% is what the table takes from somebody playing "
+                "well. It is not what it takes from everybody. Doubling "
+                "whenever the button is offered — rather than on the "
+                "handful of hands that are worth it — turns the same "
+                "table into roughly a **34% edge**, which is four times "
+                "worse than the fruit machines. Blackjack is the best bet "
+                "in the building and the easiest one to make the worst.",
+                tone="warning",
+            ),
+            Note(
                 "Over enough hands the house wins every one of these "
                 "games. That is what a house edge means. Gamble with what "
                 "you can afford to lose.",
