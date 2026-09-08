@@ -43,6 +43,13 @@ from game.casino import (
     maximum_bet as casino_maximum_bet,
 )
 from game.agents.service import AgentError
+from game.admin.mischief import (
+    MAXIMUM_ADJUSTMENT as ADMIN_MAXIMUM_ADJUSTMENT,
+    PRANKS,
+    AdminActionError,
+    adjustment_summary,
+    validate_adjustment,
+)
 from game.casino.limits import denominations as casino_denominations
 from game.casino.blackjack import (
     BASIC_STRATEGY_EDGE,
@@ -160,6 +167,8 @@ from database.repositories.growth import (
 )
 from database.repositories.moderation import get_user_role
 from database.repositories.admin import (
+    adjust_player_money,
+    apply_prank,
     get_admin_metrics,
     get_admin_player_details,
     get_admin_player_overview,
@@ -1179,6 +1188,8 @@ def admin_user_details(user_id):
             limit=100,
         ),
         item_catalog=ITEMS,
+        pranks=PRANKS,
+        maximum_adjustment=ADMIN_MAXIMUM_ADJUSTMENT,
         admin_notice=session.pop(
             "admin_player_notice",
             None,
@@ -1358,6 +1369,103 @@ def admin_user_status(user_id):
         }
 
     return redirect(f"/admin/users/{user_id}")
+
+
+@app.route(
+    "/admin/users/<int:user_id>/money",
+    methods=["POST"],
+)
+@admin_role_required
+def admin_user_money(user_id):
+    """Put money in a pocket, or take it out again.
+
+    Logged like every other panel action, and for a better reason than
+    most: this is the only screen in the game that can create currency
+    out of nothing, and an economy nobody can account for is one nobody
+    can balance later.
+    """
+    try:
+        amount = validate_adjustment(request.form.get("amount"))
+        note = str(request.form.get("note", "")).strip()
+        result = adjust_player_money(user_id, amount, note or None)
+
+        summary = adjustment_summary(
+            result["moved"], result["before"], result["after"]
+        )
+        if result["clamped"]:
+            summary += " Their pocket ran out before the figure did."
+
+        record_activity(
+            user_id,
+            "admin_money_grant" if amount > 0 else "admin_money_take",
+            summary,
+            {
+                "requested": result["requested"],
+                "moved": result["moved"],
+                "before": result["before"],
+                "after": result["after"],
+                "by": session.get("admin_display_name"),
+            },
+        )
+        session["admin_player_notice"] = {
+            "type": "success",
+            "message": summary,
+        }
+    except AdminActionError as admin_error:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": str(admin_error),
+        }
+
+    return redirect(f"/admin/users/{user_id}#admin-money")
+
+
+@app.route(
+    "/admin/users/<int:user_id>/mischief",
+    methods=["POST"],
+)
+@admin_role_required
+def admin_user_mischief(user_id):
+    """Wind somebody up, on the record.
+
+    The player always gets told something happened -- that is enforced
+    in the repository rather than here -- and so does the audit ledger.
+    A prank nobody can trace is just an unexplained change to somebody's
+    character.
+    """
+    try:
+        result = apply_prank(
+            user_id,
+            request.form.get("prank", ""),
+            request.form.get("message", ""),
+        )
+        prank = result["prank"]
+        summary = f"{prank.label} on {result['name']}."
+        if result["effects"]:
+            summary += " " + ", ".join(result["effects"]) + "."
+
+        record_activity(
+            user_id,
+            "admin_mischief",
+            summary,
+            {
+                "prank": prank.key,
+                "message": result["message"],
+                "effects": result["effects"],
+                "by": session.get("admin_display_name"),
+            },
+        )
+        session["admin_player_notice"] = {
+            "type": "success",
+            "message": f"{summary} They have been told.",
+        }
+    except AdminActionError as admin_error:
+        session["admin_player_notice"] = {
+            "type": "error",
+            "message": str(admin_error),
+        }
+
+    return redirect(f"/admin/users/{user_id}#admin-mischief")
 
 
 @app.route(
