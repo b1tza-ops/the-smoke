@@ -13,6 +13,7 @@ fails if a payout is ever edited without re-checking the arithmetic.
 
 import random
 from dataclasses import dataclass
+from itertools import product
 
 
 # Symbols in ascending order of value, with how many stops each takes on
@@ -99,3 +100,38 @@ def play(bet, rng=None):
         payout=bet * multiplier,
         line=line,
     )
+
+
+def return_to_player():
+    """The exact fraction of everything staked that comes back.
+
+    Enumerated rather than recorded. There are only six symbols on three
+    reels, so every one of the 216 combinations can be walked against
+    its own probability and the answer is exact, not sampled -- which
+    means the figure the handbook shows players is derived from the
+    paytable above rather than copied from it by hand and left to rot.
+    """
+    total = 0.0
+
+    for reels in product(REEL_WEIGHTS, repeat=REEL_COUNT):
+        probability = 1.0
+        for symbol in reels:
+            probability *= REEL_WEIGHTS[symbol] / len(STRIP)
+        total += probability * score(reels)[0]
+
+    return total
+
+
+def hit_frequency():
+    """How often a spin pays anything at all."""
+    total = 0.0
+
+    for reels in product(REEL_WEIGHTS, repeat=REEL_COUNT):
+        if score(reels)[0] == 0:
+            continue
+        probability = 1.0
+        for symbol in reels:
+            probability *= REEL_WEIGHTS[symbol] / len(STRIP)
+        total += probability
+
+    return total

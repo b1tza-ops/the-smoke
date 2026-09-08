@@ -8,6 +8,8 @@ is on whoever edits the rule.
 
 from dataclasses import dataclass
 
+from game.casino import keno, slots
+from game.casino.blackjack import BASIC_STRATEGY_EDGE
 from game.handbook.blocks import (
     Bullets,
     Gallery,
@@ -17,6 +19,41 @@ from game.handbook.blocks import (
     Table,
     Text,
 )
+
+
+def _percent(fraction):
+    """A return figure the way the casino floor would print it."""
+    return f"{fraction * 100:.1f}%"
+
+
+def _casino_returns():
+    """The three rows of the returns table, read from the games.
+
+    The old table had these typed in by hand, and the blackjack row had
+    drifted: it advertised 99.8% against a real 99.65%. Slots and keno
+    are enumerated exactly on every import, and blackjack carries the
+    figure that was measured against it, so the guide can no longer
+    promise players a number the game does not pay.
+    """
+    keno_low, keno_high = keno.return_range()
+
+    return (
+        (
+            "Fruit Machines",
+            _percent(slots.return_to_player()),
+            _percent(1 - slots.return_to_player()),
+        ),
+        (
+            "Keno",
+            f"{_percent(keno_low)}\u2013{_percent(keno_high)}",
+            f"{_percent(1 - keno_high)}\u2013{_percent(1 - keno_low)}",
+        ),
+        (
+            "Blackjack",
+            f"{(1 - BASIC_STRATEGY_EDGE) * 100:.2f}%",
+            f"{BASIC_STRATEGY_EDGE * 100:.2f}%",
+        ),
+    )
 
 
 @dataclass(frozen=True)
@@ -850,17 +887,16 @@ GUIDES = (
                 "table maximum on any single payout is £500,000."
             ),
             Text(
-                "Here is what each game returns over time. These are not "
-                "estimates — they are computed from the paytables, and the "
-                "test suite recomputes them on every change."
+                "Here is what each game returns over time. The reels and "
+                "keno are computed exactly from their paytables. "
+                "Blackjack has no closed form — splits and doubles see to "
+                "that — so its figure was measured over nineteen million "
+                "hands. All three are read straight from the code that "
+                "deals the cards."
             ),
             Table(
                 headers=("Game", "Returns", "House edge"),
-                rows=(
-                    ("Fruit Machines", "91.7%", "8.3%"),
-                    ("Keno", "90–92%", "8–10%"),
-                    ("Blackjack", "99.8%", "0.2%"),
-                ),
+                rows=_casino_returns(),
                 caption="Return to player over the long run.",
             ),
             Heading("Blackjack is the only good bet"),
@@ -877,6 +913,16 @@ GUIDES = (
                 "gets you nowhere. That is what makes the thin edge safe "
                 "to offer.",
                 tone="info",
+            ),
+            Note(
+                "That 0.35% is what the table takes from somebody playing "
+                "well. It is not what it takes from everybody. Doubling "
+                "whenever the button is offered — rather than on the "
+                "handful of hands that are worth it — turns the same "
+                "table into roughly a **34% edge**, which is four times "
+                "worse than the fruit machines. Blackjack is the best bet "
+                "in the building and the easiest one to make the worst.",
+                tone="warning",
             ),
             Note(
                 "Over enough hands the house wins every one of these "

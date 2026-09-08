@@ -4,8 +4,11 @@ Three guards, all of them economic rather than moral. The level gate
 keeps a brand-new player from losing their starting stake in one tap.
 The bet ceiling rises with level so the tables stay relevant late
 without letting a level 3 wager a fortune. The payout ceiling is a table
-maximum: a jackpot mints money from nothing, and a small server cannot
-absorb an unbounded one.
+maximum on the winnings: a jackpot mints money from nothing, and a small
+server cannot absorb an unbounded one. It bounds what comes back above
+the stake rather than the gross return, because blackjack can have eight
+bets on the table at once and a ceiling on the gross would eat into
+those.
 """
 
 
@@ -13,7 +16,8 @@ MINIMUM_LEVEL = 3
 MINIMUM_BET = 10
 BET_PER_LEVEL = 250
 
-# No single round pays out more than this, however the paytable reads.
+# No single round hands back more than this above its stake, however
+# the paytable reads.
 MAXIMUM_PAYOUT = 500_000
 
 
@@ -46,9 +50,27 @@ def validate_bet(level, bet, money):
     return bet
 
 
-def capped_payout(payout):
-    """Apply the table maximum."""
-    return min(payout, MAXIMUM_PAYOUT)
+def capped_payout(payout, staked):
+    """Apply the table maximum to the winnings, never to the stake.
+
+    The ceiling exists to bound what the house mints, and what it mints
+    is the money handed back *above* what was put down. Capping the
+    gross return instead has a sharp edge on it, because a blackjack
+    table is not one bet: split to four hands and doubled on each, it
+    holds eight times the opening stake. Trim that gross return to the
+    ceiling and a player who won every hand gets back less than they
+    staked -- the house keeping money off a table it lost outright.
+
+    Slots and keno never risk more than a single bet, so the old
+    arithmetic was right everywhere it was ever exercised. It was wrong
+    only on the one game that can stake eight bets at once, and only
+    once somebody was big enough to reach it, which is the kind of bug
+    that waits quietly for its first victim.
+    """
+    if payout <= staked:
+        return payout
+
+    return staked + min(payout - staked, MAXIMUM_PAYOUT)
 
 
 # The chips on the rail. A player picks a denomination rather than typing

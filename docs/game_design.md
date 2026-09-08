@@ -622,21 +622,33 @@ with a stake ceiling of £250 × level, so a new player cannot lose their
 starting stake in one tap and a wealthy one still finds the tables
 relevant.
 
-Every game is a pure module with an injectable rng. The outcome maths is
-therefore recomputed exactly in the tests rather than trusted:
-exhaustively over all 216 reel combinations for slots, hypergeometrically
-for keno, and by simulation for blackjack.
+Every game is a pure module with an injectable rng, so the outcome maths
+is derived rather than trusted. Slots are enumerated exhaustively over
+all 216 reel combinations and keno hypergeometrically, both cheap enough
+to compute on import — `slots.return_to_player()` and
+`keno.return_range()` are what the handbook and the casino pages print.
+
+Blackjack has no closed form: splits, doubles and surrender put the
+stake itself under the player's control. Its figure is measured instead,
+and recorded in `blackjack.BASIC_STRATEGY_EDGE` with the sample size and
+confidence interval beside it.
 
 | Game | Return to player | House edge |
 | --- | ---: | ---: |
 | Fruit machines | 91.73% | 8.27% |
 | Keno | 90.2–91.9% | 8.1–9.8% |
-| Blackjack | ~99.8% | ~0.24% |
+| Blackjack | 99.65% | 0.347% ± 0.026% |
 
 Slots and keno are the sink; blackjack is close to a wash. That is the
 honest shape of a real casino floor and it is deliberate — the player who
 learns basic strategy is rewarded, and the player who pulls a lever is
 the one funding the room.
+
+None of these figures is typed into a page. The guide, the table cards
+and the paytable headers all read them from the modules above, because
+the blackjack row did drift once: it advertised 99.8% beside a game that
+pays 99.65%, in four places at once, and nothing caught it. A number a
+player uses to choose a game has to come from the code that deals it.
 
 **Slots** are three reels sharing one 42-stop strip. Three of a kind pays
 by symbol; a pair pays only on the top four, which lifts the hit rate to
@@ -670,8 +682,17 @@ Every extra stake — a double, a split, an insurance bet — is taken from
 the player the moment it is put down, not when the table settles.
 
 Two economic guards sit above the paytables: the stake ceiling, and a
-**table maximum of £500,000** on any single payout. A jackpot mints money
-from nothing, and a small server cannot absorb an unbounded one.
+**table maximum of £500,000** on what a single round hands back *above*
+its stake. A jackpot mints money from nothing, and a small server cannot
+absorb an unbounded one.
+
+The ceiling bounds the winnings rather than the gross return, which
+matters only for blackjack and matters absolutely there: split to four
+hands and doubled on each, a table holds eight times the opening bet.
+Capping the gross return would have trimmed a big enough winning table
+to below its own stake — the house keeping money off a table it lost
+outright. Slots and keno never risk more than one bet, so nothing ever
+reached it, which is exactly why it went unnoticed.
 
 Every settled round is written to `casino_rounds`, so the house edge can
 be audited against real play rather than only against the arithmetic.

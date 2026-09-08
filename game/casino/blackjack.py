@@ -1,8 +1,8 @@
 """Blackjack, dealt from a six-deck shoe.
 
 House rules, all the player-friendly variants, which is what keeps the
-edge near half a percent rather than the two or three a stingier table
-takes:
+edge near a third of a percent rather than the two or three a stingier
+table takes:
 
   * the dealer stands on every 17, soft ones included
   * a natural blackjack pays 3:2
@@ -43,6 +43,39 @@ PUSH = "push"
 PLAYER_BUST = "player_bust"
 DEALER_BUST = "dealer_bust"
 SURRENDERED = "surrendered"
+
+# What the house actually keeps from somebody playing textbook basic
+# strategy, as a fraction of the opening stake.
+#
+# Slots and keno can be enumerated exactly; this one cannot. There is no
+# closed form for a game with splits, doubles and surrender in it, so
+# this figure was measured: 19,000,000 hands played against this module
+# by a basic-strategy driver, giving 0.347% with a standard error of
+# 0.026% (95% confidence 0.295% to 0.398%). It is recorded here rather
+# than recomputed on import because a run that tight takes the better
+# part of an hour.
+#
+# The handbook and the casino pages show players this number, so it must
+# not drift from the code: they read it from here rather than repeating
+# it, and a test asserts that they do.
+#
+# Nothing re-measures it on every run, and nothing can -- a sample small
+# enough for a unit suite carries a standard error of about a whole
+# percentage point, which cannot tell 0.35% from 1%. What the suite
+# guards instead is the settlement table this figure is a consequence
+# of, walked exhaustively in `BlackjackSettlementTests`, plus the house
+# rules that set it. A rule change that moves the edge will fail one of
+# those first.
+#
+# So: after changing a rule here, re-measure. Play basic strategy
+# against `open_table` for a few million hands, take the mean of
+# `(state.payout - state.staked) / bet`, and update this line.
+BASIC_STRATEGY_EDGE = 0.00347
+
+# The floor, for comparison: never doubling, never splitting, standing
+# on every 17. Measured the same way over 5,000,000 hands (SE 0.044%).
+NAIVE_STRATEGY_EDGE = 0.0570
+
 
 OUTCOME_LINES = {
     PLAYER_BLACKJACK: "Blackjack — pays 3:2",

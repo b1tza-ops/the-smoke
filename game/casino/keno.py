@@ -15,6 +15,7 @@ table hypergeometrically.
 
 import random
 from dataclasses import dataclass
+from math import comb
 
 
 POOL_SIZE = 80
@@ -113,3 +114,31 @@ def play(bet, picks, rng=None):
             else f"{len(hits)} of {spots} — no win"
         ),
     )
+
+
+def match_probability(spots, hits):
+    """The chance of matching exactly `hits` of `spots` picked."""
+    return (
+        comb(spots, hits)
+        * comb(POOL_SIZE - spots, DRAW_SIZE - hits)
+        / comb(POOL_SIZE, DRAW_SIZE)
+    )
+
+
+def return_to_player(spots):
+    """The exact return for one spot count.
+
+    Hypergeometric: twenty balls drawn without replacement from eighty,
+    so each outcome has a closed form and nothing here is sampled.
+    """
+    return sum(
+        match_probability(spots, hits) * multiplier
+        for hits, multiplier in PAYTABLE[spots].items()
+    )
+
+
+def return_range():
+    """The best and worst return across every spot count offered."""
+    returns = [return_to_player(spots) for spots in PAYTABLE]
+
+    return min(returns), max(returns)

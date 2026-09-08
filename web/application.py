@@ -44,6 +44,7 @@ from game.casino import (
 )
 from game.casino.limits import denominations as casino_denominations
 from game.casino.blackjack import (
+    BASIC_STRATEGY_EDGE,
     OUTCOME_LINES as BLACKJACK_OUTCOME_LINES,
     BlackjackError,
     available_actions as blackjack_actions,
@@ -57,11 +58,13 @@ from game.casino.keno import (
     PAYTABLE as KENO_PAYTABLE,
     POOL_SIZE as KENO_POOL_SIZE,
     KenoError,
+    return_range as keno_return_range,
 )
 from game.casino.slots import (
     PAIR as SLOTS_PAIR,
     SYMBOL_NAMES as SLOTS_SYMBOL_NAMES,
     THREE_OF_A_KIND as SLOTS_THREE_OF_A_KIND,
+    return_to_player as slots_return_to_player,
 )
 from database.repositories.casino import (
     act_on_table,
@@ -1797,27 +1800,40 @@ def district_shop():
 
 CASINO_DISTRICT = "soho"
 
+# The edge on each card is read from the game rather than typed here.
+# It was typed here once, and the blackjack figure drifted to 0.2%
+# against a table that actually keeps 0.35% -- a number a player uses to
+# choose which game to sit at, so it has to come from the code that
+# deals it.
+_KENO_LOW, _KENO_HIGH = keno_return_range()
+
 CASINO_TABLES = (
     {
         "key": "slots",
         "endpoint": "casino_slots",
         "name": "Fruit Machines",
         "blurb": "Three reels, one payline. The quickest way to find out.",
-        "edge": "8.3% house edge",
+        "edge": f"{(1 - slots_return_to_player()) * 100:.1f}% house edge",
     },
     {
         "key": "keno",
         "endpoint": "casino_keno",
         "name": "Keno",
         "blurb": "Mark your card. The house draws twenty.",
-        "edge": "8–10% house edge",
+        "edge": (
+            f"{(1 - _KENO_HIGH) * 100:.1f}–{(1 - _KENO_LOW) * 100:.1f}% "
+            "house edge"
+        ),
     },
     {
         "key": "blackjack",
         "endpoint": "casino_blackjack",
         "name": "Blackjack",
         "blurb": "Six decks, 3:2, splits and surrender. Beat the dealer.",
-        "edge": "0.2% house edge",
+        # The condition matters more than the figure. Doubling on
+        # everything turns this table into a 34% edge, which is worse
+        # than the slots -- so the number is never shown bare.
+        "edge": f"{BASIC_STRATEGY_EDGE * 100:.2f}% house edge, played well",
     },
 )
 
@@ -1836,11 +1852,24 @@ def _casino_player():
     return player
 
 
+# The three headline returns, formatted once for the pages that show
+# them. Every casino page prints its own game's figure, so they come
+# from the same place the cards on the index do.
+CASINO_RETURNS = {
+    "slots": f"{slots_return_to_player() * 100:.1f}% returned",
+    "keno": f"{_KENO_LOW * 100:.0f}\u2013{_KENO_HIGH * 100:.0f}% returned",
+    "blackjack": (
+        f"{BASIC_STRATEGY_EDGE * 100:.2f}% house edge under basic strategy"
+    ),
+}
+
+
 def _casino_shell(player):
     """Everything every casino page needs."""
     return {
         "player": player,
         "tables": CASINO_TABLES,
+        "returns": CASINO_RETURNS,
         "minimum_bet": CASINO_MINIMUM_BET,
         "maximum_bet": casino_maximum_bet(player.level),
         "minimum_level": CASINO_MINIMUM_LEVEL,
